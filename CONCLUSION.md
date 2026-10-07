@@ -71,6 +71,34 @@
   import `201`, traversal rejected `400`, prune verified, `first_frame` → 24-node prompt
   validated, sync `dry` staged 6 model files without uploading.
 
+### v16 — write-back fixed, first cache dataset created — ✅ VERIFIED ON KAGGLE
+- **Run COMPLETE in 32.9 min (1972 s), zero errors** — includes the 530 s first-time upload.
+- **The v15 bug is fixed and proven live**: `auth env: KAGGLE_USERNAME=False KAGGLE_KEY=False
+  KAGGLE_API_V1_TOKEN=True kaggle.json=False` → `in-kaggle-notebook: True` →
+  `cache owner: adityahalde8777 (via kagglehub.whoami)` — exactly the token-file auth story
+  v15 taught us, with `kagglehub.whoami` doing the work.
+- **First write-back succeeded**: `cache inventory: 55 files, 42.0 GB` → `staged 5 model files`
+  → `Uploading Dataset …` → **`kagglehub upload OK -> adityahalde8777/minimax-h3-model-cache
+  (530 s)`** (~80 MB/s; largest files 21.0 + 15.7 + 2.8 + 2.0 + 0.6 GB). Dataset **created**
+  from scratch by `dataset_upload` — no manual `kaggle datasets create` needed.
+- **Probe behaves correctly**: `probe: kagglehub probe: BackendError; cli rc=1 403` →
+  `remote MANIFEST unavailable -> upload (first run or probe failed)` — correct, the dataset
+  didn't exist at probe time. The `403` on the classic CLI inside a notebook is the known
+  token-file-auth limitation (kagglehub path works; CLI is fallback only).
+  *Open: confirm the second boot probes `MANIFEST.json` OK and skips the upload.*
+- **Pub self-test through the tunnel**: `200` on health/catalog/settings/jobs/docs,
+  `200` on proxied `/object_info`, `404 /h3api/nope` with the JSON envelope,
+  `200 POST /h3api/settings`. **7/9 + POST green.**
+- **Two flaky lines**: `URLError /h3api/outputs` and `URLError /h3api/gpus` — the only two
+  endpoints that do real OS work (output-dir scan, `nvidia-smi` subprocess), and the only two
+  requests that hit the 20 s client timeout, with neighbors before and after passing ⇒ most
+  likely a transient trycloudflare stall; but the handler printed only `URLError` (reason
+  swallowed) so it's undiagnosed → **v17 fix: retry-once, 30 s timeout, print `e.reason`**.
+- Smoke path unchanged and healthy: `prompt_id 1964b47f…`, `node_errors {}`,
+  **194.4–195.9 s/step × 4** (fastest measured: v14 210 → v15 207 → v16 194–196),
+  `DUAL-GPU CONFIRMED: active: 2 ranks`, `smoke status: success`, MP4 out, READY +
+  `Verified public endpoint: https://claimed-maintain-kate-stroke.trycloudflare.com`.
+
 ## 2026-10-07 — retired lanes (kept for history)
 
 ### API lane (`minimax-h3-api-server`, deleted)
@@ -110,7 +138,10 @@
 6. ⬜ **First/last-frame conditioning at runtime**: the prompt structure validates locally
    (LoadImage → subgraph input, `node_errors {}`), but no Kaggle run has yet *executed* an
    image-conditioned generation end to end.
-7. ⬜ **Write-back round trip**: v15's first upload was **skipped** by the owner-detection bug
-   (token-file auth); v16 fixes it (`kagglehub.whoami` + `dataset_upload`) — the question
-   closes when the v16 run shows `kagglehub upload OK`, and the loop fully closes when a
-   later boot symlinks models out of `/kaggle/input` (dataset attached once via Add Data).
+7. ⬜→✅ **Write-back round trip**: **upload half CLOSED in v16** — `kagglehub upload OK ->
+   adityahalde8777/minimax-h3-model-cache (530 s)`, 42 GB, dataset created from scratch
+   (owner via `kagglehub.whoami`, v15's `SKIP upload` gone). Still open: (a) second-boot probe
+   must find `MANIFEST.json` and **skip** the re-upload (v16's `BackendError/403` probe was
+   correct first-run behavior — verify in v17), (b) the read half: attach the dataset to the
+   kernel once via **Add Data** so `/kaggle/input` populates and later boots symlink models
+   instead of downloading from HF.

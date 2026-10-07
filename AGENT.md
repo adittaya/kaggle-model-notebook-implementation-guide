@@ -15,16 +15,24 @@ reconstruct the whole project after a context loss.
 **Date:** Oct 7 2026
 **Owner:** adityahalde8777
 **Kaggle kernel:** `adityahalde8777/minimax-h3-comfy-2xt4-generator` (the ONLY kernel; old lanes deleted)
-**Latest:** **v16 BUILT** (ast-clean + all-local dry-run green, ready to push): fix for v15's
-write-back skip — owner via `kagglehub.whoami` (notebooks auth via **token file**, not
-`KAGGLE_USERNAME`/`kaggle.json`) + env/kaggle.json/embedded-owner fallbacks, upload via
-`kagglehub.dataset_upload` (CLI fallback), auth diagnostics, + **live endpoint self-test**
-in the pub cell (9 GETs + POST settings through the tunnel). **v15 VERIFIED on Kaggle**:
-24.9-min run, hub listening `:8190`, tunnel `Verified public endpoint` + full READY block with
-`/h3api/*` URLs, smoke `prompt_id 59047396…`, **207 s/step × 4**, `DUAL-GPU CONFIRMED`, MP4 out,
-zero errors — sync printed `SKIP upload: cannot determine dataset owner` (the bug v16 fixes).
-Next: push v16 → verify `kagglehub upload OK` + endpoint self-test lines in the logs, then
-Phase C (image modality smoke — research done, see Phase C).
+**Latest:** **v16 VERIFIED on Kaggle (Phase B closed)**: 32.9-min run (1972 s), zero errors —
+write-back **fixed and first dataset created**: `in-kaggle-notebook: True` →
+`cache owner: adityahalde8777 (via kagglehub.whoami)` → `staged 5 model files` →
+`kagglehub upload OK -> adityahalde8777/minimax-h3-model-cache (530 s)` (42 GB, ~80 MB/s, v15's
+`SKIP upload` gone). Pub self-test live through the tunnel: 7/9 GETs `200`, deliberate `404
+/h3api/nope`, `200 POST /h3api/settings` — only `/h3api/outputs` + `/h3api/gpus` returned
+`URLError` (transient trycloudflare stall on the two OS-work handlers; **v17 fix: retry-once +
+30 s timeout + print `e.reason`**). Smoke: `prompt_id 1964b47f… node_errors {}`,
+**194.4–195.9 s/step × 4** (fastest yet), `DUAL-GPU CONFIRMED`, MP4 out, READY +
+`Verified public endpoint: https://claimed-maintain-kate-stroke.trycloudflare.com`. Probe showed
+`kagglehub probe: BackendError; cli rc=1 403` = correct first-run behavior (dataset didn't exist
+at probe time); v17 must confirm probe-OK → skip-upload on the second boot.
+Also this session: **disk hygiene** — home was 96% full (4.8 GB); pip+npm caches purged (1.7 GB
+freed), all caches redirected to `/tmp` (`XDG_CACHE_HOME`/`PIP_CACHE_DIR`/`HF_HOME`/npm),
+and **Colab is the remote machine** (CLI session `hub` READY: `colab exec/upload/download`);
+home holds only project files.
+Next: **Phase C image lane (v17)** — `modality` branch in `build_prompt`, flux registry entries,
+image presets, smoke→PNG, modality-aware dual-GPU assertion + the self-test retry fix.
 
 ---
 
@@ -183,7 +191,7 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
    → MP4 `MiniMax_H3_00001_.mp4` → READY block with Base URL printed; exchange ≈6 % of step
    time ⇒ dense slowness is T4 compute, not split overhead
 
-### Phase B — enterprise hybrid API (v15) — ✅ BUILT + DRY-RUN GREEN + PUSHED (watching)
+### Phase B — enterprise hybrid API (v15/v16) — ✅ VERIFIED ON KAGGLE
 1. ✅ Sidecar cell (`api`): stdlib `ThreadingHTTPServer` on `:8190` serves `/h3api/*`
    **and** reverse-proxies everything else to Comfy `:8188` — raw bidirectional WebSocket pipe,
    chunked bodies, hop-by-hop header strip, CORS; one tunnel carries Comfy UI + native API + hub;
@@ -208,8 +216,12 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
    (`cannot determine dataset owner`) → **v16 built**: `kagglehub.whoami` owner + native
    `dataset_upload` + auth diagnostics + pub-cell live endpoint self-test (9 GETs + POST through
    the tunnel); dry-run ALL TESTS PASSED
-9. ⬜ Watch v16 run → confirm `cache owner … (via kagglehub.whoami)` + `kagglehub upload OK`
-   (first-time dataset create) + self-test lines all `200`/`404` as expected
+9. ✅ **v16 run captured (32.9 min, zero errors)**: `in-kaggle-notebook: True` →
+   `cache owner: adityahalde8777 (via kagglehub.whoami)` → `staged 5 model files` →
+   `kagglehub upload OK -> adityahalde8777/minimax-h3-model-cache (530 s)` (42 GB created);
+   self-test 7/9 `200` + expected `404` + `200 POST` — `/outputs`+`/gpus` URLError (tunnel
+   transient; v17: retry + longer timeout + print reason). Smoke 194–196 s/step × 4, dual-GPU,
+   MP4 out → **Phase B VERIFIED**
 
 ### Phase C — modalities (v16+, one low-quality smoke each, in order)
 1. ⬜ **Image generation** — **researched ✅**: template `flux_schnell.json` (Comfy-Org/
@@ -301,6 +313,9 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 7 | Write-back auth = **kagglehub first** (`whoami` for owner, `dataset_upload` to push), classic CLI second, **embedded kernel owner** (public, build-time from kernel-metadata `id`) last | v15 run proved modern notebooks carry a **token file** (`KAGGLE_API_V1_TOKEN`), not `KAGGLE_USERNAME`/`kaggle.json` — and the in-kernel CLI got `403`; kagglehub has native notebook auth |
 | Oct 7 | Sync cell prints **auth diagnostics** every run (env/file booleans + `in-kaggle-notebook`, never secrets) | v15's skip was silent-adjacent: next run's log must show which cred sources exist without debugging blind |
 | Oct 7 | Pub cell **self-tests the public surface** (health/catalog/settings/jobs/outputs/gpus/docs, proxied `/object_info`, 404 envelope, no-op POST settings) through the tunnel before READY | tunnel-up ≠ API working; logs must *prove* every endpoint end to end (v15 had only `/history` + `/health` checks) |
+| Oct 7 | Self-test GETs get **retry-once + 30 s timeout + print `e.reason`** (v17) | v16: `/outputs`+`/gpus` returned bare `URLError` — reason was swallowed, so a tunnel stall and a slow handler were indistinguishable |
+| Oct 7 | **Local caches redirected to `/tmp`** (`XDG_CACHE_HOME`, `PIP_CACHE_DIR`, `HF_HOME`, npm cache, `TMPDIR` in `.bashrc`/`.profile`) | home partition is only 4.8 GB and hit 96%; `/tmp` lives on the 119 GB root disk |
+| Oct 7 | **Colab CLI session (`hub`) = remote compute**; home directory holds project files only (user directive) | heavy jobs (installs, dry-runs, tests) must not consume home disk; Colab gives 107 GB + torch for free |
 
 ---
 
@@ -345,7 +360,10 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 7 | Six-MD docs pass for v14 verification + v15 hub API (README/GUIDE/CONCLUSION/ERROR_PLAYBOOK/BUILD_YOUR_OWN/AGENT) | commit `1e3a64b` |
 | Oct 7 | **Phase C pre-research**: image = `flux_schnell.json` template + `Comfy-Org/flux1-schnell` fp8 single file (17.24 GB, 4 steps cfg 1, no subgraph); music = `audio_minimax_music_3.json` subgraph + `Comfy-Org/MiniMax-Music-3` (14.33 GB, 30 steps cfg 1.7); transcription = no official local template → shortlist `Setmaster/comfyui-stt7` (MIT) vs `yuvraj108c/ComfyUI-Whisper` (275★, NOASSERTION license) | findings recorded in Phase C section |
 | Oct 7 | **v15 VERIFIED on Kaggle — Phase B verified**: 24.9 min, zero stderr; `hub API + proxy listening on :8190`; tunnel `Verified public endpoint: https://costa-ltd-kelly-hosting.trycloudflare.com` + full READY with `/h3api/*` URLs; `prompt_id 59047396… node_errors {}`; **207.2–208.2 s/step × 4**; `DUAL-GPU CONFIRMED`; MP4 out; **sync bug**: `SKIP upload: cannot determine dataset owner` (notebook auth = token file) | ✅ logs captured (`/tmp/opencode/v15_stdout.txt`) |
-| Oct 7 | v16 built: sync owner via `kagglehub.whoami` + env/kaggle.json/embedded fallbacks + auth diagnostics; upload via `kagglehub.dataset_upload` (CLI fallback); pub live endpoint self-test (9 GET + POST through tunnel); dry-run **ALL TESTS PASSED** (incl. `cache owner: adityahalde8777 (via kagglehub.whoami)`) | ready to push |
+| Oct 7 | v16 built: sync owner via `kagglehub.whoami` + env/kaggle.json/embedded fallbacks + auth diagnostics; upload via `kagglehub.dataset_upload` (CLI fallback); pub live endpoint self-test (9 GET + POST through tunnel); dry-run **ALL TESTS PASSED** (incl. `cache owner: adityahalde8777 (via kagglehub.whoami)`) | pushed |
+| Oct 7 | **v16 VERIFIED on Kaggle — Phase B complete**: 32.9 min / zero errors; `in-kaggle-notebook: True`; `cache owner: adityahalde8777 (via kagglehub.whoami)`; `staged 5 model files`; **`kagglehub upload OK -> adityahalde8777/minimax-h3-model-cache (530 s)`** (42 GB first-time create); self-test 7/9 `200` + `404 /h3api/nope` + `200 POST /h3api/settings`; smoke `prompt_id 1964b47f… node_errors {}`, **194.4–195.9 s/step × 4**, `DUAL-GPU CONFIRMED`, MP4 out; only `/h3api/outputs`+`/gpus` URLError (tunnel transient → v17 retry fix) | ✅ logs `/tmp/opencode/v16_stdout.txt`; all six MDs updated |
+| Oct 7 | **Disk hygiene** (user: home dir 96% full): purged pip cache (919 MB) + npm cache (811 MB) → home 96%→59%; redirected `XDG_CACHE_HOME`/`PIP_CACHE_DIR`/`HF_HOME`/npm cache/`TMPDIR` to `/tmp` via `.bashrc`/`.profile` | ✅ |
+| Oct 7 | **Colab = remote machine** (user directive: home only for files): Colab CLI session `hub` created + probed (`colab exec` runs code: Python 3.13, 107 GB disk, torch CPU); heavy compute (dry-runs, testing) goes to Colab, home keeps repo files only | ✅ |
 
 ---
 

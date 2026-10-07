@@ -90,7 +90,10 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
 - [ ] **Self-test the public surface before READY**: after the tunnel is up, hit every read-only
       endpoint **through the public URL** (health/catalog/settings/jobs/outputs/gpus/docs, a
       proxied runtime route, a deliberate 404, and a no-op POST) and print status + JSON snippet —
-      the log then *proves* the API works end to end, not just that the tunnel exists
+      the log then *proves* the API works end to end, not just that the tunnel exists. **Retry
+      each check once with a generous timeout and print the exception's `reason`** (v16: a
+      transient tunnel stall on two endpoints was indistinguishable from a slow handler because
+      the bare `URLError` was all that got printed)
 - [ ] **Double escapes meant for the notebook**: cell code with `"\n"` / `b"\r\n"` sits inside the
       build script's triple-quoted string, which consumes the backslashes — write `\\n` there, and
       `ast.parse` every **generated** cell (the build script parsing cleanly proves nothing)
@@ -176,7 +179,9 @@ git add -A; git commit -m "progress: ..."; git push
 Needed step — skip the HF download on every boot by shipping the weights in a Kaggle Dataset and
 letting the notebook auto-detect the mount:
 
-1. Upload the assets once: `kaggle datasets create -p <folder with the H3 files>`
+1. Upload the assets once — **or let the notebook do it**: the `sync` cell ran first in v16 and
+   **created** `adityahalde8777/minimax-h3-model-cache` itself via `kagglehub.dataset_upload`
+   (42 GB in 530 s, no manual `kaggle datasets create` needed)
 2. In the assets cell, **first** copy matching files out of `/kaggle/input/` into
    `/tmp/ComfyUI/models/<subdir>/`, keeping the exact directory layout ComfyUI expects
    (`diffusion_models/`, `text_encoders/`, `vae/`, `loras/`)

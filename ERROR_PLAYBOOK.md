@@ -46,7 +46,9 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
 | Broken cloudflared fetch (curl + stale pinned URL) | tunnel never starts, no READY block | `latest/download/...` with fallback + size check |
 | Generated cell had `SyntaxError: unterminated string literal` at `b"\r\n"` | the build script's **triple-quoted** string consumed `\r\n`/`\n` as *real* control chars, so the emitted notebook code contained raw newlines inside a bytes literal — the build script itself still parsed fine | double every escape meant for the notebook (`b"\\r\\n"` in the build script); **`ast.parse` every generated cell**, not just the build script |
 | `kaggle datasets version -d <ref>` → CLI error / wrong target | `-d` on `datasets version` means `--delete-old-versions`, not the dataset — the command reads `dataset-metadata.json` from the `-p` folder | write `{title, id, licenses}` into `dataset-metadata.json` in the staging folder; `list` CSV needs `-v` (not `--csv`); existence probe = `kaggle datasets metadata <owner>/<slug>` |
-| v15 sync cell: `SKIP upload: cannot determine dataset owner - continuing` (run healthy, write-back silently skipped) | **modern Kaggle notebooks authenticate via a token file** (`KAGGLE_API_V1_TOKEN`), *not* `KAGGLE_USERNAME`/`KAGGLE_KEY`/`~/.kaggle/kaggle.json` — the classic owner check finds nothing; the classic `kaggle` CLI also gets `403` in-kernel | owner = `kagglehub.whoami()` (native in-notebook auth) → env pair → kaggle.json (multi-path incl. `KAGGLE_CONFIG_DIR`) → **embedded kernel owner** (public, build-time from kernel-metadata `id`); upload via `kagglehub.dataset_upload` (creates/versions natively), classic CLI as second fallback; print auth **diagnostics** (booleans only, never secrets) every run so the next log shows which sources exist |
+| v15 sync cell: `SKIP upload: cannot determine dataset owner - continuing` (run healthy, write-back silently skipped) | **modern Kaggle notebooks authenticate via a token file** (`KAGGLE_API_V1_TOKEN`), *not* `KAGGLE_USERNAME`/`KAGGLE_KEY`/`~/.kaggle/kaggle.json` — the classic owner check finds nothing; the classic `kaggle` CLI also gets `403` in-kernel | owner = `kagglehub.whoami()` (native in-notebook auth) → env pair → kaggle.json (multi-path incl. `KAGGLE_CONFIG_DIR`) → **embedded kernel owner** (public, build-time from kernel-metadata `id`); upload via `kagglehub.dataset_upload` (creates/versions natively), classic CLI as second fallback; print auth **diagnostics** (booleans only, never secrets) every run so the next log shows which sources exist — **v16 verified live**: `via kagglehub.whoami` + `upload OK (530 s)` |
+| v16 self-test: `URLError /h3api/outputs` + `URLError /h3api/gpus` (the only 2 of 9 GETs to fail; neighbors 200) | those two handlers do real OS work (output-dir `rglob`, `nvidia-smi` subprocess) and sat behind a transient **trycloudflare** stall → the 20 s client timeout fired; the print showed only `URLError` because the exception's `reason` was never surfaced | v17: **retry once** on `URLError`, raise the GET timeout to 30 s, and print `e.reason` so a slow handler and a tunnel drop are distinguishable; re-verify next run |
+| v16 sync probe: `kagglehub probe: BackendError; cli rc=1 403` → `remote MANIFEST unavailable -> upload` | **expected first-run behavior**: the dataset didn't exist when the probe ran (`403` = classic CLI's known in-kernel token gap; `BackendError` = dataset not yet created) — the upload then created it | no fix needed; **verify in v17** that the second boot probes `MANIFEST.json` OK and prints `cache dataset up to date (manifest match)` (i.e. no 42 GB re-upload) |
 
 ### Debugging signals that actually solved things
 
@@ -72,11 +74,14 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
   `active: 2 ranks` -> ~210 s/step x 4 -> `smoke status: success completed: True` ->
   `found: /tmp/ComfyUI/output/video/MiniMax_H3_00001_.mp4` -> READY block with Base URL.
   If your run deviates from that sequence, start from the first divergence.
-- **Write-back healthy tail (v16+):** `auth env: KAGGLE_USERNAME=... kaggle.json=...` (booleans)
-  → `in-kaggle-notebook: True` → `cache owner: <user> (via kagglehub.whoami)` →
+- **Write-back healthy tail (v16 — PROVEN on Kaggle):** `auth env: KAGGLE_USERNAME=... kaggle.json=...`
+  (booleans) → `in-kaggle-notebook: True` → `cache owner: <user> (via kagglehub.whoami)` →
   `cache dataset: <owner>/minimax-h3-model-cache | probe: ...` → `staged N model files` →
   `kagglehub upload OK -> <ref> (<seconds> s)`. Any `SKIP upload:` line means the owner chain
-  failed — see the v15 token-file row above.
+  failed — see the v15 token-file row above. v16 measured: 5 files / 42 GB staged, upload
+  **530 s** at ~80 MB/s, dataset created from scratch. On the *second* boot the probe should
+  find the remote `MANIFEST.json` and print `cache dataset up to date (manifest match)` instead
+  of uploading again (v17 checkpoint).
 - **Dry-run the notebook cells locally before pushing**: run every cell against a local ComfyUI
   (CPU build) — registry/settings/assets/convert/submit/API all execute for free and `/prompt`
   validation is the real `validate_prompt`. The v15 harness goes further: after the cells it

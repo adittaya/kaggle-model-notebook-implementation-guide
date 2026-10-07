@@ -1,11 +1,13 @@
 # MiniMax H3 Kaggle Generator — Comfy 2×T4
 
 Deploy a **MiniMax H3** video/audio generator on Kaggle's free `T4 ×2` machine.
-Single lane, single kernel: `adityahalde8777/minimax-h3-comfy-2xt4-generator` (**current build v16**:
+Single lane, single kernel: `adityahalde8777/minimax-h3-comfy-2xt4-generator` (**current build v16 — VERIFIED**:
 dynamic model registry + Kaggle Dataset auto-cache + preset settings + **`/h3api/*` hub API** behind
-one public Base URL; **fast smoke verified in v14/v15** = 4-step turbo LoRA @ 864×480, ~207 s/step,
-whole run ~25 min, real MP4 out; **hub API + tunnel verified in v15** (24.9 min run, all endpoints
-200); dual-GPU verified in v13/v14/v15 — `active: 2 ranks cuda:0+cuda:1`, both T4s 100 % / ~65 W).
+one public Base URL; **fast smoke verified in v14/v15/v16** = 4-step turbo LoRA @ 864×480, 194–210 s/step,
+whole run ~25–33 min, real MP4 out; **hub API + tunnel verified in v15/v16** (all endpoints live, self-tested
+through the tunnel); **dataset write-back verified in v16** — `kagglehub upload OK ->
+adityahalde8777/minimax-h3-model-cache (530 s)`, 42 GB cached; dual-GPU verified in v13–v16 —
+`active: 2 ranks cuda:0+cuda:1`, both T4s 100 % / ~65 W).
 
 - **Runtime:** ComfyUI + `ComfyUI-H3-MultiStream` — the H3 transformer split across both T4s
   (`exchange="host"`, `exchange_chunks=8`, caches off for the 31 GB RAM box)
@@ -22,10 +24,10 @@ whole run ~25 min, real MP4 out; **hub API + tunnel verified in v15** (24.9 min 
   API **and** `/h3api/*` (docs, health, catalog `?refresh=1`, models, settings, select, download,
   generate, jobs, outputs, free, gpus, import) with WebSocket passthrough; the run **self-tests
   every endpoint live through the tunnel** before printing READY
-- **Write-back (v15/v16):** downloaded models staged (hardlinks) and pushed back to a Kaggle
-  Dataset (`minimax-h3-model-cache`) via **kagglehub's native in-notebook auth** (owner from
-  `whoami`, embedded kernel owner as fallback, classic CLI as second fallback) —
-  **200 GB cap auto-skips, never fails the run**
+- **Write-back (v15/v16 ✅ verified):** downloaded models staged (hardlinks) and pushed back to a
+  Kaggle Dataset (`minimax-h3-model-cache`) via **kagglehub's native in-notebook auth** (owner from
+  `whoami`, embedded kernel owner as fallback, classic CLI as second fallback) — first run created
+  the dataset and pushed 42 GB in 530 s; **200 GB cap auto-skips, never fails the run**
 - **Output:** runs a real smoke generation on both GPUs, then prints a public Base URL +
   hub endpoints (cloudflared quick tunnel)
 
