@@ -9,3 +9,5 @@ TL;DR: push `kernel-metadata.json` + notebook to Kaggle with `kaggle kernels pus
 add an `HF_TOKEN` Kaggle Secret, wait for the READY block, then call the Cloudflare Quick Tunnel URL.
 
 Note on model caching: the default notebook downloads from HF once per kernel. For zero re-downloads, attach a Kaggle Dataset with the H3 files to `/kaggle/input` — the predownload cell now auto-detects and copies them before falling back to HF.
+
+See [`ERROR_PLAYBOOK.md`](ERROR_PLAYBOOK.md) for the Kaggle model-download failure chain and the canonical xet/predownload fix.
