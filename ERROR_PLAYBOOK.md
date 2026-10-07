@@ -46,6 +46,7 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
 | Broken cloudflared fetch (curl + stale pinned URL) | tunnel never starts, no READY block | `latest/download/...` with fallback + size check |
 | Generated cell had `SyntaxError: unterminated string literal` at `b"\r\n"` | the build script's **triple-quoted** string consumed `\r\n`/`\n` as *real* control chars, so the emitted notebook code contained raw newlines inside a bytes literal — the build script itself still parsed fine | double every escape meant for the notebook (`b"\\r\\n"` in the build script); **`ast.parse` every generated cell**, not just the build script |
 | `kaggle datasets version -d <ref>` → CLI error / wrong target | `-d` on `datasets version` means `--delete-old-versions`, not the dataset — the command reads `dataset-metadata.json` from the `-p` folder | write `{title, id, licenses}` into `dataset-metadata.json` in the staging folder; `list` CSV needs `-v` (not `--csv`); existence probe = `kaggle datasets metadata <owner>/<slug>` |
+| v15 sync cell: `SKIP upload: cannot determine dataset owner - continuing` (run healthy, write-back silently skipped) | **modern Kaggle notebooks authenticate via a token file** (`KAGGLE_API_V1_TOKEN`), *not* `KAGGLE_USERNAME`/`KAGGLE_KEY`/`~/.kaggle/kaggle.json` — the classic owner check finds nothing; the classic `kaggle` CLI also gets `403` in-kernel | owner = `kagglehub.whoami()` (native in-notebook auth) → env pair → kaggle.json (multi-path incl. `KAGGLE_CONFIG_DIR`) → **embedded kernel owner** (public, build-time from kernel-metadata `id`); upload via `kagglehub.dataset_upload` (creates/versions natively), classic CLI as second fallback; print auth **diagnostics** (booleans only, never secrets) every run so the next log shows which sources exist |
 
 ### Debugging signals that actually solved things
 
@@ -71,6 +72,11 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
   `active: 2 ranks` -> ~210 s/step x 4 -> `smoke status: success completed: True` ->
   `found: /tmp/ComfyUI/output/video/MiniMax_H3_00001_.mp4` -> READY block with Base URL.
   If your run deviates from that sequence, start from the first divergence.
+- **Write-back healthy tail (v16+):** `auth env: KAGGLE_USERNAME=... kaggle.json=...` (booleans)
+  → `in-kaggle-notebook: True` → `cache owner: <user> (via kagglehub.whoami)` →
+  `cache dataset: <owner>/minimax-h3-model-cache | probe: ...` → `staged N model files` →
+  `kagglehub upload OK -> <ref> (<seconds> s)`. Any `SKIP upload:` line means the owner chain
+  failed — see the v15 token-file row above.
 - **Dry-run the notebook cells locally before pushing**: run every cell against a local ComfyUI
   (CPU build) — registry/settings/assets/convert/submit/API all execute for free and `/prompt`
   validation is the real `validate_prompt`. The v15 harness goes further: after the cells it

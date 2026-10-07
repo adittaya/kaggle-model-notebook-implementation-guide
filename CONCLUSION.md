@@ -49,18 +49,27 @@
 - Output produced: `/tmp/ComfyUI/output/video/MiniMax_H3_00001_.mp4`; READY block printed the
   public Base URL (quick-tunnel URLs are ephemeral per session).
 
-### v15 — enterprise hub API + dataset write-back (Phase B, pushed)
-- **One Base URL serves three planes**: ComfyUI web UI, native `/prompt` API, and the
-  `/h3api/*` management hub (docs/health/catalog/models/settings/select/download/generate/
-  jobs/outputs/free/gpus/import) — all behind one cloudflared tunnel to a stdlib proxy on
-  `:8190` with raw WebSocket passthrough.
-- Settings surface exposed end-to-end (preset/set/seed/frame conditioning); model switching
-  **downloads the new set and prunes superseded files** so disk never bloats.
-- Kaggle Dataset write-back: hardlink staging (≈0 extra disk), manifest-drift detection,
-  **200 GB cap → auto-skip**, every failure path prints and continues (never fails the run).
-- Local dry-run: **all tests green** — every endpoint, WS `101`, chunked POST, import `201`,
-  traversal rejected `400`, prune verified, `first_frame` → 24-node prompt validated,
-  sync `dry` policy staged 6 model files without uploading.
+### v15 — enterprise hub API + dataset write-back (Phase B) — ✅ VERIFIED ON KAGGLE
+- **Run COMPLETE in 24.9 min, zero stderr errors**: hub came up (`hub API + proxy listening on
+  http://127.0.0.1:8190`), tunnel targeted `:8190`, `Verified public endpoint:
+  https://costa-ltd-kelly-hosting.trycloudflare.com`, full READY block with `/h3api/docs`,
+  `/h3api/health`, `/h3api/generate` URLs printed.
+- Smoke path identical to v14 through the new `convert` cell: subgraph expanded → 21 nodes,
+  3 UI-only notes skipped, flattened 24 nodes, turbo armed, `prompt_id 59047396…`,
+  `node_errors {}`; **207.2–208.2 s/step × 4**; `DUAL-GPU CONFIRMED: active: 2 ranks`;
+  MP4 `MiniMax_H3_00001_.mp4` out.
+- **One bug found by the run itself**: sync printed
+  `SKIP upload: cannot determine dataset owner - continuing` — modern Kaggle notebooks
+  authenticate via a **token file** (`KAGGLE_API_V1_TOKEN`), *not* `KAGGLE_USERNAME`/
+  `kaggle.json`, so the owner check found nothing. The never-fail design worked (run
+  completed), but write-back silently skipped → **v16 fix**: owner via `kagglehub.whoami`
+  (native notebook auth) + env/kaggle.json/embedded-owner fallbacks, upload via
+  `kagglehub.dataset_upload` (classic CLI second), auth diagnostics printed, plus a **live
+  endpoint self-test** in the pub cell (health/catalog/settings/jobs/outputs/gpus/docs,
+  proxied `/object_info`, 404 envelope, POST settings — all through the tunnel).
+- v15 local dry-run before push: **all tests green** — every endpoint, WS `101`, chunked POST,
+  import `201`, traversal rejected `400`, prune verified, `first_frame` → 24-node prompt
+  validated, sync `dry` staged 6 model files without uploading.
 
 ## 2026-10-07 — retired lanes (kept for history)
 
@@ -101,6 +110,7 @@
 6. ⬜ **First/last-frame conditioning at runtime**: the prompt structure validates locally
    (LoadImage → subgraph input, `node_errors {}`), but no Kaggle run has yet *executed* an
    image-conditioned generation end to end.
-7. ⬜ **Write-back round trip**: v15 creates/refreshes `MiniMax H3 model cache` — the loop
-   closes when a later boot actually symlinks models out of `/kaggle/input` (needs the dataset
-   attached once via Add Data).
+7. ⬜ **Write-back round trip**: v15's first upload was **skipped** by the owner-detection bug
+   (token-file auth); v16 fixes it (`kagglehub.whoami` + `dataset_upload`) — the question
+   closes when the v16 run shows `kagglehub upload OK`, and the loop fully closes when a
+   later boot symlinks models out of `/kaggle/input` (dataset attached once via Add Data).

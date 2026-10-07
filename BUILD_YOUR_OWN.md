@@ -82,7 +82,15 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
 - [ ] **Dataset write-back that can never kill the run**: stage with **hardlinks** (≈0 extra disk,
       symlink targets preserved), compare a remote `MANIFEST.json` for drift instead of re-uploading
       blindly, **size-cap and auto-skip** (200 GB here), and wrap the entire cell in try/except —
-      policy switch (`auto|always|dry|never`) via env var
+      policy switch (`auto|always|dry|never`) via env var. **Auth matters**: inside a Kaggle
+      notebook the classic `kaggle` CLI has no `KAGGLE_USERNAME`/`kaggle.json` — use
+      **`kagglehub.whoami()` for the owner and `kagglehub.dataset_upload()` for the push**
+      (native token-file auth, creates or versions), keep the CLI as a fallback, embed the
+      kernel's own owner (public info) as last resort, and print auth diagnostics (booleans only)
+- [ ] **Self-test the public surface before READY**: after the tunnel is up, hit every read-only
+      endpoint **through the public URL** (health/catalog/settings/jobs/outputs/gpus/docs, a
+      proxied runtime route, a deliberate 404, and a no-op POST) and print status + JSON snippet —
+      the log then *proves* the API works end to end, not just that the tunnel exists
 - [ ] **Double escapes meant for the notebook**: cell code with `"\n"` / `b"\r\n"` sits inside the
       build script's triple-quoted string, which consumes the backslashes — write `\\n` there, and
       `ast.parse` every **generated** cell (the build script parsing cleanly proves nothing)
@@ -175,12 +183,14 @@ letting the notebook auto-detect the mount:
 3. Then run `snapshot_download(...)` only for files **still missing**, and print the size of
    every file afterwards (exit code 0 proves nothing — a silent no-op "succeeds" too)
 4. Write a `MANIFEST.json` of what actually landed (name, size, present)
-5. **v15 automates the upload half**: a `sync` cell inventories local models, checks the remote
-   `MANIFEST.json` for drift, hardlink-stages and pushes back with
-   `kaggle datasets create/version` — policy via `H3_CACHE_UPLOAD=auto|always|dry|never`,
-   **200 GB cap auto-skips**, and *any* failure prints and continues (the run never dies on it).
-   CLI gotchas: `datasets version` has **no `-d`** — it reads `dataset-metadata.json`
-   (`{title, id, licenses}`) from the `-p` folder; `datasets list` CSV flag is `-v`;
-   existence probe = `kaggle datasets metadata <owner>/<slug>`.
+5. **v15/v16 automates the upload half**: a `sync` cell inventories local models, checks the
+   remote `MANIFEST.json` for drift, hardlink-stages and pushes back — **primary path
+   `kagglehub.dataset_upload`** (native in-notebook auth; owner from `kagglehub.whoami()`),
+   classic `kaggle datasets create/version` as fallback — policy via
+   `H3_CACHE_UPLOAD=auto|always|dry|never`, **200 GB cap auto-skips**, and *any* failure
+   prints and continues (the run never dies on it).
+   CLI gotchas (fallback path): `datasets version` has **no `-d`** — it reads
+   `dataset-metadata.json` (`{title, id, licenses}`) from the `-p` folder; `datasets list`
+   CSV flag is `-v`; existence probe = `kaggle datasets metadata <owner>/<slug>`.
    One-time manual step: attach the created dataset to the kernel (Add Data) so `/kaggle/input`
    holds it — next boots then mirror it via symlink instead of downloading.

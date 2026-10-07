@@ -15,13 +15,16 @@ reconstruct the whole project after a context loss.
 **Date:** Oct 7 2026
 **Owner:** adityahalde8777
 **Kaggle kernel:** `adityahalde8777/minimax-h3-comfy-2xt4-generator` (the ONLY kernel; old lanes deleted)
-**Latest:** **v15 PUSHED** (all-local dry-run green): enterprise hub API + proxy (`/h3api/*` docs/
-health/catalog/models/settings/select/download/generate/jobs/outputs/free/gpus/import + WS
-passthrough on one tunnel) + Kaggle Dataset write-back (200 GB cap auto-skip, never fails) +
-shared `build_prompt()` with first/last-frame conditioning. **v14 VERIFIED on Kaggle**: 25.6-min
-run, fast smoke **210 s/step × 4**, dual-GPU (`active: 2 ranks`), real MP4, READY block, zero
-errors. Kernel currently RUNNING (v15 watch). Next: capture v15 run (hub READY URLs + sync
-behavior), then Phase C (image modality smoke).
+**Latest:** **v16 BUILT** (ast-clean + all-local dry-run green, ready to push): fix for v15's
+write-back skip — owner via `kagglehub.whoami` (notebooks auth via **token file**, not
+`KAGGLE_USERNAME`/`kaggle.json`) + env/kaggle.json/embedded-owner fallbacks, upload via
+`kagglehub.dataset_upload` (CLI fallback), auth diagnostics, + **live endpoint self-test**
+in the pub cell (9 GETs + POST settings through the tunnel). **v15 VERIFIED on Kaggle**:
+24.9-min run, hub listening `:8190`, tunnel `Verified public endpoint` + full READY block with
+`/h3api/*` URLs, smoke `prompt_id 59047396…`, **207 s/step × 4**, `DUAL-GPU CONFIRMED`, MP4 out,
+zero errors — sync printed `SKIP upload: cannot determine dataset owner` (the bug v16 fixes).
+Next: push v16 → verify `kagglehub upload OK` + endpoint self-test lines in the logs, then
+Phase C (image modality smoke — research done, see Phase C).
 
 ---
 
@@ -199,8 +202,14 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
    call it); first/last-frame `LoadImage` nodes 9001/9002 → subgraph input injection
 7. ✅ Local dry-run **ALL TESTS PASSED**: every endpoint, WS `101`, chunked POST, import `201`,
    traversal `400`, prune verified, `first_frame` → 24-node prompt, sync `dry` staged 6 files
-8. ⬜ Watch v15 run → capture hub READY block (Base URL + `/h3api/docs`) + verify live endpoints
-   through the tunnel + first-time dataset upload outcome
+8. ✅ **v15 run captured (24.9 min, zero errors)**: hub listening `:8190`, tunnel verified
+   (`https://costa-ltd-kelly-hosting.trycloudflare.com`), READY block with all `/h3api/*` URLs,
+   smoke `prompt_id 59047396…`, 207 s/step × 4, `DUAL-GPU CONFIRMED`, MP4 out; **sync skipped**
+   (`cannot determine dataset owner`) → **v16 built**: `kagglehub.whoami` owner + native
+   `dataset_upload` + auth diagnostics + pub-cell live endpoint self-test (9 GETs + POST through
+   the tunnel); dry-run ALL TESTS PASSED
+9. ⬜ Watch v16 run → confirm `cache owner … (via kagglehub.whoami)` + `kagglehub upload OK`
+   (first-time dataset create) + self-test lines all `200`/`404` as expected
 
 ### Phase C — modalities (v16+, one low-quality smoke each, in order)
 1. ⬜ **Image generation** — **researched ✅**: template `flux_schnell.json` (Comfy-Org/
@@ -289,6 +298,9 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 7 | Write-back cell wrapped **entirely** in try/except with `auto\|always\|dry\|never` policy; hardlink staging; manifest-drift probe; 200 GB + disk guards auto-skip | user directive: cache-full must auto-skip and **never fail the run** |
 | Oct 7 | Notebook-cell escapes **doubled** in the build script (`b"\\r\\n"` → `b"\\\\r\\\\n"`) + `ast.parse` every *generated* cell | v15 pre-push: the outer triple-quoted string ate the backslashes → generated cell had an unterminated bytes literal (build script itself parsed fine) |
 | Oct 7 | Kaggle dataset CLI: `version -p FOLDER` (reads `dataset-metadata.json`; **no `-d`**), `list -s X -v`, existence probe = `datasets metadata <ref>` | verified against the installed CLI while wiring the sync cell |
+| Oct 7 | Write-back auth = **kagglehub first** (`whoami` for owner, `dataset_upload` to push), classic CLI second, **embedded kernel owner** (public, build-time from kernel-metadata `id`) last | v15 run proved modern notebooks carry a **token file** (`KAGGLE_API_V1_TOKEN`), not `KAGGLE_USERNAME`/`kaggle.json` — and the in-kernel CLI got `403`; kagglehub has native notebook auth |
+| Oct 7 | Sync cell prints **auth diagnostics** every run (env/file booleans + `in-kaggle-notebook`, never secrets) | v15's skip was silent-adjacent: next run's log must show which cred sources exist without debugging blind |
+| Oct 7 | Pub cell **self-tests the public surface** (health/catalog/settings/jobs/outputs/gpus/docs, proxied `/object_info`, 404 envelope, no-op POST settings) through the tunnel before READY | tunnel-up ≠ API working; logs must *prove* every endpoint end to end (v15 had only `/history` + `/health` checks) |
 
 ---
 
@@ -332,6 +344,8 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 7 | v15 pushed to Kaggle (kernel version 15) | RUNNING — watching |
 | Oct 7 | Six-MD docs pass for v14 verification + v15 hub API (README/GUIDE/CONCLUSION/ERROR_PLAYBOOK/BUILD_YOUR_OWN/AGENT) | commit `1e3a64b` |
 | Oct 7 | **Phase C pre-research**: image = `flux_schnell.json` template + `Comfy-Org/flux1-schnell` fp8 single file (17.24 GB, 4 steps cfg 1, no subgraph); music = `audio_minimax_music_3.json` subgraph + `Comfy-Org/MiniMax-Music-3` (14.33 GB, 30 steps cfg 1.7); transcription = no official local template → shortlist `Setmaster/comfyui-stt7` (MIT) vs `yuvraj108c/ComfyUI-Whisper` (275★, NOASSERTION license) | findings recorded in Phase C section |
+| Oct 7 | **v15 VERIFIED on Kaggle — Phase B verified**: 24.9 min, zero stderr; `hub API + proxy listening on :8190`; tunnel `Verified public endpoint: https://costa-ltd-kelly-hosting.trycloudflare.com` + full READY with `/h3api/*` URLs; `prompt_id 59047396… node_errors {}`; **207.2–208.2 s/step × 4**; `DUAL-GPU CONFIRMED`; MP4 out; **sync bug**: `SKIP upload: cannot determine dataset owner` (notebook auth = token file) | ✅ logs captured (`/tmp/opencode/v15_stdout.txt`) |
+| Oct 7 | v16 built: sync owner via `kagglehub.whoami` + env/kaggle.json/embedded fallbacks + auth diagnostics; upload via `kagglehub.dataset_upload` (CLI fallback); pub live endpoint self-test (9 GET + POST through tunnel); dry-run **ALL TESTS PASSED** (incl. `cache owner: adityahalde8777 (via kagglehub.whoami)`) | ready to push |
 
 ---
 
