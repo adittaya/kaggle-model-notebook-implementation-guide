@@ -73,3 +73,5 @@ Keep the current kernel status up to date at the top.
 - Turbo/TeaCache/Spectrum/FBC stay OFF for the quality-first build.
 
 | Oct 7 | Notebook predownload now prefers /kaggle/input datasets; documented in GUIDE/BUILD_YOUR_OWN | ✅ |
+| Oct 7 | v1 full run: READY block printed, URL/key valid, ~80 min; cleanup cell killed server → cleanup now guarded by H3_SHUTDOWN=1 | ✅ |
+| Oct 7 | v7 pushed (guarded cleanup + dataset-aware predownload) as the primary API path | RUNNING |

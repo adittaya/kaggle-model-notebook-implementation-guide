@@ -22,3 +22,10 @@
 1. Does ComfyUI 0.35 + H3 MultiStream mount on Kaggle's image and run one denoise step on 2×T4?
 2. WanGP stable lane vs MultiStream lane: which catches the tangent errors first?
 3. What torch/deps does the MultiStream lane need to co-exist with WanGP?
+
+
+## 2026-10-07 final state
+
+- v1 ran end-to-end successfully: smoke test passed, READY block printed, public  URL verified. Total run ≈ 80 min.
+- The optional cleanup cell at the bottom ran automatically and stopped the server + tunnel, so v1's endpoint is now dead. The cleanup cell is now guarded by  (v7).
+- Only one multi-GPU experiment lane was ever allowed by the 2-session GPU cap; it has been deleted to free a session for the guarded API v7.
