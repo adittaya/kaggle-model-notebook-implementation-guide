@@ -71,3 +71,5 @@ Keep the current kernel status up to date at the top.
 - All caches/models under `/tmp`, session-only.
 - Dual-T4 designs must use host-staged exchange, not raw P2P, on T4 PCIe.
 - Turbo/TeaCache/Spectrum/FBC stay OFF for the quality-first build.
+
+| Oct 7 | Notebook predownload now prefers /kaggle/input datasets; documented in GUIDE/BUILD_YOUR_OWN | ✅ |

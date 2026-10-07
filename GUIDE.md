@@ -74,3 +74,21 @@ scratchpad and the dual-T4 design that is being built next.
 ## Known issues / roadmap
 
 Tracked in `AGENT.md`.
+
+---
+
+## Optional: upload models once as a Kaggle Dataset
+
+By default the notebook downloads the ~20 GB of MiniMax H3 assets from Hugging Face on every fresh session and copies them into `/tmp`. To avoid that re-download you can attach them as a **Kaggle Dataset** the kernel mounts at `/kaggle/input`:
+
+1. Collect the 12 files used in v5/v6:
+   `MiniMax-H3-FL2VA-pruned_rank8_int8_convrot.safetensors`, the two VAE files,
+   `minimax_h3/` + upscaler/X2 VAE, and the whole `Qwen3-VL-32B-Instruct/` folder contents.
+2. `kaggle datasets create -p <folder>` (one-time upload; or `kaggle datasets version` to update).
+3. Attach the dataset to your kernel via **Add Data** in the Kaggle UI.
+4. The notebook now runs the following rule automatically:
+   - Scan `/kaggle/input` for `*minimax-h3*`, `*qwen3-vl*`, `*minimax_h3*` files.
+   - Copy them into `/tmp/Wan2GP/ckpts/` preserving the same subfolder names (`Qwen3-VL-32B-Instruct/`, `minimax_h3/`).
+   - Only download anything that is **still missing** from Hugging Face.
+
+So the "download from scratch" cost happens once (when you create the dataset); after that every new kernel boot on Kaggle just copies from the local mounted dataset into `/tmp`.

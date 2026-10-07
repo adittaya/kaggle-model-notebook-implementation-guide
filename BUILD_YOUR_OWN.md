@@ -79,3 +79,26 @@ git add -A; git commit -m "progress: ..."; git push
 ```
 
 Use this template and you're ~90% of the way to the same MiniMax H3 API server we built.
+
+---
+
+## Persistent model caching across sessions (Kaggle Dataset)
+
+If you don't want to re-download ~20 GB of weights every new kernel, ship them in a Kaggle Dataset and let the notebook **auto-detect** the local mount:
+
+1. Upload the assets once: `kaggle datasets create -p <folder with the H3 files>`
+2. In your notebook's predownload cell, **first** mirror anything under `/kaggle/input/` into `<ckpts>/`:
+
+```python
+CKPT = Path("/tmp/Wan2GP/ckpts"); CKPT.mkdir(parents=True, exist_ok=True)
+for base in [Path("/kaggle/input")]:
+    for root,_,files in os.walk(base):
+        for f in files:
+            if "minimax-h3" in f.lower() or "qwen3-vl" in f.lower() or "minimax_h3" in f.lower():
+                dst = CKPT / ("Qwen3-VL-32B-Instruct" if "qwen3-vl" in f.lower() else ("minimax_h3" if f.startswith("minimax_h3") else "")) / f
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                if not dst.exists():
+                    shutil.copy2(os.path.join(root,f), dst)
+```
+
+3. Then only run `hf_hub_download` for files **still missing** from `CKPT`.
