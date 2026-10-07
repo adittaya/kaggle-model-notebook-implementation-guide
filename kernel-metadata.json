@@ -1,11 +1,12 @@
 {
-  "id": "adityahalde8777/minimax-h3-multigpu-experiment",
-  "title": "MiniMax H3 Kaggle Generator",
-  "code_file": "minimax_h3_api.ipynb",
+  "id": "adityahalde8777/minimax-h3-comfy-2xt4-generator",
+  "title": "MiniMax H3 Comfy 2xT4 Generator",
+  "code_file": "minimax_h3_comfy2.ipynb",
   "language": "python",
   "kernel_type": "notebook",
   "is_private": true,
   "enable_gpu": true,
   "enable_tpu": false,
-  "enable_internet": true
+  "enable_internet": true,
+  "machine_shape": "NvidiaTeslaT4"
 }

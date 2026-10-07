@@ -1,13 +1,14 @@
-# MiniMax H3 — Kaggle 2×T4 API Server
+# MiniMax H3 Kaggle Generator — Comfy 2×T4
 
-Deploy a **MiniMax H3 video/audio inference API** on Kaggle free GPUs.
+Deploy a **MiniMax H3** video/audio generator on Kaggle's free `T4 ×2` machine.
+This repository is now single-lane: the ComfyUI 0.35-compatible generator
+(`minimax_h3_comfy2.ipynb`) with one H3 MultiStream node splitting the H3
+transformer across both rigs.
 
-- See [`GUIDE.md`](GUIDE.md) for the full deployment & usage doc.
-- See [`AGENT.md`](AGENT.md) for the progressive task/decision log.
-
-TL;DR: push `kernel-metadata.json` + notebook to Kaggle with `kaggle kernels push -p .`,
-add an `HF_TOKEN` Kaggle Secret, wait for the READY block, then call the Cloudflare Quick Tunnel URL.
-
-Note on model caching: the default notebook downloads from HF once per kernel. For zero re-downloads, attach a Kaggle Dataset with the H3 files to `/kaggle/input` — the predownload cell now auto-detects and copies them before falling back to HF.
-
-See [`ERROR_PLAYBOOK.md`](ERROR_PLAYBOOK.md) for the Kaggle model-download failure chain and the canonical xet/predownload fix.
+- Fastest path: `kaggle kernels push -p .` (pushes the single Comfy kernel)
+- Details on caching / dataset detection / errors:
+  - `GUIDE.md`
+  - `ERROR_PLAYBOOK.md`
+- Task & decision history: `AGENT.md`
+- What we found and what we build next: `CONCLUSION.md`
+- How to reproduce the same technology for your own models: `BUILD_YOUR_OWN.md`
