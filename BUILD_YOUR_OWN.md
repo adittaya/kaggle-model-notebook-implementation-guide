@@ -40,6 +40,13 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
 - [ ] **Wire the acceleration node** where the docs say (here: after model patches →
       `BasicGuider` + `BasicScheduler`)
 - [ ] **Send `extra_data.preview_method`** — API clients must set it explicitly
+- [ ] **Verify side effects, not exit codes**: print `OK <bytes>` for every downloaded file and
+      raise on any miss. Never `python -m <pkg>.cli.<cmd>` without checking the module has an
+      `if __name__ == "__main__"` guard — `huggingface_hub.cli.download` has none, so it exits 0
+      having downloaded nothing. Prefer in-process `snapshot_download()`
+- [ ] **Pass every linked input through**, even if its name is absent from the static
+      `object_info` schema (autogrow slots like `values.a` only exist after finalization); only
+      *widgets* get filtered against the schema
 - [ ] **Smoke test before READY**: run a real generation; only then print Base URL + endpoint
 - [ ] **Quality-first defaults**: turbo/TeaCache/Spectrum/FBC off (this template's switches default to dense 20-step)
 - [ ] **Public tunnel**: `cloudflared tunnel --url http://127.0.0.1:8188`, health-check `/history`
@@ -121,5 +128,6 @@ letting the notebook auto-detect the mount:
 2. In the assets cell, **first** copy matching files out of `/kaggle/input/` into
    `/tmp/ComfyUI/models/<subdir>/`, keeping the exact directory layout ComfyUI expects
    (`diffusion_models/`, `text_encoders/`, `vae/`, `loras/`)
-3. Then run the `huggingface_hub.cli.download` only for files **still missing**
+3. Then run `snapshot_download(...)` only for files **still missing**, and print the size of
+   every file afterwards (exit code 0 proves nothing — a silent no-op "succeeds" too)
 4. Write a `MANIFEST.json` of what actually landed (name, size, present)

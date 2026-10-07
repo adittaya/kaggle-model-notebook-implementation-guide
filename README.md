@@ -1,7 +1,8 @@
 # MiniMax H3 Kaggle Generator — Comfy 2×T4
 
 Deploy a **MiniMax H3** video/audio generator on Kaggle's free `T4 ×2` machine.
-Single lane, single kernel: `adityahalde8777/minimax-h3-comfy-2xt4-generator`.
+Single lane, single kernel: `adityahalde8777/minimax-h3-comfy-2xt4-generator` (**current build v12**;
+v11 failed on a silent no-op model download + autogrow `values.a` — see `AGENT.md`).
 
 - **Runtime:** ComfyUI + `ComfyUI-H3-MultiStream` — the H3 transformer split across both T4s
   (`exchange="host"`, `exchange_chunks=8`, caches off for the 31 GB RAM box)

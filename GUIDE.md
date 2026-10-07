@@ -26,7 +26,7 @@
 | 1 | secrets | `/tmp` cache dirs, `HF_HUB_DISABLE_XET=1`, load `HF_TOKEN` |
 | 2 | preflight | 2×T4 probe: VRAM free, RAM, `nvidia-smi topo -m` (expect `PHB`, RAM ≈ 31.3 GB) |
 | 3 | install | clone ComfyUI + `ComfyUI-H3-MultiStream`, pip install requirements |
-| 4 | assets | download 5 files from `Comfy-Org/MiniMax-H3` into `/tmp/ComfyUI/models` + the T2V template |
+| 4 | assets | `snapshot_download` 5 files from `Comfy-Org/MiniMax-H3` into `/tmp/ComfyUI/models`, **print `OK <bytes>` per file and raise if any is missing** + fetch the T2V template |
 | 5 | inspect | report top-level nodes / subgraph names |
 | 6 | start | launch ComfyUI `--preview-method latent2rgb`, wait for `:8188` |
 | 7 | submit | **convert saved workflow → API prompt** (flatten subgraph), insert `H3MultiStream`, `POST /prompt` |
@@ -54,10 +54,14 @@ loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors
 
 ## If it fails
 
-- Read the printed HTTP **body** first — see `ERROR_PLAYBOOK.md` for the v3→v11 table.
+- Read the printed HTTP **body** first — see `ERROR_PLAYBOOK.md` for the v3→v12 table.
 - A `400 missing_node_type` → something is not in `object_info` (skip UI-only nodes).
 - A `400 prompt_outputs_failed_validation` / `KeyError prompt[o_id]` → a dangling link, almost
   always an unflattened subgraph or a non-string link id.
+- A `400 value_not_in_list` → the model file never landed (empty folder). `vae_name ... not in
+  ['pixel_space']` literally means `models/vae` is empty — check the `OK <bytes>` lines in cell 4.
+- Run finished suspiciously fast (~2 min) with no download output → a subprocess exited 0
+  without doing anything (this is exactly what `python -m huggingface_hub.cli.download` does).
 
 ## Remaining MD set
 

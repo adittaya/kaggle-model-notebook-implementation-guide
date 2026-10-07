@@ -27,6 +27,10 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
 | v8 | `missing_node_type: MarkdownNote` (node `#116`) | UI-only annotation nodes aren't in `object_info` | fetch `GET /object_info`, skip unregistered types |
 | v9 | `AttributeError: 'bytes' object has no attribute 'read'` | `json.load(urlopen(...).read())` | use `json.loads(...)` |
 | v10 | `prompt_outputs_failed_validation` → `KeyError prompt[o_id]['class_type']` validating `SaveVideo` | skipped the UUID node → dangling link. The UUID is a **subgraph** holding the entire 21-node H3 pipeline | **flatten subgraphs**, never drop them |
+| v11 | 6 × `value_not_in_list` (`unet_name ... not in []`, `vae_name ... not in ['pixel_space']`, clip/lora lists empty) + `required_input_missing: values.a` | (a) `python -m huggingface_hub.cli.download` has **no `__main__` guard** → module imported, exit 0, **zero files downloaded**, all model folders empty. (b) `values.a` autogrow slot exists only after schema finalization, so the schema filter dropped a required link | in-process `snapshot_download` + per-file size assert; include every **linked** input regardless of static schema |
+
+> Sanity signal you can use too: v11 finished in **111 s** — impossible for a multi-GB download,
+> and the download command printed *nothing*. A subprocess with no output and exit 0 is a lie.
 
 ### Supporting bugs found by inspection before they fired
 
@@ -47,6 +51,10 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
   `GET /object_info`.
 - `KeyError prompt[o_id]` in `validate_inputs` ⇒ dangling link: unflattened subgraph, skipped
   node, or int-vs-string id mismatch.
+- `value_not_in_list ... not in ['pixel_space']` ⇒ `models/vae` is **empty** (`pixel_space` is a
+  built-in pseudo-VAE, `nodes.py` appends it to every VAE list), so your download never landed.
+- A whole notebook that finishes in ~110 s, or a download subprocess with **no output and
+  exit 0** ⇒ it did nothing. Verify files and sizes, never trust the exit code.
 - `ComfyUI did not listen in time` ⇒ check pip's dependency-conflict banner before blaming Comfy.
 - Template structure inspection (`definitions.subgraphs`, `widgets_values_named`, link arrays) is
   a 30-second local check that saves a full 10-minute Kaggle round trip.

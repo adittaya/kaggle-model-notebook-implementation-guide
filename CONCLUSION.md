@@ -18,7 +18,8 @@
 | v8 | `missing_node_type: MarkdownNote` | UI-only nodes exist in the graph but not in `object_info`; filter them out |
 | v9 | `json.load(bytes)` | One-shot typo; the value of printing the response **body** |
 | v10 | `KeyError` validating `SaveVideo` | The whole H3 pipeline lives inside `definitions.subgraphs[0]` — skipping an unresolvable node leaves dangling links; you must **flatten** subgraphs, not drop them |
-| v11 | (pending) | Flattener + schema-aware widget filter + `extra_data.preview_method` + asset/resolution/RAM alignment |
+| v11 | 6 × `value_not_in_list` + `values.a` missing | The asset cell had **never downloaded anything**: `python -m huggingface_hub.cli.download` has no `__main__` guard (exit 0, silence). Also: static `object_info` can omit dynamically finalized inputs (`values.a`), so **links must always be passed through** |
+| v12 | (pending) | `snapshot_download` + size verification, link inputs always kept, flattener otherwise unchanged |
 
 ### Hard numbers measured on the Kaggle image
 - 2 × Tesla T4 (14.6 GB each), topology `PHB`, **host ≈ 10 GB/s vs p2p ≈ 9.3 GB/s**
@@ -42,7 +43,8 @@
 
 ## Open questions
 
-1. Does the v11 flattened prompt pass `/prompt` validation on the first try? (last open 400)
+1. Do the 5 model files actually land this time (v12 prints `OK <bytes>` per file), and does the
+   flattened prompt then pass `/prompt` validation on the first try?
 2. How long does a 20-step dense 1344×768 × ~124-frame run take on 2×T4?
 3. Does `weight_cache=False` leave enough throughput, or do we need a Dataset-backed boot to
    afford the 18 GiB pinned DiT cache?
