@@ -62,10 +62,12 @@ loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors
   ['pixel_space']` literally means `models/vae` is empty — check the `OK <bytes>` lines in cell 4.
 - Run finished suspiciously fast (~2 min) with no download output → a subprocess exited 0
   without doing anything (this is exactly what `python -m huggingface_hub.cli.download` does).
-- **Dual-GPU checks** (search the output): `[MultiStream] active: 2 ranks` or `[GPUs] dit: …
-  cuda:0, cuda:1` = both T4s in the split; `running UNSPLIT` / `running unsplit on 1 GPU` =
-  single-GPU fallback (the wait cell now raises on this); `nvidia-smi` samples printed as
-  `[gpu] 0, 87 %, … MiB, …` / `1, 84 %, …` = live per-card utilization.
+- **Dual-GPU checks** (search the output): success looks like `[GPUs] dit: 2 rank(s): cuda:0
+  (primary), cuda:1` + `[MultiStream] active: 2 ranks cuda:0+cuda:1 …` and
+  `[gpu] 0, 100 % … / 1, 100 % …` (both cards ~66 W = T4 ceiling); `running UNSPLIT` /
+  `running unsplit on 1 GPU` = single-GPU fallback (the wait cell raises on this);
+  `nvidia-smi` samples printed as `[gpu] 0, 87 %, … MiB, …` / `1, 84 %, …` = live per-card
+  utilization.
 
 ## Remaining MD set
 

@@ -61,7 +61,9 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
   comfy.log; `running UNSPLIT` / `running unsplit on 1 GPU` means the split silently fell back
   to one card. The notebook's wait cell now asserts this (raises unless `active: 2 ranks` is
   present) and tails `nvidia-smi -l 10` samples as `[gpu]` lines so utilization per card lands
-  in the Kaggle output.
+  in the Kaggle output. **Verified working in v13:** `2 rank(s): cuda:0 (primary), cuda:1` +
+  `active: 2 ranks` + both cards `100 % / 65.9 W` (T4's ~70 W ceiling) with 10.4/8.6 GiB
+  resident — the canonical healthy pattern to compare against.
 - **Size timeouts from measurements, not estimates**: v12 ran at 861 s/step (≈4.8 h job) under a
   60-min wait cap — the cap would have killed a healthy run. A tqdm line like
   `2/20 [28:43<4:18:27, 861.5s/it]` in your progress tail gives you the true ETA; recompute the

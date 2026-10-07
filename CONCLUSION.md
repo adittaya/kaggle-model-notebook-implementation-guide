@@ -53,8 +53,10 @@
 2. ✅ **20-step dense 1344×768 on 2×T4 ≈ 861 s/step → ≈4.8 h sampling** (v12, first measurement).
    Why ~17× slower than the pack's 2×5060 Ti reference (42–49 s/step)? v13 streams
    `[MultiStream] step:` / `[GPUs]` diagnostics to separate compute vs exchange.
-3. **Is the split actually on both T4s?** (v13 asserts `active: 2 ranks`, early-fails on
-   `UNSPLIT`, shows live `nvidia-smi` util per card — this is *the* question now.)
+3. ✅ **Is the split actually on both T4s?** — **YES, verified live in v13**:
+   `[GPUs] dit: 2 rank(s): cuda:0 (primary), cuda:1` + `active: 2 ranks cuda:0+cuda:1,
+   50 blocks, heads 28/28` + both cards at `100 % util / ~66 W (T4 ceiling)`,
+   10.4 / 8.6 GiB resident; no `UNSPLIT`. The final assertion confirms it at smoke end.
 4. Does `weight_cache=False` leave enough throughput, or do we need a Dataset-backed boot to
    afford the 18 GiB pinned DiT cache?
 5. Optional speed lever (quality kept for now): the template's `turbo_mode` switch → 4-step

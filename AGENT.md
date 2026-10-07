@@ -8,9 +8,10 @@ ERROR_PLAYBOOK) after any significant change — not just AGENT.md.
 **Date:** Oct 7 2026
 **Owner:** adityahalde8777
 **Kaggle kernel:** `adityahalde8777/minimax-h3-comfy-2xt4-generator` (the ONLY kernel)
-**Latest:** **v13 pushed, RUNNING/QUEUED** — quality config untouched (20-step dense, 0.98 MP) +
-**dual-GPU verification**: `nvidia-smi` monitor, `[h3ms]` diagnostic stream, early fail on
-`UNSPLIT`, final `active: 2 ranks` assertion, 6.5 h wait cap (v12 died at its 60-min cap)
+**Latest:** **v13 RUNNING — DUAL-GPU VERIFIED LIVE**: `[GPUs] dit: 2 rank(s): cuda:0 (primary),
+cuda:1`, `[MultiStream] active: 2 ranks cuda:0+cuda:1, 50 blocks, heads 28/28`, both cards
+`100 % util, ~66 W (T4 TDP ceiling), 10.4/8.6 GiB` — no `UNSPLIT`; waiting on smoke completion
++ READY block (quality config unchanged: 20-step dense, 0.98 MP)
 
 ---
 
@@ -108,6 +109,7 @@ ERROR_PLAYBOOK) after any significant change — not just AGENT.md.
 | Oct 7 | v13 built locally: `nvidia-smi -l 10` monitor + `[gpu]` lines in wait-cell snapshots + hard dual-GPU assertion | ✅ rebuilt, `ast`-clean, **NOT pushed** — waits for v12's outcome |
 | Oct 7 | v12 live log analysed: prompt accepted, sampling at **861 s/step**, tqdm ETA `2/20 … 4:18:27` (≈4.8 h total) vs pack reference 42–49 s/step on 2×5060 Ti; 60-min wait cap would trip long before completion | user decided: terminate, keep quality, verify dual GPU first |
 | Oct 7 | v13 pushed: same quality graph + verification suite (monitor, `[h3ms]` diagnostics stream, early `UNSPLIT` fail, `active: 2 ranks` assertion) + 6.5 h wait cap | PUSHED — watching first snapshots for `cuda:0, cuda:1` evidence |
+| Oct 7 | **v13 dual-GPU verified in production**: `[GPUs] dit: 2 rank(s): cuda:0 (primary), cuda:1`; `active: 2 ranks cuda:0+cuda:1, exchange host, 50 blocks, heads per rank 28/28`; nvidia-smi `0: 100 %, 10383 MiB, 65.9 W` / `1: 100 %, 8583 MiB, 65.9 W` (≈70 W TDP ceiling); no `UNSPLIT` | ✅ the core requirement — both T4s loaded and power-saturated; remaining: smoke completion, READY block, step-time breakdown |
 
 ---
 

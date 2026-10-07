@@ -52,7 +52,9 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       alongside the server and print its tail in your wait loop; after the job, **assert** the
       pack's own evidence (here `[MultiStream] active: 2 ranks`) is in the server log and
       **raise** on any single-GPU fallback warning (`UNSPLIT`). Intent in the submitted config
-      (`device_count: 2`, `second_gpu=-1`) is not proof.
+      (`device_count: 2`, `second_gpu=-1`) is not proof. **Healthy pattern (verified on 2×T4):**
+      `2 rank(s): cuda:0 (primary), cuda:1` → `active: 2 ranks … heads per rank 28/28` →
+      `nvidia-smi` showing both cards at 100 % / ~TDP watts during sampling.
 - [ ] **Size wait timeouts from measured throughput, not optimism**: parse the sampler's own
       progress line (`2/20 [28:43<4:18:27, 861.5s/it]` → ETA 4:18) and set the cap with real
       headroom; fail *fast* on fallback warnings instead of waiting out the cap on a doomed run.
