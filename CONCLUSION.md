@@ -26,6 +26,6 @@
 
 ## 2026-10-07 final state
 
-- v1 ran end-to-end successfully: smoke test passed, READY block printed, public  URL verified. Total run ≈ 80 min.
-- The optional cleanup cell at the bottom ran automatically and stopped the server + tunnel, so v1's endpoint is now dead. The cleanup cell is now guarded by  (v7).
+- v1 ran end-to-end successfully: smoke test passed, READY block printed, public trycloudflare.com URL verified. Total run ≈ 80 min.
+- The optional cleanup cell at the bottom ran automatically and stopped the server + tunnel, so v1's endpoint is now dead. The cleanup cell is now guarded by H3_SHUTDOWN=1 (v7).
 - Only one multi-GPU experiment lane was ever allowed by the 2-session GPU cap; it has been deleted to free a session for the guarded API v7.
