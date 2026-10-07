@@ -1,5 +1,5 @@
 {
-  "id": "adityahalde8777/minimax-h3-kaggle-generator",
+  "id": "adityahalde8777/minimax-h3-multigpu-experiment",
   "title": "MiniMax H3 Kaggle Generator",
   "code_file": "minimax_h3_api.ipynb",
   "language": "python",
@@ -7,6 +7,5 @@
   "is_private": true,
   "enable_gpu": true,
   "enable_tpu": false,
-  "enable_internet": true,
-  "machine_shape": "NvidiaTeslaT4"
+  "enable_internet": true
 }
