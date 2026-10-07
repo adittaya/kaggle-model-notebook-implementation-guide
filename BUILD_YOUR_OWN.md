@@ -84,7 +84,7 @@ Use this template and you're ~90% of the way to the same MiniMax H3 API server w
 
 ## Persistent model caching across sessions (Kaggle Dataset)
 
-If you don't want to re-download ~20 GB of weights every new kernel, ship them in a Kaggle Dataset and let the notebook **auto-detect** the local mount:
+Needed step — if you want to re-use the same weights without waiting for HF every kernel boot, ship them in a Kaggle Dataset and let the notebook **auto-detect** the local mount:
 
 1. Upload the assets once: `kaggle datasets create -p <folder with the H3 files>`
 2. In your notebook's predownload cell, **first** mirror anything under `/kaggle/input/` into `<ckpts>/`:

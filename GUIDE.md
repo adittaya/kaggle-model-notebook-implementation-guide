@@ -77,7 +77,7 @@ Tracked in `AGENT.md`.
 
 ---
 
-## Optional: upload models once as a Kaggle Dataset
+## Needed: upload models once as a Kaggle Dataset
 
 By default the notebook downloads the ~20 GB of MiniMax H3 assets from Hugging Face on every fresh session and copies them into `/tmp`. To avoid that re-download you can attach them as a **Kaggle Dataset** the kernel mounts at `/kaggle/input`:
 
