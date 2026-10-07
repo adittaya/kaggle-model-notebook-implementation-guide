@@ -1,0 +1,12 @@
+{
+  "id": "adityahalde8777/minimax-h3-api-server",
+  "title": "MiniMax H3 API Server",
+  "code_file": "minimax_h3_api.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "machine_shape": "NvidiaTeslaT4"
+}
