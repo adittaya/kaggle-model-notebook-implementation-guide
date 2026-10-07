@@ -2,15 +2,18 @@
 
 Deploy a **MiniMax H3** video/audio generator **+ Flux image generation + use-case tasks** on Kaggle's
 free `T4 ×2` machine.
-Single lane, single kernel: `adityahalde8777/minimax-h3-comfy-2xt4-generator` (**current build v17 — pushed,
-run in progress; v16 VERIFIED**:
+Single lane, single kernel: `adityahalde8777/minimax-h3-comfy-2xt4-generator` (**current build v18 — pushed,
+run in progress; v16 VERIFIED, v17 partial — see below**:
 dynamic model registry + Kaggle Dataset auto-cache + preset settings + **`/h3api/*` hub API** behind
 one public Base URL; **fast smoke verified in v14/v15/v16** = 4-step turbo LoRA @ 864×480, 194–210 s/step,
 whole run ~25–33 min, real MP4 out; **hub API + tunnel verified in v15/v16** (all endpoints live, self-tested
 through the tunnel); **dataset write-back verified in v16** — `kagglehub upload OK ->
 adityahalde8777/minimax-h3-model-cache (530 s)`, 42 GB cached; dual-GPU verified in v13–v16 —
-`active: 2 ranks cuda:0+cuda:1`, both T4s 100 % / ~65 W; **v17 local dry-run 59/59 PASSED** —
-image lane + 8 use-case tasks verified on CPU before push).
+`active: 2 ranks cuda:0+cuda:1`, both T4s 100 % / ~65 W; **v17 proved the multi-modality lanes on
+Kaggle** — image smoke PNG + video MP4 @ 204–206 s/step × 4 in one run, pub self-test 11/11 `200`,
+upscale + video_frames tasks `200` — but a **mixed-numpy `_slice` ImportError** killed
+bg_remove/extract (scipy/rembg) at the last step → **v18 adds a probe + auto-heal of numpy in the
+install cell and a `TASKS_HEALTHY` gate** so the run always completes; **local dry-run 59/59**).
 
 - **Runtime:** ComfyUI + `ComfyUI-H3-MultiStream` — the H3 transformer split across both T4s
   (`exchange="host"`, `exchange_chunks=8`, caches off for the 31 GB RAM box)

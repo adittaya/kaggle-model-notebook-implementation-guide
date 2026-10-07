@@ -124,6 +124,19 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       Comfy's combo lists category dirs — download with
       `snapshot_download(..., local_dir=models/<category>)` and track those paths in one shared
       set used by boot, `select`, and prune alike
+- [ ] **Probe + heal the CPU-task stack at install time** (v18): a Kaggle boot can't be debugged
+      interactively, so after pip installs run the EXACT imports your CPU tasks need in a
+      subprocess (`from numpy._core.strings import *; from scipy import ndimage; import rembg`),
+      and on failure resync numpy with `pip install --force-reinstall --no-deps numpy==<version>`
+      (a same-version reinstall rewrites every file from one wheel — re-consistent by
+      construction), then verify in-kernel too (drop stale `numpy*` from `sys.modules` first).
+      Survive a permanent failure: gate *secondary-feature* task requirements behind the health
+      flag (`TASKS_HEALTHY`) so a bad environment can't block READY — or the write-back cell
+      that runs after it — while core generation stays mandatory
+- [ ] **Never discard pip output on rc=0**: a "clean" install can silently shuffle numpy in the
+      resolve (v17: a mixed `strings.py`/`umath.py` broke scipy and rembg while `import numpy`
+      kept working — the one diagnostic line that would have shown it was thrown away). Always
+      log the tail; it's the cheapest lifelong log line you print
 - [ ] **Double escapes meant for the notebook**: cell code with `"\n"` / `b"\r\n"` sits inside the
       build script's triple-quoted string, which consumes the backslashes — write `\\n` there, and
       `ast.parse` every **generated** cell (the build script parsing cleanly proves nothing)

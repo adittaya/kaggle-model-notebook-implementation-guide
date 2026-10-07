@@ -15,22 +15,24 @@ reconstruct the whole project after a context loss.
 **Date:** Oct 7 2026
 **Owner:** adityahalde8777
 **Kaggle kernel:** `adityahalde8777/minimax-h3-comfy-2xt4-generator` (the ONLY kernel; old lanes deleted)
-**Latest:** **v17 PUSHED (image lane + task engine), run in progress**: local CPU dry-run
-**59/59 ALL TESTS PASSED** — image smoke builds a 7-node flat flux prompt (`node_errors {}` in
-dry-run submit), all 8 tasks verified end-to-end (`bg_remove` alpha extent, `extract` bbox,
-`upscale 4× → 1024²` via GPU-through-Comfy path, video_frames/gif, audio_extract/trim, probe,
-path-escape 400), pub cell now prints **`TASK SMOKE PASSED`** after retry-once probes. v17 scope:
-`modality` branch in `build_prompt` (`_build_image` on `flux_schnell.json`, KSampler 4 steps cfg 1,
-`Checkpoints` prune dir added), preset `image_smoke`, `H3_SMOKE="image,video"` schedule with
-image-first + modality-aware dual-GPU assertion, registry `image`/`image_community`/`extras`
-sections, `GET /h3api/tasks` + `POST /h3api/task` engine (rembg `bg_remove`/`extract`,
-RealESRGAN `upscale`, ffmpeg `video_frames`/`video_gif`/`audio_extract`/`audio_trim`/`probe`),
-pub retry fix (`e.reason` visible), `REMBG_HOME=/tmp/ComfyUI/models/rembg` (dataset-cached).
-Boot adds ~17 GB flux + 176 MB u2net + 67 MB ESRGAN to the 41 GB video set (/tmp has 1070 GiB);
-write-back will drift → second cache upload expected. Prior verified baseline: **v16** (32.9 min,
-194–196 s/step × 4, dual-GPU, first 42 GB dataset upload). Local test assets ready: static
-ffmpeg/ffprobe `/tmp/bin`, `rembg[cpu]` + u2net/u2netp, RealESRGAN `.pth`.
-Next: watch v17 → verify → six-MD pass → music lane (v18), transcription (v19).
+**Latest:** **v17 RUN FAILED (one root cause) → v18 PUSHED, run in progress.** v17 proved almost
+everything: image smoke **PNG out**, video smoke **MP4 out @ 204.2–206.0 s/step × 4**,
+`DUAL-GPU CONFIRMED`, `SMOKE PASSED: ['image','video']`, pub self-test **11/11 green**
+(`outputs` + `gpus` now `200` — the v16 URLError retry fix **verified**), tasks `upscale 200`
+(GPU path) + `video_frames 200` live — but **bg_remove/extract failed** on `ImportError:
+cannot import name '_slice' from 'numpy._core.umath'` → pub raised → **sync cell never ran**
+(no write-back this boot). Root cause: a **mixed numpy dir** (`strings.py` from a newer numpy
+imports `_slice`; `umath.py` still 2.1.3-consistent — plain `import numpy` works, `scipy` and
+`rembg` die); the rembg pip tail was **discarded on rc=0** so the numpy move was invisible.
+**v18 fix**: install cell now (1) always prints the pip tail, (2) probes the exact imports in a
+subprocess, (3) **auto-heals** with `pip force-reinstall --no-deps numpy==<ver>` + numpy
+diagnostics (`__path__`, dist-info list, per-file `_slice` markers), (4) verifies **in-kernel**
+(stale-module drop + retry) → `TASKS_HEALTHY`; pub requires bg_remove/extract **only when
+healthy** (warn otherwise, upscale always required); `/h3api/tasks` reports `rembg_error` +
+`healthy`; api keeps the real import error in the failure text. Dry-run **59/59** again.
+Prior verified baseline: **v16** (32.9 min, 194–196 s/step × 4, first 42 GB dataset upload).
+Next: watch v18 → on success verify sync probe (`manifest match` vs re-upload) → six-MD pass →
+music lane (v19), transcription (v20).
 
 ---
 
@@ -41,8 +43,8 @@ The product is an **all-in-one generation hub** on one public Base URL, not just
 | Modality | Models (candidates) | Status |
 |---|---|---|
 | **Video generation** | MiniMax H3 (FL2VA/Ref2VA, turbo/dense), H3-Max-style variants | ✅ H3 lane in production |
-| **Image generation** | Flux family (Comfy-Org repos), community Fluxes | 🔄 **v17 built** (flux schnell fp8 + tasks), run in progress |
-| **Image/audio use-case tasks** | bg remover, element extractor, upscaler, frame/GIF/audio tools | 🔄 **v17 built** (`/h3api/task`), dry-run verified |
+| **Image generation** | Flux family (Comfy-Org repos), community Fluxes | 🟡 **v17 smoke proven on Kaggle** (PNG + MP4, dual-GPU); v18 rerunning |
+| **Image/audio use-case tasks** | bg remover, element extractor, upscaler, frame/GIF/audio tools | 🟡 v17 live: upscale + video_frames `200`; bg_remove/extract blocked by mixed-numpy on Kaggle → **v18 auto-heal** |
 | **Music generation** | `audio_minimax_music_3` Comfy template (MinimaxMusic), LTx community | ⬜ Phase C (v18) |
 | **Sound / soundtrack** | H3 native audio track (already joint audio+video), music models | ⬜ Phase C |
 | **Transcription (ASR)** | to research (Whisper-class on Comfy / community) | ⬜ Phase C research (v19) |
@@ -223,11 +225,19 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
    MP4 out → **Phase B VERIFIED**
 
 ### Phase C — modalities (v16+, one low-quality smoke each, in order)
-1. 🔄 **Image generation + use-case tasks (v17, PUSHED — awaiting Kaggle verification)** —
-   **researched ✅ + built ✅**: template `flux_schnell.json` (Comfy-Org/workflow_templates) =
+1. 🟡 **Image generation + use-case tasks (v17 tested on Kaggle → v18 healing rerun)** —
+   **v17 run result (partial pass)**: image smoke produced `h3_image_00001_.png`, video smoke
+   `MiniMax_H3_00001_.mp4` @ 204–206 s/step × 4 dual-GPU, `SMOKE PASSED`, pub self-test
+   **11/11 `200`** (incl. the two v16 stragglers), tasks `upscale`/`video_frames` green —
+   **bg_remove/extract failed**: `ImportError cannot import name '_slice' from
+   'numpy._core.umath'` = **mixed numpy dir on the image after pip shuffled deps** (newer
+   `strings.py` + 2.1.3 `umath.py`; `import numpy` fine, scipy/rembg dead) → pub raised →
+   sync skipped. **v18**: install-cell probe + `force-reinstall --no-deps numpy==<ver>` heal +
+   `TASKS_HEALTHY` gate (bg_remove/extract warn-only when unhealthy, upscale always required).
+   **Design (as shipped in v17)**: template `flux_schnell.json` (Comfy-Org/workflow_templates) =
    9 flat nodes, **no subgraph**, KSampler `4 steps, cfg 1, euler/simple`, latent 1024²,
    `CheckpointLoaderSimple` → **`Comfy-Org/flux1-schnell` / `flux1-schnell-fp8.safetensors`
-   (17.24 GB, ONE file at repo root → downloaded into `models/checkpoints/`)**. Design shipped:
+   (17.24 GB, ONE file at repo root → downloaded into `models/checkpoints/`)**:
    - `build_prompt(cfg)` branches on `cfg["modality"]` → `_build_image` (separate flat converter
      reusing `load_info()` schema filter; Note/MarkdownNote skipped; `widgets_values_named`
      set for prompt (positive CLIPTextEncode via KSampler `positive` link origin), empty
@@ -351,6 +361,10 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 7 | Task response envelope: `{ok, task, outputs:[data URLs], saved:[names], view:[/view URLs], meta}` with a **25 MB payload cap** falling back to saved/view | data URLs are the easiest client UX; unbounded base64 (4096² upscale = ~55 MB) would make responses unpredictable |
 | Oct 7 | Pub self-test **requires** bg_remove/extract/upscale to pass, video tasks warn-only | image tasks are the core v17 feature (fail the run loudly); ffmpeg availability varies by image, so video tasks must not fail a healthy run |
 | Oct 7 | Local dry-run recreates 12-byte weight placeholders **at boot and before the image generate test** | the select-prune test legitimately deletes `checkpoints/flux…` mid-run (Comfy re-scans the combo list), and only 11 GB disk is free locally — never let assets see a missing flux file |
+| Oct 7 | **v18: install-cell numpy health probe + auto-heal** (`from numpy._core.strings import *; from scipy import ndimage; import rembg` in a subprocess, then `pip force-reinstall --no-deps numpy==<ver>` on failure, plus numpy diagnostics: `__path__`, dist-info list, per-file `_slice` markers) and an **in-kernel verify** that drops stale `numpy*` modules and retries | v17 died after everything else passed because a **mixed numpy dir** silently kills scipy/rembg while `import numpy` still works; the failure only surfaced in the *task smoke*, 31 minutes in — probe the exact imports you depend on, at install time, and heal from inside the notebook (a Kaggle boot cannot be debugged interactively) |
+| Oct 7 | **`TASKS_HEALTHY` gate on the pub task smoke**: bg_remove/extract REQUIRED only when the probe+heal succeeded (warn-only otherwise), upscale always required, video tasks warn-only; `/h3api/tasks` exposes `healthy` + `rembg_error` | a secondary feature (bg_remove) must not block READY and the write-back cell for the whole stack when the environment is the problem — but a *healthy* environment must prove the feature works; the run still completes and the log still shows the exact import error |
+| Oct 7 | **Always print the pip tail, even on rc=0** (was: print output only on failure) | v17's discarded pip output hid whether the rembg resolve moved numpy — the single most important diagnostic line was thrown away by a "keep logs clean" default |
+| Oct 7 | Cell-order fact: **sync only runs if pub succeeds** — a pub raise silently skips write-back | gates before READY must be calibrated to *environment-dependent* features; core-generation failures stay fatal, environment-conditional ones degrade with a loud warning |
 
 ---
 
@@ -401,7 +415,9 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 7 | **Colab = remote machine** (user directive: home only for files): Colab CLI session `hub` created + probed (`colab exec` runs code: Python 3.13, 107 GB disk, torch CPU); heavy compute (dry-runs, testing) goes to Colab, home keeps repo files only | ✅ |
 | Oct 7 | **v17 local test assets**: `rembg[cpu]` + onnxruntime (u2netp/u2net warmed under `REMBG_HOME`), `RealESRGAN_x4plus.pth` (67 MB → `models/upscale_models/`), static ffmpeg+ffprobe 7.0.2 → `/tmp/bin`, 12-byte flux placeholder → `models/checkpoints/` | ✅ (rembg default bria-rmbg 1.02 GB SIGKILL'd the 8 GB box → switched to u2net) |
 | Oct 7 | **v17 built** (image branch + task engine + smoke schedule + pub retry/task smoke) → `ast`-validated 14 cells → local dry-run **59/59 ALL TESTS PASSED** (incl. real `upscale 4× 256→1024²`, bg_remove alpha extent, extract bbox, 8 tasks, path-escape 400, pub `TASK SMOKE PASSED`) | ✅ two dry-run bugs fixed en route: `T_upscale` forgot the `{"prompt": …}` wrapper; image generate test ran after the prune test deleted the flux placeholder |
-| Oct 7 | **v17 pushed** (kernel version 17) — image lane + use-case tasks + self-test retry | RUNNING — watching; success = image smoke PNG + task smoke green + video dual-GPU + second dataset upload (flux drift) |
+| Oct 7 | **v17 pushed** (kernel version 17) — image lane + use-case tasks + self-test retry | RUN **PARTIAL FAIL at 31 min**: image smoke PNG ✅, video MP4 @ 204–206 s/step × 4 ✅ dual-GPU ✅, `SMOKE PASSED` ✅, pub self-test **11/11 `200`** ✅ (outputs+gpus retry fix verified), tasks upscale/video_frames ✅ — but bg_remove/extract hit the **mixed-numpy `_slice` ImportError** → pub raised → sync skipped; root-caused from the downloaded log |
+| Oct 7 | **v18 built** — numpy probe + auto-heal + in-kernel verify in the install cell, `TASKS_HEALTHY` gate in pub, `rembg_error`/`healthy` in `/h3api/tasks`, pip tail always printed → rebuilt, 13 cells `ast`-validated, dry-run **59/59** | ✅ |
+| Oct 7 | **v18 pushed** (kernel version 18) | RUNNING — watching; success = `TASKS_HEALTHY = True` (or explicit heal line) + `TASK SMOKE PASSED` + **sync runs** (probe → manifest drift → second upload of ~58 GB) |
 
 ---
 

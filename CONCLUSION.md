@@ -99,7 +99,7 @@
   `DUAL-GPU CONFIRMED: active: 2 ranks`, `smoke status: success`, MP4 out, READY +
   `Verified public endpoint: https://claimed-maintain-kate-stroke.trycloudflare.com`.
 
-### v17 — image lane + use-case task engine (Phase C start) — PUSHED, run in progress
+### v17 — image lane + use-case task engine (Phase C start) — RUN ATTEMPTED (partial fail, root-caused)
 - **Scope**: the hub stops being video-only. `build_prompt()` branches on `modality`; the image
   branch converts the flat `flux_schnell.json` template (CheckpointLoaderSimple / CLIPTextEncode ×2 /
   EmptySD3LatentImage / KSampler 4 steps cfg 1 euler/simple / SaveImage, 1024²) reusing the same
@@ -125,6 +125,41 @@
   (`value_not_in_list` — Comfy re-scans combo lists, so prune is real) → harness now restores
   placeholders right before that test. Pub GET probes gained retry-once + 30 s timeout +
   `e.reason` (v16's blind `URLError`).
+
+#### v17 run result on Kaggle (31 min, ERROR at the last gate)
+
+**Everything the run was built to prove, proved — except one environment bug:**
+- ✅ **Image lane works end to end**: flux downloaded (17.24 GB), `[image smoke] build meta …
+  modality: image` → `submitted … node_errors {}` → **PNG out** (`h3_image_00001_.png`).
+- ✅ **Video lane still perfect**: `[video smoke]` → `active: 2 ranks` → **206.0 / 205.6 / 204.2 /
+  205.0 s/step × 4** → MP4 → `DUAL-GPU CONFIRMED` → `SMOKE PASSED: ['image', 'video']`.
+- ✅ **v17's self-test retry fix verified**: pub probes **11/11 green through the tunnel** —
+  including `/h3api/outputs` and `/h3api/gpus`, the two that failed in v16.
+- ✅ **Two of four task-smoke tasks green live**: `POST task upscale 200` (Real-ESRGAN through
+  Comfy's GPU) and `POST task video_frames 200` (3 PNGs).
+- ❌ **bg_remove/extract failed**: rembg's install (rc=0) left a **mixed numpy dir** —
+  `numpy/_core/strings.py` from a newer numpy imports `_slice`, `umath.py` is 2.1.3-consistent
+  and lacks it → `from scipy import ndimage` (and `import rembg`) die with
+  `ImportError: cannot import name '_slice' from 'numpy._core.umath'` while plain `import numpy`
+  and torch/Comfy work normally. v17's pub cell (correctly) raised on the required image tasks →
+  **the sync cell never ran** (no write-back, no manifest probe — cell order matters).
+
+### v18 — numpy probe + auto-heal + TASKS_HEALTHY gate — PUSHED, run in progress
+- **Install cell** always prints the pip tail (v17 discarded it on rc=0 — hiding whether the
+  resolve moved numpy), then probes the exact imports in a subprocess
+  (`from numpy._core.strings import *; from scipy import ndimage; import rembg`); on failure it
+  prints numpy diagnostics (`__path__`, `numpy-*.dist-info` list, `_slice` presence per file) and
+  **auto-heals** with `pip install --force-reinstall --no-deps numpy==<current version>`, re-probes,
+  and finally verifies **in-kernel** (dropping any stale in-memory `numpy*` modules first) →
+  `TASKS_HEALTHY`.
+- **Pub task smoke gate**: bg_remove/extract are required only when `TASKS_HEALTHY` (warn-only
+  otherwise, with the real import error already printed by the api cell via `rembg_error`);
+  upscale stays always-required (it doesn't touch scipy), video tasks stay warn-only →
+  **the run can no longer be killed by an environment bug in a secondary feature**, and sync
+  always runs.
+- `/h3api/tasks` now reports `runtime.healthy` + `runtime.rembg_error` so clients see the state.
+- Local dry-run: **59/59** again (install cell is skipped locally → `TASKS_HEALTHY` defaults to
+  required, and local rembg is healthy).
 
 ## 2026-10-07 — retired lanes (kept for history)
 
