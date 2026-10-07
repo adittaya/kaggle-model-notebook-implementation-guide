@@ -59,6 +59,15 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       progress line (`2/20 [28:43<4:18:27, 861.5s/it]` → ETA 4:18) and set the cap with real
       headroom; fail *fast* on fallback warnings instead of waiting out the cap on a doomed run.
 - [ ] **Smoke test before READY**: run a real generation; only then print Base URL + endpoint
+- [ ] **Preset-driven settings**: one `PRESETS`/`ACTIVE` dict feeds the prompt *and* the download
+      list (fast = turbo 4-step @ 0.4 MP, quality = dense 20-step @ 0.98 MP); add `resolution`,
+      `duration`, `seed`, `turbo_steps` there — never scatter magic numbers through the converter
+- [ ] **Auto-list models from the live source of truth**: query the HF repo tree + community search
+      on every boot and print availability (`local`/`cached`/`remote`) — new files/repos appear
+      without a code change; cache `/kaggle/input` hits as symlinks (instant mirror), HF download
+      only the missing files, then write `MANIFEST.json`
+- [ ] **Local dry-run harness**: execute the notebook cells against a local CPU ComfyUI (start it
+      with `--cpu` on CPU-only torch) and confirm `/prompt` returns a `prompt_id` before pushing
 - [ ] **Quality-first defaults**: turbo/TeaCache/Spectrum/FBC off (this template's switches default to dense 20-step)
 - [ ] **Public tunnel**: `cloudflared tunnel --url http://127.0.0.1:8188`, health-check `/history`
 - [ ] **Guarded cleanup**: only act on `H3_SHUTDOWN=1`

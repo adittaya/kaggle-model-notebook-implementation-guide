@@ -50,6 +50,11 @@
 
 1. ✅ Assets land (v12: 5/5 `OK <bytes>`, 41 GB) and the flattened prompt validates
    (`prompt_id … node_errors: {}`) — the pipeline works end to end.
+   ✅ v14: same validation reproduced **locally** (CPU ComfyUI dry-run: `prompt_id 918c50eb…`,
+   `node_errors: {}`, turbo path armed) before pushing.
+1.5 ⬜ **Fast path timing**: how long does the v14 smoke (4-step turbo, 864×480, 124 frames)
+   actually take on 2×T4? (Estimate: init ~14 min + 4 × ~350 s ≈ 35–50 min total — the run
+   prints `[MultiStream] step:` lines that give compute vs exchange split.)
 2. ✅ **20-step dense 1344×768 on 2×T4 ≈ 861 s/step → ≈4.8 h sampling** (v12, first measurement).
    Why ~17× slower than the pack's 2×5060 Ti reference (42–49 s/step)? v13 streams
    `[MultiStream] step:` / `[GPUs]` diagnostics to separate compute vs exchange.

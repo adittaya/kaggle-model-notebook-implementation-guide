@@ -15,10 +15,10 @@ reconstruct the whole project after a context loss.
 **Date:** Oct 7 2026
 **Owner:** adityahalde8777
 **Kaggle kernel:** `adityahalde8777/minimax-h3-comfy-2xt4-generator` (the ONLY kernel; old lanes deleted)
-**Latest:** **v13 RUNNING — DUAL-GPU VERIFIED LIVE** (`[GPUs] dit: 2 rank(s): cuda:0 (primary), cuda:1`,
-`[MultiStream] active: 2 ranks cuda:0+cuda:1, 50 blocks, heads 28/28`, both T4s `100 % util /
-~66 W / 10.4+8.6 GiB`, no `UNSPLIT`) — waiting on 20-step dense smoke + READY block.
-**Next:** Phase A (v14) — dynamic registry + fast 4-step/480p turbo smoke (see *Phased plan*).
+**Latest:** **v14 PUSHED** (dry-run green locally): dynamic registry + Dataset auto-cache +
+preset settings (`fast_smoke` = 4-step turbo @ 864×480), `/prompt` accepted offline
+(`prompt_id 918c50eb…`). **v13 still RUNNING** (dual-GPU verified live: `active: 2 ranks
+cuda:0+cuda:1`, both T4s 100 %/66 W). Next: watch v14's fast smoke → READY block.
 
 ---
 
@@ -161,17 +161,17 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 
 ## Phased plan (proper to-do)
 
-### Phase A — v14: dynamic foundation + fast verified smoke (NEXT PUSH)
-1. ⬜ **Registry cell**: live HF tree query (`Comfy-Org/MiniMax-H3` + community search) → grouped
-   catalog table with local/cached/remote status — new files/repos auto-listed every boot
-2. ⬜ **Settings cell**: `PRESETS` + `ACTIVE` (fast_smoke: turbo ON, 4-step lora, megapixels 0.4 =
+### Phase A — v14: dynamic foundation + fast verified smoke (PUSHED — watching)
+1. ✅ **Registry cell**: live HF tree + community search → grouped catalog with
+   `local/cached/remote` status — new files/repos auto-list every boot
+2. ✅ **Settings cell**: `PRESETS` + `ACTIVE` (`fast_smoke`: turbo ON, 4-step lora, 0.4 MP =
    864×480, duration 5, short prompt, seed) — single source of truth for prompt + downloads
-3. ⬜ **Assets rework**: preset-selective download (drop unused files), order local →
-   `/kaggle/input` symlink mirror → HF (token), `MANIFEST.json`, per-file `OK <bytes>`
-4. ⬜ Converter applies `ACTIVE` (instance widgets + ResolutionSelector); wait cap → 3 h; keep all
-   dual-GPU verification
-5. ⬜ Local CPU-Comfy dry-run of the turbo prompt (background pip install in progress) → push v14
-6. ⬜ Watch smoke → capture READY block (Base URL + `/prompt`)
+3. ✅ **Assets rework**: preset-selective download, local → `/kaggle/input` symlink mirror → HF
+   (token), `MANIFEST.json`, per-file `OK <bytes>`
+4. ✅ Converter applies `ACTIVE` (instance widgets + ResolutionSelector); wait cap → 3 h;
+   dual-GPU verification retained
+5. ✅ Local CPU-Comfy dry-run of the turbo prompt → **`/prompt` accepted** → pushed v14
+6. ⬜ Watch v14 smoke → capture READY block (Base URL + `/prompt` endpoint) + step timings
 
 ### Phase B — enterprise hybrid API (v15)
 1. ⬜ Sidecar (`/h3api/*`) + reverse proxy (WebSocket passthrough for Comfy UI) behind the ONE tunnel

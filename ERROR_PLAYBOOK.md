@@ -64,6 +64,11 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
   in the Kaggle output. **Verified working in v13:** `2 rank(s): cuda:0 (primary), cuda:1` +
   `active: 2 ranks` + both cards `100 % / 65.9 W` (T4's ~70 W ceiling) with 10.4/8.6 GiB
   resident — the canonical healthy pattern to compare against.
+- **Dry-run the notebook cells locally before pushing**: run every cell against a local ComfyUI
+  (CPU build) — registry/settings/assets/submit all execute for free and `/prompt` validation is
+  the real `validate_prompt`. Gotcha: on a CPU-only torch box Comfy crashes at import with
+  `Torch not compiled with CUDA enabled` unless you start it with `--cpu` (the harness patches
+  the start cell; the Kaggle cell is untouched because T4s exist there).
 - **Size timeouts from measurements, not estimates**: v12 ran at 861 s/step (≈4.8 h job) under a
   60-min wait cap — the cap would have killed a healthy run. A tqdm line like
   `2/20 [28:43<4:18:27, 861.5s/it]` in your progress tail gives you the true ETA; recompute the

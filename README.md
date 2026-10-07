@@ -1,16 +1,20 @@
 # MiniMax H3 Kaggle Generator — Comfy 2×T4
 
 Deploy a **MiniMax H3** video/audio generator on Kaggle's free `T4 ×2` machine.
-Single lane, single kernel: `adityahalde8777/minimax-h3-comfy-2xt4-generator` (**current build v13**,
-**dual-GPU verified**: `active: 2 ranks cuda:0+cuda:1`, both T4s 100 % / ~66 W — quality config
-unchanged + full verification suite; see `AGENT.md`).
+Single lane, single kernel: `adityahalde8777/minimax-h3-comfy-2xt4-generator` (**current build v14**:
+dynamic model registry + Kaggle Dataset auto-cache + preset settings; **fast smoke = 4-step turbo
+LoRA @ 864×480**; dual-GPU verified in v13 — `active: 2 ranks cuda:0+cuda:1`, both T4s 100 % / ~66 W).
 
 - **Runtime:** ComfyUI + `ComfyUI-H3-MultiStream` — the H3 transformer split across both T4s
   (`exchange="host"`, `exchange_chunks=8`, caches off for the 31 GB RAM box)
-- **Models:** `Comfy-Org/MiniMax-H3` (int8 convrot DiT, NVFP4/AWQ text encoder, int8 video VAE)
+- **Registry:** live HF catalog query every boot (39 core files + 100 community repos auto-listed);
+  availability shown as `local` / `cached` / `remote`
+- **Cache:** `/kaggle/input` auto-detect → symlink mirror into model dirs → HF fallback (token) →
+  `MANIFEST.json`; preset-selective download (only files the ACTIVE preset needs)
+- **Settings:** `PRESETS` cell — `fast_smoke` (turbo ON, 4 steps, 0.4 MP = 864×480) and `quality`
+  (dense 20 steps, 0.98 MP = 1344×768); no negative prompt (H3 is CFG-distilled)
 - **Workflow:** official `video_minimax_h3_t2v.json`, flattened to API prompt + `H3MultiStream`
   inserted before `BasicGuider`/`BasicScheduler`
-- **Quality:** 0.98 MP → **1344×768**, dense (turbo/TeaCache/Spectrum/FBC off)
 - **Output:** runs a real smoke generation on both GPUs, then prints a public Base URL +
   `/prompt` endpoint (cloudflared quick tunnel)
 
