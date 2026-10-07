@@ -203,9 +203,29 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
    through the tunnel + first-time dataset upload outcome
 
 ### Phase C — modalities (v16+, one low-quality smoke each, in order)
-1. ⬜ **Image generation**: locate Flux/Comfy-Org image repos + official API template → lane → smoke
-2. ⬜ **Music generation**: `audio_minimax_music_3.json` template (+ LTx/community research) → smoke
-3. ⬜ **Transcription**: research ASR options on Comfy → lane → smoke
+1. ⬜ **Image generation** — **researched ✅**: template `flux_schnell.json` (Comfy-Org/
+   workflow_templates) = 9 flat nodes, **no subgraph**, KSampler `4 steps, cfg 1, euler/simple`,
+   latent 1024², `CheckpointLoaderSimple` → **`Comfy-Org/flux1-schnell` /
+   `flux1-schnell-fp8.safetensors` (17.24 GB, ONE file)**; flat conversion reuses the existing
+   flattener + schema filter (MarkdownNote/Note auto-dropped), just skip the H3 subgraph/turbo/
+   MultiStream inserts → `build_prompt(cfg)` gets a `modality` branch; **single T4** (Comfy
+   offload — MultiStream is H3-only ⇒ wait-cell dual-GPU assertion must be modality-aware);
+   upgrade path: Flux2 klein 4B distilled (`image_flux2_klein_*` templates), Qwen-Image 20B too
+   big for T4
+2. ⬜ **Music generation** — **researched ✅**: template `audio_minimax_music_3.json` = subgraph
+   "Text to Music (MiniMax Music 3)" (flattener applies), instance widgets = caption + lyrics +
+   max_duration 60 + seed + loaders; KSampler `30 steps, cfg 1.7`; models from
+   **`Comfy-Org/MiniMax-Music-3`**: dit fp16 **4.91 GB** + TE pruned int8 convrot **9.20 GB** +
+   dav VAE **0.22 GB** = **14.33 GB** (also listed: dit fp32 9.8 / dit int8 2.5 / TE bf16 18.5 /
+   TE pruned bf16 16.7); all land in the same `diffusion_models/text_encoders/vae` dirs the
+   registry + prune already cover; outputs via `SaveAudioAdvanced`
+3. ⬜ **Transcription** — **researched ✅** (no official local template; only cloud `api_*`
+   STT). Front-runners: **`Setmaster/comfyui-stt7`** (MIT, purpose-built suite:
+   LoadModel/TranscribeAudio/LoadAudioFile, faster-whisper, built-in VRAM mgmt) and
+   **`yuvraj108c/ComfyUI-Whisper`** (275★, auto-downloads models, license NOASSERTION ⚠);
+   MIT alternatives: `endman100/ComfyUI-WhisperLargeV3-Repack`. Smoke input = a short
+   speech WAV (downloaded sample) → native `LoadAudio` → whisper node → text; decision: pick
+   one pack, pip-install its requirements in the install cell
 4. ⬜ **Soundtrack**: H3 native joint audio (already produces 32 kHz stereo) — document + API field
 5. ⬜ Each modality gets: registry entries, settings schema, docs section, one 480p/low smoke
 
@@ -310,7 +330,8 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 7 | **v14 VERIFIED on Kaggle — Phase A complete**: run 25.6 min / zero stderr errors; 5/5 `OK` (41.03 GB, HF token, minutes); registry auto-listed 39 core + 100 community; `fast_smoke` applied; turbo armed `['1021']`; `prompt_id 67580883… node_errors {}`; `active: 2 ranks cuda:0+cuda:1, 50 blocks, 28/28`; **209.6–210.9 s/step × 4**; both T4s 100 % / 64.9+62.1 W; MP4 `MiniMax_H3_00001_.mp4`; READY Base URL `https://poem-smile-fell-ddr.trycloudflare.com` | ✅ all six MDs updated (commit `a9defb6`) |
 | Oct 7 | v15 built (14 cells): `convert` (`build_prompt` + frame injection), `api` (hub `:8190` + proxy + WS), `sync` (dataset write-back); local CPU dry-run **ALL TESTS PASSED** (every endpoint, WS `101`, chunked, import `201`, traversal `400`, prune, sync `dry`) | ✅ |
 | Oct 7 | v15 pushed to Kaggle (kernel version 15) | RUNNING — watching |
-| Oct 7 | Six-MD docs pass for v14 verification + v15 hub API (README/GUIDE/CONCLUSION/ERROR_PLAYBOOK/BUILD_YOUR_OWN/AGENT) | this commit |
+| Oct 7 | Six-MD docs pass for v14 verification + v15 hub API (README/GUIDE/CONCLUSION/ERROR_PLAYBOOK/BUILD_YOUR_OWN/AGENT) | commit `1e3a64b` |
+| Oct 7 | **Phase C pre-research**: image = `flux_schnell.json` template + `Comfy-Org/flux1-schnell` fp8 single file (17.24 GB, 4 steps cfg 1, no subgraph); music = `audio_minimax_music_3.json` subgraph + `Comfy-Org/MiniMax-Music-3` (14.33 GB, 30 steps cfg 1.7); transcription = no official local template → shortlist `Setmaster/comfyui-stt7` (MIT) vs `yuvraj108c/ComfyUI-Whisper` (275★, NOASSERTION license) | findings recorded in Phase C section |
 
 ---
 
