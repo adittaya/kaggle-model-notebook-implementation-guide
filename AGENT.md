@@ -61,7 +61,7 @@ Keep the current kernel status up to date at the top.
 | Oct 7 | v5 set `HF_HUB_DISABLE_XET` | Still failed in WanGP downloader path |
 | Oct 7 | v6 pre-download assets in notebook | ✅ All 12 assets downloaded; smoke test entered; final validation pending |
 | Oct 7 | MultiGPU experiment v1 | probe finished: 2× T4 cc7.5 14.6G, PHB topology, host~10.0 GB/s vs p2p~9.3 GB/s; failed only on cell syntax typo |
-| Oct 7 | MultiGPU experiment v2 | pushed to `adityahalde8777/minimax-h3-multigpu-experiment`; typo fixed |
+| Oct 7 | MultiGPU experiment v2 | probe finished green: host~10.3 GB/s vs p2p~9.4 GB/s; PHB topology. v3 SUCCESS on rerun. |
 
 ---
 
