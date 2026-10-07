@@ -28,6 +28,7 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
 | v9 | `AttributeError: 'bytes' object has no attribute 'read'` | `json.load(urlopen(...).read())` | use `json.loads(...)` |
 | v10 | `prompt_outputs_failed_validation` → `KeyError prompt[o_id]['class_type']` validating `SaveVideo` | skipped the UUID node → dangling link. The UUID is a **subgraph** holding the entire 21-node H3 pipeline | **flatten subgraphs**, never drop them |
 | v11 | 6 × `value_not_in_list` (`unet_name ... not in []`, `vae_name ... not in ['pixel_space']`, clip/lora lists empty) + `required_input_missing: values.a` | (a) `python -m huggingface_hub.cli.download` has **no `__main__` guard** → module imported, exit 0, **zero files downloaded**, all model folders empty. (b) `values.a` autogrow slot exists only after schema finalization, so the schema filter dropped a required link | in-process `snapshot_download` + per-file size assert; include every **linked** input regardless of static schema |
+| v12 | healthy run at **861 s/step** (tqdm ETA ≈4.8 h / 20 steps) vs pack reference 42–49 s/step on 2×5060 Ti (~17× off); its **60-min wait cap would false-fail** the job | perf anomaly to diagnose (T4 compute vs exchange vs off-plan); timeout budgets must come from measured throughput, not estimates | surface `[MultiStream] step:` lines live; wait cap sized from measured s/it (v13: 6.5 h); fail *fast* on `UNSPLIT` |
 
 > Sanity signal you can use too: v11 finished in **111 s** — impossible for a multi-GB download,
 > and the download command printed *nothing*. A subprocess with no output and exit 0 is a lie.
@@ -61,6 +62,10 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
   to one card. The notebook's wait cell now asserts this (raises unless `active: 2 ranks` is
   present) and tails `nvidia-smi -l 10` samples as `[gpu]` lines so utilization per card lands
   in the Kaggle output.
+- **Size timeouts from measurements, not estimates**: v12 ran at 861 s/step (≈4.8 h job) under a
+  60-min wait cap — the cap would have killed a healthy run. A tqdm line like
+  `2/20 [28:43<4:18:27, 861.5s/it]` in your progress tail gives you the true ETA; recompute the
+  budget from it, and fail *fast* on fallback warnings instead of waiting out the cap.
 - `ComfyUI did not listen in time` ⇒ check pip's dependency-conflict banner before blaming Comfy.
 - Template structure inspection (`definitions.subgraphs`, `widgets_values_named`, link arrays) is
   a 30-second local check that saves a full 10-minute Kaggle round trip.

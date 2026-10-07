@@ -8,8 +8,9 @@ ERROR_PLAYBOOK) after any significant change — not just AGENT.md.
 **Date:** Oct 7 2026
 **Owner:** adityahalde8777
 **Kaggle kernel:** `adityahalde8777/minimax-h3-comfy-2xt4-generator` (the ONLY kernel)
-**Latest:** **v12 RUNNING** — prompt accepted (`node_errors: {}`), sampling on 2×T4; **v13 prepared
-locally (NOT pushed)** with dual-GPU verification (see To do)
+**Latest:** **v13 pushed, RUNNING/QUEUED** — quality config untouched (20-step dense, 0.98 MP) +
+**dual-GPU verification**: `nvidia-smi` monitor, `[h3ms]` diagnostic stream, early fail on
+`UNSPLIT`, final `active: 2 ranks` assertion, 6.5 h wait cap (v12 died at its 60-min cap)
 
 ---
 
@@ -23,7 +24,8 @@ locally (NOT pushed)** with dual-GPU verification (see To do)
 | Model source | `Comfy-Org/MiniMax-H3` via `snapshot_download` + per-file verification |
 | Workflow | official `video_minimax_h3_t2v.json`, **subgraph flattened to API prompt** |
 | Smoke test | real 2×T4 run: H3MultiStream inserted before BasicGuider/BasicScheduler |
-| Dual-GPU verification | **v13 prepared, not pushed**: `nvidia-smi -l 10` → `/tmp/gpus.log` (printed as `[gpu]` lines every 120 s) + hard assertion on `[MultiStream] active: 2 ranks` (raises on `UNSPLIT` fallback) |
+| Dual-GPU verification | **live in v13**: `nvidia-smi -l 10` → `[gpu]` lines every 120 s; `[h3ms]` stream of `[GPUs]`/`[MultiStream]` lines; **early raise** on `UNSPLIT` fallback; final raise unless `active: 2 ranks` |
+| Wait budget | 6.5 h (v13) — sized from *measured* 861 s/step, not from estimates (v12's 60-min cap would have false-failed a healthy job) |
 | Resolution | 0.98 MP → **1344×768** (official 768p table row) |
 | Public endpoint | printed only AFTER smoke passes (cloudflared → `*.trycloudflare.com/history` 200) |
 | Old lanes (WanGP/FastAPI/api-server/kaggle-generator/multigpu) | 🗑 deleted |
@@ -32,15 +34,18 @@ locally (NOT pushed)** with dual-GPU verification (see To do)
 
 ## To do
 
-1. ⬜ Watch v12 to completion: look for `[GPUs] dit:` / `[MultiStream] active: 2 ranks` in the
-   120-s comfy.log snapshots (proves both T4s); `UNSPLIT` would betray a single-GPU fallback
-2. ⬜ After v12 outcome → push **v13** (dual-GPU monitor + assertion already built & `ast`-clean)
-3. ⬜ Confirm smoke generation finishes on both T4s → READY block with Base URL + `/prompt` endpoint
-4. ⬜ If the 60-min wait cap trips on a healthy job → raise it to 90–120 min in the same v13 push
-5. ⬜ If RAM pressure appears: keep `weight_cache=False`, consider dropping duration to 3 s
-6. ⬜ Optional: add `H3 MS VAE Split Decode` + `H3 MS Text Encoder Cache` for extra speed
-7. ⬜ Optional: mount a Kaggle Dataset of the 5 model files so boots skip the HF download
-8. ⬜ Rotate the GitHub PAT that was pasted in chat earlier (credential leak)
+1. ⬜ **Watch v13's `[h3ms]`/`[gpu]` stream from the first snapshot**: confirm
+   `[GPUs] dit: … cuda:0, cuda:1`, `[MultiStream] active: 2 ranks`, and **both** `[gpu]` rows
+   showing non-zero util
+2. ⬜ Explain the performance anomaly: **861 s/step** measured on 2×T4 vs the pack's 2×5060 Ti
+   reference 42–49 s/step (~17×) — the step diagnostics (compute s + exchange GB) will show
+   whether it's T4 compute, exchange, or an off-plan path
+3. ⬜ If smoke passes → capture READY block (Base URL + `/prompt` endpoint)
+4. ⬜ Optional speed lever for later (user chose quality first): flip the template's
+   `turbo_mode`/`If-Else Switch (Steps)` → 4-step turbo lora path
+5. ⬜ Optional: `H3 MS VAE Split Decode` + `H3 MS Text Encoder Cache`
+6. ⬜ Optional: mount a Kaggle Dataset of the 5 model files so boots skip the HF download
+7. ⬜ Rotate the GitHub PAT that was pasted in chat earlier (credential leak)
 
 ---
 
@@ -69,6 +74,8 @@ locally (NOT pushed)** with dual-GPU verification (see To do)
 | Oct 7 | Always include **linked** inputs even if absent from the static `object_info` schema | v11: autogrow slots (`values.a`) are created only during validation finalization, so the schema filter dropped a required input |
 | Oct 7 | **Prove dual-GPU execution at runtime, don't infer it from config**: background `nvidia-smi --query-gpu=... -l 10` → `/tmp/gpus.log` (tail printed every 120 s) + post-smoke assertion that comfy.log contains `[MultiStream] active: 2 ranks` and raises on `UNSPLIT` / `running unsplit on 1 GPU` | outside world can't reach the machine (no terminal, Comfy bound to 127.0.0.1 until the post-smoke tunnel); config (`second_gpu=-1`) shows intent, not execution |
 | Oct 7 | Ship the verification as **v13 after v12's outcome**, not mid-run | pushing triggers a fresh run → 41 GB re-download + burns the 2-session GPU cap while v12 is live |
+| Oct 7 | **Keep quality config** (20-step dense, 0.98 MP, turbo OFF) for v13; speed work comes *after* dual-GPU is proven | user decision: "keep quality, but this time dual GPU verify" |
+| Oct 7 | Wait cap **6.5 h**, sized from measured throughput (861 s/step × 20 + init/decode), and **fail fast** if an `UNSPLIT` line appears mid-run | v12 proved optimistic caps false-fail healthy runs: its 60-min cap would have killed a 4.8 h job; detecting fallback early avoids burning hours on a single-GPU run |
 
 ---
 
@@ -99,6 +106,8 @@ locally (NOT pushed)** with dual-GPU verification (see To do)
 | Oct 7 | v12: assets OK (5/5 files: 21 GB DiT, 15.7 GB TE, VAEs, lora), Comfy ready in 45 s, **`/prompt` accepted** (`prompt_id b5f94a63…`, `node_errors: {}`), sampling started | ✅ first run to pass validation in this lane; est. 30–45 min for the 20-step 1344×768 job |
 | Oct 7 | User asked to verify both GPUs are actually loaded; investigated available paths | outside access impossible (no Kaggle terminal, Comfy `127.0.0.1`-only until post-smoke tunnel, CLI logs lag while running). Pack logs the answer: `[GPUs] dit:` / `[MultiStream] active: 2 ranks` vs `UNSPLIT` |
 | Oct 7 | v13 built locally: `nvidia-smi -l 10` monitor + `[gpu]` lines in wait-cell snapshots + hard dual-GPU assertion | ✅ rebuilt, `ast`-clean, **NOT pushed** — waits for v12's outcome |
+| Oct 7 | v12 live log analysed: prompt accepted, sampling at **861 s/step**, tqdm ETA `2/20 … 4:18:27` (≈4.8 h total) vs pack reference 42–49 s/step on 2×5060 Ti; 60-min wait cap would trip long before completion | user decided: terminate, keep quality, verify dual GPU first |
+| Oct 7 | v13 pushed: same quality graph + verification suite (monitor, `[h3ms]` diagnostics stream, early `UNSPLIT` fail, `active: 2 ranks` assertion) + 6.5 h wait cap | PUSHED — watching first snapshots for `cuda:0, cuda:1` evidence |
 
 ---
 

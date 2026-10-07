@@ -53,6 +53,9 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       pack's own evidence (here `[MultiStream] active: 2 ranks`) is in the server log and
       **raise** on any single-GPU fallback warning (`UNSPLIT`). Intent in the submitted config
       (`device_count: 2`, `second_gpu=-1`) is not proof.
+- [ ] **Size wait timeouts from measured throughput, not optimism**: parse the sampler's own
+      progress line (`2/20 [28:43<4:18:27, 861.5s/it]` → ETA 4:18) and set the cap with real
+      headroom; fail *fast* on fallback warnings instead of waiting out the cap on a doomed run.
 - [ ] **Smoke test before READY**: run a real generation; only then print Base URL + endpoint
 - [ ] **Quality-first defaults**: turbo/TeaCache/Spectrum/FBC off (this template's switches default to dense 20-step)
 - [ ] **Public tunnel**: `cloudflared tunnel --url http://127.0.0.1:8188`, health-check `/history`

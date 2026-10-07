@@ -30,7 +30,7 @@
 | 5 | inspect | report top-level nodes / subgraph names |
 | 6 | start | launch ComfyUI `--preview-method latent2rgb`, wait for `:8188`; start a background `nvidia-smi -l 10` monitor → `/tmp/gpus.log` |
 | 7 | submit | **convert saved workflow → API prompt** (flatten subgraph), insert `H3MultiStream`, `POST /prompt` |
-| 8 | wait | poll `/history/<id>` up to 60 min, print comfy.log progress **+ `[gpu]` util lines** every 120 s, fail on execution errors, then **assert dual-GPU**: print `[GPUs]`/`[MultiStream] active` lines, raise on `UNSPLIT` fallback or missing `active: 2 ranks` |
+| 8 | wait | poll `/history/<id>` up to **6.5 h**, every 120 s print comfy.log tail (tqdm ETA) + new **`[h3ms]` diagnostics** (`[GPUs]` plan, `active: 2 ranks`, per-step times) + **`[gpu]` nvidia-smi util lines**; **early raise on `UNSPLIT`**; fail on execution errors; final **assert dual-GPU** (raise unless `active: 2 ranks`) |
 | 9 | pub | cloudflared quick tunnel, verify `/history` returns 200, print READY block |
 
 ### Model files staged (exact widget names from the official template)

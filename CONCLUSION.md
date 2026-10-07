@@ -22,6 +22,7 @@
 | v9 | `json.load(bytes)` | One-shot typo; the value of printing the response **body** |
 | v10 | `KeyError` validating `SaveVideo` | The whole H3 pipeline lives inside `definitions.subgraphs[0]` — skipping an unresolvable node leaves dangling links; you must **flatten** subgraphs, not drop them |
 | v11 | 6 × `value_not_in_list` + `values.a` missing | The asset cell had **never downloaded anything**: `python -m huggingface_hub.cli.download` has no `__main__` guard (exit 0, silence). Also: static `object_info` can omit dynamically finalized inputs (`values.a`), so **links must always be passed through** |
+| v12 | *perf anomaly:* **861 s/step** measured on 2×T4 (≈4.8 h for 20 steps) — ~17× slower than the pack's 2×5060 Ti reference (42–49 s/step); its 60-min wait cap would have false-failed a healthy run | size every timeout from **measured** throughput and stream the pack's per-step diagnostics live; verify the split is active *before* trusting the timing |
 | (v13) | *prevention, not a failure* | Multi-GPU intent in a submitted config is not proof of execution: the split can silently fall back to one card. Assert the pack's runtime evidence (`active: 2 ranks` vs `UNSPLIT`) and tail `nvidia-smi` into the output |
 | v12 | (pending) | `snapshot_download` + size verification, link inputs always kept, flattener otherwise unchanged |
 
@@ -47,9 +48,14 @@
 
 ## Open questions
 
-1. Do the 5 model files actually land this time (v12 prints `OK <bytes>` per file), and does the
-   flattened prompt then pass `/prompt` validation on the first try?
-2. How long does a 20-step dense 1344×768 × ~124-frame run take on 2×T4?
-3. Does `weight_cache=False` leave enough throughput, or do we need a Dataset-backed boot to
+1. ✅ Assets land (v12: 5/5 `OK <bytes>`, 41 GB) and the flattened prompt validates
+   (`prompt_id … node_errors: {}`) — the pipeline works end to end.
+2. ✅ **20-step dense 1344×768 on 2×T4 ≈ 861 s/step → ≈4.8 h sampling** (v12, first measurement).
+   Why ~17× slower than the pack's 2×5060 Ti reference (42–49 s/step)? v13 streams
+   `[MultiStream] step:` / `[GPUs]` diagnostics to separate compute vs exchange.
+3. **Is the split actually on both T4s?** (v13 asserts `active: 2 ranks`, early-fails on
+   `UNSPLIT`, shows live `nvidia-smi` util per card — this is *the* question now.)
+4. Does `weight_cache=False` leave enough throughput, or do we need a Dataset-backed boot to
    afford the 18 GiB pinned DiT cache?
-4. Optional next: add `H3 MS VAE Split Decode` + `H3 MS Text Encoder Cache`.
+5. Optional speed lever (quality kept for now): the template's `turbo_mode` switch → 4-step
+   turbo lora path; also `H3 MS VAE Split Decode` + `H3 MS Text Encoder Cache`.
