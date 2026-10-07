@@ -7,7 +7,10 @@
 - ComfyUI (Comfy-Org/ComfyUI @ main) + `ComfyUI-H3-MultiStream` node pack, models from
   `Comfy-Org/MiniMax-H3`, official `video_minimax_h3_t2v.json` template.
 - Public endpoint: Comfy's own `/prompt` API behind a cloudflared quick tunnel, printed only
-  after a real smoke generation completes on **both** T4s.
+  after a real smoke generation completes on **both** T4s — and "both" is now **enforced**:
+  a background `nvidia-smi -l 10` monitor feeds `[gpu]` utilization lines into the wait loop,
+  and the wait cell raises unless comfy.log contains `[MultiStream] active: 2 ranks`
+  (single-GPU `UNSPLIT` fallback = hard failure).
 
 ### What the debugging marathon (v3 → v11) taught us
 
@@ -19,6 +22,7 @@
 | v9 | `json.load(bytes)` | One-shot typo; the value of printing the response **body** |
 | v10 | `KeyError` validating `SaveVideo` | The whole H3 pipeline lives inside `definitions.subgraphs[0]` — skipping an unresolvable node leaves dangling links; you must **flatten** subgraphs, not drop them |
 | v11 | 6 × `value_not_in_list` + `values.a` missing | The asset cell had **never downloaded anything**: `python -m huggingface_hub.cli.download` has no `__main__` guard (exit 0, silence). Also: static `object_info` can omit dynamically finalized inputs (`values.a`), so **links must always be passed through** |
+| (v13) | *prevention, not a failure* | Multi-GPU intent in a submitted config is not proof of execution: the split can silently fall back to one card. Assert the pack's runtime evidence (`active: 2 ranks` vs `UNSPLIT`) and tail `nvidia-smi` into the output |
 | v12 | (pending) | `snapshot_download` + size verification, link inputs always kept, flattener otherwise unchanged |
 
 ### Hard numbers measured on the Kaggle image

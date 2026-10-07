@@ -28,9 +28,9 @@
 | 3 | install | clone ComfyUI + `ComfyUI-H3-MultiStream`, pip install requirements |
 | 4 | assets | `snapshot_download` 5 files from `Comfy-Org/MiniMax-H3` into `/tmp/ComfyUI/models`, **print `OK <bytes>` per file and raise if any is missing** + fetch the T2V template |
 | 5 | inspect | report top-level nodes / subgraph names |
-| 6 | start | launch ComfyUI `--preview-method latent2rgb`, wait for `:8188` |
+| 6 | start | launch ComfyUI `--preview-method latent2rgb`, wait for `:8188`; start a background `nvidia-smi -l 10` monitor → `/tmp/gpus.log` |
 | 7 | submit | **convert saved workflow → API prompt** (flatten subgraph), insert `H3MultiStream`, `POST /prompt` |
-| 8 | wait | poll `/history/<id>` up to 60 min, print comfy.log progress, fail on execution errors |
+| 8 | wait | poll `/history/<id>` up to 60 min, print comfy.log progress **+ `[gpu]` util lines** every 120 s, fail on execution errors, then **assert dual-GPU**: print `[GPUs]`/`[MultiStream] active` lines, raise on `UNSPLIT` fallback or missing `active: 2 ranks` |
 | 9 | pub | cloudflared quick tunnel, verify `/history` returns 200, print READY block |
 
 ### Model files staged (exact widget names from the official template)
@@ -62,6 +62,10 @@ loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors
   ['pixel_space']` literally means `models/vae` is empty — check the `OK <bytes>` lines in cell 4.
 - Run finished suspiciously fast (~2 min) with no download output → a subprocess exited 0
   without doing anything (this is exactly what `python -m huggingface_hub.cli.download` does).
+- **Dual-GPU checks** (search the output): `[MultiStream] active: 2 ranks` or `[GPUs] dit: …
+  cuda:0, cuda:1` = both T4s in the split; `running UNSPLIT` / `running unsplit on 1 GPU` =
+  single-GPU fallback (the wait cell now raises on this); `nvidia-smi` samples printed as
+  `[gpu] 0, 87 %, … MiB, …` / `1, 84 %, …` = live per-card utilization.
 
 ## Remaining MD set
 

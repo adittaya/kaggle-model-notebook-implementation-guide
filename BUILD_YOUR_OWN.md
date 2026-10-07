@@ -47,6 +47,12 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
 - [ ] **Pass every linked input through**, even if its name is absent from the static
       `object_info` schema (autogrow slots like `values.a` only exist after finalization); only
       *widgets* get filtered against the schema
+- [ ] **Prove multi-GPU execution at runtime**: start
+      `nvidia-smi --query-gpu=index,utilization.gpu,memory.used --format=csv,noheader -l 10 > /tmp/gpus.log`
+      alongside the server and print its tail in your wait loop; after the job, **assert** the
+      pack's own evidence (here `[MultiStream] active: 2 ranks`) is in the server log and
+      **raise** on any single-GPU fallback warning (`UNSPLIT`). Intent in the submitted config
+      (`device_count: 2`, `second_gpu=-1`) is not proof.
 - [ ] **Smoke test before READY**: run a real generation; only then print Base URL + endpoint
 - [ ] **Quality-first defaults**: turbo/TeaCache/Spectrum/FBC off (this template's switches default to dense 20-step)
 - [ ] **Public tunnel**: `cloudflared tunnel --url http://127.0.0.1:8188`, health-check `/history`

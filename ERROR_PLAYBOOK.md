@@ -55,6 +55,12 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
   built-in pseudo-VAE, `nodes.py` appends it to every VAE list), so your download never landed.
 - A whole notebook that finishes in ~110 s, or a download subprocess with **no output and
   exit 0** ⇒ it did nothing. Verify files and sizes, never trust the exit code.
+- **Config ≠ execution for multi-GPU**: `device_count: 2` and `second_gpu=-1` only show intent.
+  Runtime proof is `[GPUs] dit: … cuda:0, cuda:1` + `[MultiStream] active: 2 ranks` in
+  comfy.log; `running UNSPLIT` / `running unsplit on 1 GPU` means the split silently fell back
+  to one card. The notebook's wait cell now asserts this (raises unless `active: 2 ranks` is
+  present) and tails `nvidia-smi -l 10` samples as `[gpu]` lines so utilization per card lands
+  in the Kaggle output.
 - `ComfyUI did not listen in time` ⇒ check pip's dependency-conflict banner before blaming Comfy.
 - Template structure inspection (`definitions.subgraphs`, `widgets_values_named`, link arrays) is
   a 30-second local check that saves a full 10-minute Kaggle round trip.

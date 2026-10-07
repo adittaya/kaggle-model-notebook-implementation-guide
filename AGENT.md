@@ -8,7 +8,8 @@ ERROR_PLAYBOOK) after any significant change — not just AGENT.md.
 **Date:** Oct 7 2026
 **Owner:** adityahalde8777
 **Kaggle kernel:** `adityahalde8777/minimax-h3-comfy-2xt4-generator` (the ONLY kernel)
-**Latest:** **v12 pushed, QUEUED** (v11 failed validation on 6 errors — see Task log)
+**Latest:** **v12 RUNNING** — prompt accepted (`node_errors: {}`), sampling on 2×T4; **v13 prepared
+locally (NOT pushed)** with dual-GPU verification (see To do)
 
 ---
 
@@ -22,6 +23,7 @@ ERROR_PLAYBOOK) after any significant change — not just AGENT.md.
 | Model source | `Comfy-Org/MiniMax-H3` via `snapshot_download` + per-file verification |
 | Workflow | official `video_minimax_h3_t2v.json`, **subgraph flattened to API prompt** |
 | Smoke test | real 2×T4 run: H3MultiStream inserted before BasicGuider/BasicScheduler |
+| Dual-GPU verification | **v13 prepared, not pushed**: `nvidia-smi -l 10` → `/tmp/gpus.log` (printed as `[gpu]` lines every 120 s) + hard assertion on `[MultiStream] active: 2 ranks` (raises on `UNSPLIT` fallback) |
 | Resolution | 0.98 MP → **1344×768** (official 768p table row) |
 | Public endpoint | printed only AFTER smoke passes (cloudflared → `*.trycloudflare.com/history` 200) |
 | Old lanes (WanGP/FastAPI/api-server/kaggle-generator/multigpu) | 🗑 deleted |
@@ -30,12 +32,15 @@ ERROR_PLAYBOOK) after any significant change — not just AGENT.md.
 
 ## To do
 
-1. ⬜ Watch v12: assets cell must print 5× `OK <bytes>` lines, then `/prompt` must return `prompt_id`
-2. ⬜ Confirm smoke generation finishes on both T4s → READY block with Base URL + `/prompt` endpoint
-3. ⬜ If RAM pressure appears: keep `weight_cache=False`, consider dropping duration to 3 s
-4. ⬜ Optional: add `H3 MS VAE Split Decode` + `H3 MS Text Encoder Cache` for extra speed
-5. ⬜ Optional: mount a Kaggle Dataset of the 5 model files so boots skip the HF download
-6. ⬜ Rotate the GitHub PAT that was pasted in chat earlier (credential leak)
+1. ⬜ Watch v12 to completion: look for `[GPUs] dit:` / `[MultiStream] active: 2 ranks` in the
+   120-s comfy.log snapshots (proves both T4s); `UNSPLIT` would betray a single-GPU fallback
+2. ⬜ After v12 outcome → push **v13** (dual-GPU monitor + assertion already built & `ast`-clean)
+3. ⬜ Confirm smoke generation finishes on both T4s → READY block with Base URL + `/prompt` endpoint
+4. ⬜ If the 60-min wait cap trips on a healthy job → raise it to 90–120 min in the same v13 push
+5. ⬜ If RAM pressure appears: keep `weight_cache=False`, consider dropping duration to 3 s
+6. ⬜ Optional: add `H3 MS VAE Split Decode` + `H3 MS Text Encoder Cache` for extra speed
+7. ⬜ Optional: mount a Kaggle Dataset of the 5 model files so boots skip the HF download
+8. ⬜ Rotate the GitHub PAT that was pasted in chat earlier (credential leak)
 
 ---
 
@@ -62,6 +67,8 @@ ERROR_PLAYBOOK) after any significant change — not just AGENT.md.
 | Oct 7 | Only ONE kernel on the account | 2-session GPU cap; old lanes deleted |
 | Oct 7 | Download via `huggingface_hub.snapshot_download(...)` + post-download size verification | v11: `python -m huggingface_hub.cli.download` has **no `if __name__=="__main__"` guard** → exits 0, downloads NOTHING, all model folders empty |
 | Oct 7 | Always include **linked** inputs even if absent from the static `object_info` schema | v11: autogrow slots (`values.a`) are created only during validation finalization, so the schema filter dropped a required input |
+| Oct 7 | **Prove dual-GPU execution at runtime, don't infer it from config**: background `nvidia-smi --query-gpu=... -l 10` → `/tmp/gpus.log` (tail printed every 120 s) + post-smoke assertion that comfy.log contains `[MultiStream] active: 2 ranks` and raises on `UNSPLIT` / `running unsplit on 1 GPU` | outside world can't reach the machine (no terminal, Comfy bound to 127.0.0.1 until the post-smoke tunnel); config (`second_gpu=-1`) shows intent, not execution |
+| Oct 7 | Ship the verification as **v13 after v12's outcome**, not mid-run | pushing triggers a fresh run → 41 GB re-download + burns the 2-session GPU cap while v12 is live |
 
 ---
 
@@ -89,6 +96,9 @@ ERROR_PLAYBOOK) after any significant change — not just AGENT.md.
 | Oct 7 | v11: subgraph flattener + schema filter + H3 insert + asset/resolution/RAM fixes | ❌ 6 validation errors: 5× `value_not_in_list` (model folders EMPTY — download CLI was a silent no-op) + `values.a` required missing (autogrow) |
 | Oct 7 | Root-caused v11: ran the exact CLI locally → exit 0, no output, no files; `inspect` showed no `__main__` guard | fixed: in-process `snapshot_download` + per-file size check; links now bypass the schema filter |
 | Oct 7 | v12 pushed | QUEUED — local dry-run green (27 nodes, autogrow link present, all links resolve) |
+| Oct 7 | v12: assets OK (5/5 files: 21 GB DiT, 15.7 GB TE, VAEs, lora), Comfy ready in 45 s, **`/prompt` accepted** (`prompt_id b5f94a63…`, `node_errors: {}`), sampling started | ✅ first run to pass validation in this lane; est. 30–45 min for the 20-step 1344×768 job |
+| Oct 7 | User asked to verify both GPUs are actually loaded; investigated available paths | outside access impossible (no Kaggle terminal, Comfy `127.0.0.1`-only until post-smoke tunnel, CLI logs lag while running). Pack logs the answer: `[GPUs] dit:` / `[MultiStream] active: 2 ranks` vs `UNSPLIT` |
+| Oct 7 | v13 built locally: `nvidia-smi -l 10` monitor + `[gpu]` lines in wait-cell snapshots + hard dual-GPU assertion | ✅ rebuilt, `ast`-clean, **NOT pushed** — waits for v12's outcome |
 
 ---
 
