@@ -6,14 +6,17 @@ features as this repo.
 ## The stack (current — Comfy lane)
 
 ```
-Comfy-Org/MiniMax-H3 on HF
-        │
-        ▼
+Comfy-Org/MiniMax-H3 on HF          Comfy-Org/flux1-schnell (image)
+        │                                    │
+        ▼                                    ▼
 Kaggle kernel (T4×2, internet on, 31.3 GB RAM)
         │
         ├─ ComfyUI (cloned @ main) + pinned requirements
-        ├─ ComfyUI-H3-MultiStream custom node  ← the 2-GPU split
+        ├─ ComfyUI-H3-MultiStream custom node  ← the 2-GPU split (video only)
         ├─ official workflow template (subgraph!) → converted to API prompt
+        ├─ flat flux template → image API prompt (modality branch in build_prompt)
+        ├─ use-case tasks: rembg (bg_remove/extract) + scipy + ffmpeg (video/audio)
+        │                  + Real-ESRGAN upscale through Comfy's GPU
         ├─ Comfy /prompt HTTP API on 127.0.0.1:8188
         ├─ hub API + proxy on 127.0.0.1:8190  (/h3api/* JSON + docs + WS passthrough)
         ├─ cloudflared quick tunnel → one public https://*.trycloudflare.com
@@ -94,13 +97,43 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       each check once with a generous timeout and print the exception's `reason`** (v16: a
       transient tunnel stall on two endpoints was indistinguishable from a slow handler because
       the bare `URLError` was all that got printed)
+- [ ] **One low-quality smoke per modality, schedule-driven** (v17): an env var (`H3_SMOKE`,
+      default `image,video`) defines the smoke order; the smoke cell loops it collecting
+      `SMOKE_JOBS=[(modality, prompt_id)]`, the wait cell gives each job its **own budget**
+      (fast modality 1800 s, slow 10800 s) and applies **modality-aware assertions** —
+      dual-GPU proof only when the multi-GPU modality ran, "output file exists" for the fast one.
+      Don't let a single-T4 image lane trip a video-mode `active: 2 ranks` assertion.
+- [ ] **Separate builder per workflow shape**: a flat template (flux) does not belong inside a
+      subgraph flattener — branch `build_prompt(cfg)` on `cfg["modality"]` and keep the verified
+      path untouched; share `load_info()` schema filtering, `widgets_values_named`, and the
+      Note/MarkdownNote skip between both branches
+- [ ] **Use-case tasks beside generation** (v17): `GET /h3api/tasks` (availability: binary
+      presence, model files, python deps) + `POST /h3api/task` with one handler per task;
+      CPU work in-process (rembg → `scipy.ndimage` connected components for the element
+      extractor; ffmpeg for frames/GIF/audio/trim/probe), **GPU work submitted to the runtime
+      and polled on `/history`** (Real-ESRGAN via `UpscaleModelLoader`); uniform envelope
+      `{ok, outputs:[data URLs], saved:[names], view:[URLs], meta}` with a **payload cap**
+      falling back to saved/view URLs; inputs = data URLs or paths **confined to the served
+      directory** (400 on escape); 503 with an availability hint when a dep is missing instead
+      of a stack trace. Pin the heavy dep (`rembg[cpu]==2.0.85`) and pick a **small default
+      model** (u2net 176 MB, not a 1 GB commercial one that can SIGKILL an 8 GB dev box).
+- [ ] **Put every runtime asset inside `models/` so the cache picks it up**: rembg weights via
+      `REMBG_HOME=/tmp/ComfyUI/models/rembg`, upscaler `.pth` in `models/upscale_models/` —
+      anything outside the inventory tree will silently re-download every boot.
+- [ ] **Repo-root files need relocation**: some HF repos store the checkpoint at the root, but
+      Comfy's combo lists category dirs — download with
+      `snapshot_download(..., local_dir=models/<category>)` and track those paths in one shared
+      set used by boot, `select`, and prune alike
 - [ ] **Double escapes meant for the notebook**: cell code with `"\n"` / `b"\r\n"` sits inside the
       build script's triple-quoted string, which consumes the backslashes — write `\\n` there, and
       `ast.parse` every **generated** cell (the build script parsing cleanly proves nothing)
 - [ ] **Local dry-run harness**: execute the notebook cells against a local CPU ComfyUI (start it
       with `--cpu` on CPU-only torch), confirm `/prompt` returns a `prompt_id`, **and exercise every
       HTTP endpoint you added** (happy paths, error codes, WS `101` handshake, chunked body, and the
-      write-back cell's `dry` policy) before pushing
+      write-back cell's `dry` policy) before pushing. **Never let big weights download locally**:
+      write 12-byte placeholders for every expected `.safetensors` at harness boot — and re-create
+      them right before any test that runs *after* your own prune/select tests (Comfy re-scans its
+      combo lists, so a pruned placeholder genuinely disappears from validation)
 - [ ] **Quality-first defaults**: turbo/TeaCache/Spectrum/FBC off (this template's switches default to dense 20-step)
 - [ ] **Public tunnel**: `cloudflared tunnel --url http://127.0.0.1:<hub-port>`, health-check the
       hub health endpoint **and** the runtime's `/history` through it (fall back to `:8188` direct
@@ -184,7 +217,8 @@ letting the notebook auto-detect the mount:
    (42 GB in 530 s, no manual `kaggle datasets create` needed)
 2. In the assets cell, **first** copy matching files out of `/kaggle/input/` into
    `/tmp/ComfyUI/models/<subdir>/`, keeping the exact directory layout ComfyUI expects
-   (`diffusion_models/`, `text_encoders/`, `vae/`, `loras/`)
+   (`diffusion_models/`, `text_encoders/`, `vae/`, `loras/`, `checkpoints/`,
+   `upscale_models/`, `rembg/` — v17 added image + task assets to the same inventory)
 3. Then run `snapshot_download(...)` only for files **still missing**, and print the size of
    every file afterwards (exit code 0 proves nothing — a silent no-op "succeeds" too)
 4. Write a `MANIFEST.json` of what actually landed (name, size, present)

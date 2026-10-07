@@ -15,24 +15,22 @@ reconstruct the whole project after a context loss.
 **Date:** Oct 7 2026
 **Owner:** adityahalde8777
 **Kaggle kernel:** `adityahalde8777/minimax-h3-comfy-2xt4-generator` (the ONLY kernel; old lanes deleted)
-**Latest:** **v16 VERIFIED on Kaggle (Phase B closed)**: 32.9-min run (1972 s), zero errors —
-write-back **fixed and first dataset created**: `in-kaggle-notebook: True` →
-`cache owner: adityahalde8777 (via kagglehub.whoami)` → `staged 5 model files` →
-`kagglehub upload OK -> adityahalde8777/minimax-h3-model-cache (530 s)` (42 GB, ~80 MB/s, v15's
-`SKIP upload` gone). Pub self-test live through the tunnel: 7/9 GETs `200`, deliberate `404
-/h3api/nope`, `200 POST /h3api/settings` — only `/h3api/outputs` + `/h3api/gpus` returned
-`URLError` (transient trycloudflare stall on the two OS-work handlers; **v17 fix: retry-once +
-30 s timeout + print `e.reason`**). Smoke: `prompt_id 1964b47f… node_errors {}`,
-**194.4–195.9 s/step × 4** (fastest yet), `DUAL-GPU CONFIRMED`, MP4 out, READY +
-`Verified public endpoint: https://claimed-maintain-kate-stroke.trycloudflare.com`. Probe showed
-`kagglehub probe: BackendError; cli rc=1 403` = correct first-run behavior (dataset didn't exist
-at probe time); v17 must confirm probe-OK → skip-upload on the second boot.
-Also this session: **disk hygiene** — home was 96% full (4.8 GB); pip+npm caches purged (1.7 GB
-freed), all caches redirected to `/tmp` (`XDG_CACHE_HOME`/`PIP_CACHE_DIR`/`HF_HOME`/npm),
-and **Colab is the remote machine** (CLI session `hub` READY: `colab exec/upload/download`);
-home holds only project files.
-Next: **Phase C image lane (v17)** — `modality` branch in `build_prompt`, flux registry entries,
-image presets, smoke→PNG, modality-aware dual-GPU assertion + the self-test retry fix.
+**Latest:** **v17 PUSHED (image lane + task engine), run in progress**: local CPU dry-run
+**59/59 ALL TESTS PASSED** — image smoke builds a 7-node flat flux prompt (`node_errors {}` in
+dry-run submit), all 8 tasks verified end-to-end (`bg_remove` alpha extent, `extract` bbox,
+`upscale 4× → 1024²` via GPU-through-Comfy path, video_frames/gif, audio_extract/trim, probe,
+path-escape 400), pub cell now prints **`TASK SMOKE PASSED`** after retry-once probes. v17 scope:
+`modality` branch in `build_prompt` (`_build_image` on `flux_schnell.json`, KSampler 4 steps cfg 1,
+`Checkpoints` prune dir added), preset `image_smoke`, `H3_SMOKE="image,video"` schedule with
+image-first + modality-aware dual-GPU assertion, registry `image`/`image_community`/`extras`
+sections, `GET /h3api/tasks` + `POST /h3api/task` engine (rembg `bg_remove`/`extract`,
+RealESRGAN `upscale`, ffmpeg `video_frames`/`video_gif`/`audio_extract`/`audio_trim`/`probe`),
+pub retry fix (`e.reason` visible), `REMBG_HOME=/tmp/ComfyUI/models/rembg` (dataset-cached).
+Boot adds ~17 GB flux + 176 MB u2net + 67 MB ESRGAN to the 41 GB video set (/tmp has 1070 GiB);
+write-back will drift → second cache upload expected. Prior verified baseline: **v16** (32.9 min,
+194–196 s/step × 4, dual-GPU, first 42 GB dataset upload). Local test assets ready: static
+ffmpeg/ffprobe `/tmp/bin`, `rembg[cpu]` + u2net/u2netp, RealESRGAN `.pth`.
+Next: watch v17 → verify → six-MD pass → music lane (v18), transcription (v19).
 
 ---
 
@@ -43,10 +41,11 @@ The product is an **all-in-one generation hub** on one public Base URL, not just
 | Modality | Models (candidates) | Status |
 |---|---|---|
 | **Video generation** | MiniMax H3 (FL2VA/Ref2VA, turbo/dense), H3-Max-style variants | ✅ H3 lane in production |
-| **Image generation** | Flux family (Comfy-Org repos), community Fluxes | ⬜ Phase C |
-| **Music generation** | `audio_minimax_music_3` Comfy template (MinimaxMusic), LTx community | ⬜ Phase C |
+| **Image generation** | Flux family (Comfy-Org repos), community Fluxes | 🔄 **v17 built** (flux schnell fp8 + tasks), run in progress |
+| **Image/audio use-case tasks** | bg remover, element extractor, upscaler, frame/GIF/audio tools | 🔄 **v17 built** (`/h3api/task`), dry-run verified |
+| **Music generation** | `audio_minimax_music_3` Comfy template (MinimaxMusic), LTx community | ⬜ Phase C (v18) |
 | **Sound / soundtrack** | H3 native audio track (already joint audio+video), music models | ⬜ Phase C |
-| **Transcription (ASR)** | to research (Whisper-class on Comfy / community) | ⬜ Phase C research |
+| **Transcription (ASR)** | to research (Whisper-class on Comfy / community) | ⬜ Phase C research (v19) |
 | **Text generation** | ❌ explicitly NOT needed | — |
 
 Requirements distilled from user messages:
@@ -224,15 +223,42 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
    MP4 out → **Phase B VERIFIED**
 
 ### Phase C — modalities (v16+, one low-quality smoke each, in order)
-1. ⬜ **Image generation** — **researched ✅**: template `flux_schnell.json` (Comfy-Org/
-   workflow_templates) = 9 flat nodes, **no subgraph**, KSampler `4 steps, cfg 1, euler/simple`,
-   latent 1024², `CheckpointLoaderSimple` → **`Comfy-Org/flux1-schnell` /
-   `flux1-schnell-fp8.safetensors` (17.24 GB, ONE file)**; flat conversion reuses the existing
-   flattener + schema filter (MarkdownNote/Note auto-dropped), just skip the H3 subgraph/turbo/
-   MultiStream inserts → `build_prompt(cfg)` gets a `modality` branch; **single T4** (Comfy
-   offload — MultiStream is H3-only ⇒ wait-cell dual-GPU assertion must be modality-aware);
-   upgrade path: Flux2 klein 4B distilled (`image_flux2_klein_*` templates), Qwen-Image 20B too
-   big for T4
+1. 🔄 **Image generation + use-case tasks (v17, PUSHED — awaiting Kaggle verification)** —
+   **researched ✅ + built ✅**: template `flux_schnell.json` (Comfy-Org/workflow_templates) =
+   9 flat nodes, **no subgraph**, KSampler `4 steps, cfg 1, euler/simple`, latent 1024²,
+   `CheckpointLoaderSimple` → **`Comfy-Org/flux1-schnell` / `flux1-schnell-fp8.safetensors`
+   (17.24 GB, ONE file at repo root → downloaded into `models/checkpoints/`)**. Design shipped:
+   - `build_prompt(cfg)` branches on `cfg["modality"]` → `_build_image` (separate flat converter
+     reusing `load_info()` schema filter; Note/MarkdownNote skipped; `widgets_values_named`
+     set for prompt (positive CLIPTextEncode via KSampler `positive` link origin), empty
+     negative, ckpt/latent/sampler/seed/steps/cfg); no MultiStream/no turbo on image.
+   - Preset `image_smoke` (1024², 4 steps, cfg 1, euler/simple, `h3_image` SaveImage prefix);
+     `required_files` branches (`checkpoints` category); `PRUNE_DIRS` += `checkpoints`
+     (selecting video prunes flux and vice versa).
+   - Smoke schedule `H3_SMOKE="image,video"` (default; override to `"video"` to skip flux):
+     image first (fast fail → PNG), wait cell polls a **`SMOKE_JOBS` list** with per-modality
+     budgets (image 1800 s / video 10800 s) and **modality-aware assertions** (dual-GPU proof
+     only when the video smoke ran; image smoke must produce a PNG).
+   - Boot download ≈ 58 GB (41 GB video + 17.24 GB flux) + task assets (u2net 176 MB, ESRGAN
+     67 MB) — `/tmp` has 1070 GiB on Kaggle; write-back drifts → second dataset upload expected.
+   - **Use-case task engine** `GET /h3api/tasks` + `POST /h3api/task` (8 tasks):
+     `bg_remove` (rembg → transparent PNG; default `u2net`, models: u2net/u2netp/
+     isnet-general-use/u2net_human_seg/birefnet-*; `REMBG_HOME=/tmp/ComfyUI/models/rembg` so
+     models land inside `models/` and get dataset-cached), `extract` (element extractor:
+     rembg mask → `scipy.ndimage` 8-connected components → top-N element crops + bboxes +
+     optional mask), `upscale` (RealESRGAN_x4plus.pth via Comfy `UpscaleModelLoader` +
+     `ImageUpscaleWithModel`, synchronous history poll ≤300 s), `video_frames`, `video_gif`,
+     `audio_extract`, `audio_trim`, `probe` (ffmpeg/ffprobe, `shutil.which` + `/tmp/bin` fallback,
+     graceful 503 if missing). Inputs = data URLs or `<key>_path` (confined to `/tmp/ComfyUI`).
+     Uniform envelope `{ok, outputs:[dataURL], saved:[names], view:[/view URLs], meta}`;
+     ≤25 MB payloads fall back to saved/view URLs.
+   - **Pub self-test**: GET probes get retry-once + 30 s timeout + `e.reason` (v16 blind
+     `URLError` fixed), `/h3api/tasks` added, then a **task smoke through the tunnel**
+     (bg_remove/extract/upscale on the newest PNG = required, video_frames on the smoke MP4 =
+     warn-only) → prints `TASK SMOKE PASSED`.
+   - Local CPU dry-run **59/59 ALL TESTS PASSED** (incl. real upscale 256→1024², alpha extent,
+     bbox sanity, path-escape 400, sync dry). Upgrade path: Flux2 klein 4B distilled, Qwen-Image
+     20B too big for T4
 2. ⬜ **Music generation** — **researched ✅**: template `audio_minimax_music_3.json` = subgraph
    "Text to Music (MiniMax Music 3)" (flattener applies), instance widgets = caption + lyrics +
    max_duration 60 + seed + loaders; KSampler `30 steps, cfg 1.7`; models from
@@ -316,6 +342,15 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 7 | Self-test GETs get **retry-once + 30 s timeout + print `e.reason`** (v17) | v16: `/outputs`+`/gpus` returned bare `URLError` — reason was swallowed, so a tunnel stall and a slow handler were indistinguishable |
 | Oct 7 | **Local caches redirected to `/tmp`** (`XDG_CACHE_HOME`, `PIP_CACHE_DIR`, `HF_HOME`, npm cache, `TMPDIR` in `.bashrc`/`.profile`) | home partition is only 4.8 GB and hit 96%; `/tmp` lives on the 119 GB root disk |
 | Oct 7 | **Colab CLI session (`hub`) = remote compute**; home directory holds project files only (user directive) | heavy jobs (installs, dry-runs, tests) must not consume home disk; Colab gives 107 GB + torch for free |
+| Oct 7 | **Image lane = separate `_build_image(cfg)`**, not the H3 subgraph flattener (v17) | `flux_schnell.json` is already flat (9 nodes); keeping the verified video path untouched is worth ~30 lines of dedicated converter |
+| Oct 7 | **`H3_SMOKE` schedule (default `image,video`, image first)** + `SMOKE_JOBS` list + per-modality budgets (1800 s / 10800 s) + **modality-aware assertions** (dual-GPU proof only if video ran; image must yield a PNG) | user rule: one low-quality smoke per modality; image first = fastest fail signal and its PNG feeds the task self-test; flux runs single-T4 so the `active: 2 ranks` assertion must not fire on image-only boots |
+| Oct 7 | **Task engine = in-process for CPU work (rembg + scipy + ffmpeg), GPU only via Comfy** (`UpscaleModelLoader` → synchronous `/history` poll ≤300 s) | keeps tasks fast and dependency-light; only upscale needs the GPU; a Comfy-executed upscale reuses the existing validated queue path |
+| Oct 7 | Pin **`rembg[cpu]==2.0.85`**, default model **`u2net`** (explicitly not rembg's own default `bria-rmbg`) | 2.0.85 verified locally (new `new_session`/`REMBG_HOME` API); bria-rmbg = 1.02 GB download + SIGKILL on the 8 GB local box + license ambiguity; u2net = 176 MB, well-understood license |
+| Oct 7 | `REMBG_HOME=/tmp/ComfyUI/models/rembg` | segmentation weights must live **inside `models/`** so the inventory → hardlink staging → dataset cache picks them up automatically |
+| Oct 7 | Flux root file downloaded with `snapshot_download(..., local_dir=models/checkpoints)`; `IMG_FILES` set shared by boot, `/h3api/download`, and prune | repo stores `flux1-schnell-fp8.safetensors` at the ROOT, but Comfy's combo lists category dirs — relocate at download time; prune `checkpoints` like the other model dirs |
+| Oct 7 | Task response envelope: `{ok, task, outputs:[data URLs], saved:[names], view:[/view URLs], meta}` with a **25 MB payload cap** falling back to saved/view | data URLs are the easiest client UX; unbounded base64 (4096² upscale = ~55 MB) would make responses unpredictable |
+| Oct 7 | Pub self-test **requires** bg_remove/extract/upscale to pass, video tasks warn-only | image tasks are the core v17 feature (fail the run loudly); ffmpeg availability varies by image, so video tasks must not fail a healthy run |
+| Oct 7 | Local dry-run recreates 12-byte weight placeholders **at boot and before the image generate test** | the select-prune test legitimately deletes `checkpoints/flux…` mid-run (Comfy re-scans the combo list), and only 11 GB disk is free locally — never let assets see a missing flux file |
 
 ---
 
@@ -364,6 +399,9 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 7 | **v16 VERIFIED on Kaggle — Phase B complete**: 32.9 min / zero errors; `in-kaggle-notebook: True`; `cache owner: adityahalde8777 (via kagglehub.whoami)`; `staged 5 model files`; **`kagglehub upload OK -> adityahalde8777/minimax-h3-model-cache (530 s)`** (42 GB first-time create); self-test 7/9 `200` + `404 /h3api/nope` + `200 POST /h3api/settings`; smoke `prompt_id 1964b47f… node_errors {}`, **194.4–195.9 s/step × 4**, `DUAL-GPU CONFIRMED`, MP4 out; only `/h3api/outputs`+`/gpus` URLError (tunnel transient → v17 retry fix) | ✅ logs `/tmp/opencode/v16_stdout.txt`; all six MDs updated |
 | Oct 7 | **Disk hygiene** (user: home dir 96% full): purged pip cache (919 MB) + npm cache (811 MB) → home 96%→59%; redirected `XDG_CACHE_HOME`/`PIP_CACHE_DIR`/`HF_HOME`/npm cache/`TMPDIR` to `/tmp` via `.bashrc`/`.profile` | ✅ |
 | Oct 7 | **Colab = remote machine** (user directive: home only for files): Colab CLI session `hub` created + probed (`colab exec` runs code: Python 3.13, 107 GB disk, torch CPU); heavy compute (dry-runs, testing) goes to Colab, home keeps repo files only | ✅ |
+| Oct 7 | **v17 local test assets**: `rembg[cpu]` + onnxruntime (u2netp/u2net warmed under `REMBG_HOME`), `RealESRGAN_x4plus.pth` (67 MB → `models/upscale_models/`), static ffmpeg+ffprobe 7.0.2 → `/tmp/bin`, 12-byte flux placeholder → `models/checkpoints/` | ✅ (rembg default bria-rmbg 1.02 GB SIGKILL'd the 8 GB box → switched to u2net) |
+| Oct 7 | **v17 built** (image branch + task engine + smoke schedule + pub retry/task smoke) → `ast`-validated 14 cells → local dry-run **59/59 ALL TESTS PASSED** (incl. real `upscale 4× 256→1024²`, bg_remove alpha extent, extract bbox, 8 tasks, path-escape 400, pub `TASK SMOKE PASSED`) | ✅ two dry-run bugs fixed en route: `T_upscale` forgot the `{"prompt": …}` wrapper; image generate test ran after the prune test deleted the flux placeholder |
+| Oct 7 | **v17 pushed** (kernel version 17) — image lane + use-case tasks + self-test retry | RUNNING — watching; success = image smoke PNG + task smoke green + video dual-GPU + second dataset upload (flux drift) |
 
 ---
 

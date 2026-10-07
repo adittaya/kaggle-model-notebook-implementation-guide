@@ -99,6 +99,33 @@
   `DUAL-GPU CONFIRMED: active: 2 ranks`, `smoke status: success`, MP4 out, READY +
   `Verified public endpoint: https://claimed-maintain-kate-stroke.trycloudflare.com`.
 
+### v17 — image lane + use-case task engine (Phase C start) — PUSHED, run in progress
+- **Scope**: the hub stops being video-only. `build_prompt()` branches on `modality`; the image
+  branch converts the flat `flux_schnell.json` template (CheckpointLoaderSimple / CLIPTextEncode ×2 /
+  EmptySD3LatentImage / KSampler 4 steps cfg 1 euler/simple / SaveImage, 1024²) reusing the same
+  `load_info()` schema filter and `widgets_values_named` handling. Preset `image_smoke`;
+  `PRUNE_DIRS` gains `checkpoints` so video⇄flux selection prunes the other lane's weights.
+- **Smoke schedule** `H3_SMOKE` (default `image,video`): one low-quality smoke per modality,
+  image first (fast fail → PNG), wait cell polls a `SMOKE_JOBS` list with per-modality budgets
+  (1800 s / 10800 s) and modality-aware assertions (dual-GPU proof only if video ran; the image
+  lane legitimately runs single-T4 with Comfy offload).
+- **Task engine** `GET /h3api/tasks` + `POST /h3api/task` (8 tasks): `bg_remove`, `extract`
+  (rembg u2net mask → `scipy.ndimage` components → element crops + bboxes), `upscale`
+  (RealESRGAN_x4plus through Comfy's GPU, synchronous `/history` poll ≤300 s), `video_frames`,
+  `video_gif`, `audio_extract`, `audio_trim`, `probe`. Inputs = data URLs or paths confined to
+  `/tmp/ComfyUI`; envelope `{ok, outputs, saved, view, meta}` with a 25 MB payload cap.
+- **Boot grows to ≈58 GB** (41 GB video + 17.24 GB flux) + 176 MB u2net + 67 MB ESRGAN;
+  `/tmp` has 1070 GiB on Kaggle, and write-back drift ⇒ a second dataset upload is expected.
+- **Local dry-run: 59/59 ALL TESTS PASSED** before push — including a *real* upscale
+  (256² → 1024² CPU), bg_remove alpha extent, extract bbox sanity, path-escape 400, image
+  generate through the full handler, and the pub cell printing `TASK SMOKE PASSED`.
+- Two dry-run bugs fixed en route (both caught by the harness, not the notebook):
+  `T_upscale` posted the node dict **without** the `{"prompt": …}` wrapper (`no_prompt`), and the
+  image generate test ran *after* the prune test had legitimately deleted the flux placeholder
+  (`value_not_in_list` — Comfy re-scans combo lists, so prune is real) → harness now restores
+  placeholders right before that test. Pub GET probes gained retry-once + 30 s timeout +
+  `e.reason` (v16's blind `URLError`).
+
 ## 2026-10-07 — retired lanes (kept for history)
 
 ### API lane (`minimax-h3-api-server`, deleted)
