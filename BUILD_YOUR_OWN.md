@@ -15,7 +15,9 @@ Kaggle kernel (T4×2, internet on, 31.3 GB RAM)
         ├─ ComfyUI-H3-MultiStream custom node  ← the 2-GPU split
         ├─ official workflow template (subgraph!) → converted to API prompt
         ├─ Comfy /prompt HTTP API on 127.0.0.1:8188
-        ├─ cloudflared quick tunnel → public https://*.trycloudflare.com
+        ├─ hub API + proxy on 127.0.0.1:8190  (/h3api/* JSON + docs + WS passthrough)
+        ├─ cloudflared quick tunnel → one public https://*.trycloudflare.com
+        │     Comfy UI + native /prompt + /h3api/* share the same Base URL
         └─ everything in /tmp (session-only)
 ```
 
@@ -66,10 +68,32 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       on every boot and print availability (`local`/`cached`/`remote`) — new files/repos appear
       without a code change; cache `/kaggle/input` hits as symlinks (instant mirror), HF download
       only the missing files, then write `MANIFEST.json`
+- [ ] **One public Base URL, three planes**: a stdlib `ThreadingHTTPServer` in front of the runtime —
+      `/h3api/*` management JSON + an HTML docs page, everything else **piped** to the runtime
+      (raw **WebSocket** bidirectional pipe, chunked request bodies, CORS); tunnel *that* port and
+      health-check **both** planes through the tunnel before printing READY; a kill-switch env var
+      (`H3_API=0`) falls back to tunneling the runtime directly
+- [ ] **Settings surface as an API, one builder two callers**: expose preset/override/seed/frame
+      conditioning via `POST /generate` built on the **same** `build_prompt()` the smoke cell uses
+      — never duplicate the conversion logic in the server
+- [ ] **Model lifecycle endpoints**: `select` = download the new set async **and prune superseded
+      `.safetensors`** (previous model never lingers); `import` = raw-bytes upload streamed to disk
+      with a free-space guard + path-traversal rejection
+- [ ] **Dataset write-back that can never kill the run**: stage with **hardlinks** (≈0 extra disk,
+      symlink targets preserved), compare a remote `MANIFEST.json` for drift instead of re-uploading
+      blindly, **size-cap and auto-skip** (200 GB here), and wrap the entire cell in try/except —
+      policy switch (`auto|always|dry|never`) via env var
+- [ ] **Double escapes meant for the notebook**: cell code with `"\n"` / `b"\r\n"` sits inside the
+      build script's triple-quoted string, which consumes the backslashes — write `\\n` there, and
+      `ast.parse` every **generated** cell (the build script parsing cleanly proves nothing)
 - [ ] **Local dry-run harness**: execute the notebook cells against a local CPU ComfyUI (start it
-      with `--cpu` on CPU-only torch) and confirm `/prompt` returns a `prompt_id` before pushing
+      with `--cpu` on CPU-only torch), confirm `/prompt` returns a `prompt_id`, **and exercise every
+      HTTP endpoint you added** (happy paths, error codes, WS `101` handshake, chunked body, and the
+      write-back cell's `dry` policy) before pushing
 - [ ] **Quality-first defaults**: turbo/TeaCache/Spectrum/FBC off (this template's switches default to dense 20-step)
-- [ ] **Public tunnel**: `cloudflared tunnel --url http://127.0.0.1:8188`, health-check `/history`
+- [ ] **Public tunnel**: `cloudflared tunnel --url http://127.0.0.1:<hub-port>`, health-check the
+      hub health endpoint **and** the runtime's `/history` through it (fall back to `:8188` direct
+      if the hub failed to start)
 - [ ] **Guarded cleanup**: only act on `H3_SHUTDOWN=1`
 
 ## 2×T4 guide (Kaggle)
@@ -151,3 +175,12 @@ letting the notebook auto-detect the mount:
 3. Then run `snapshot_download(...)` only for files **still missing**, and print the size of
    every file afterwards (exit code 0 proves nothing — a silent no-op "succeeds" too)
 4. Write a `MANIFEST.json` of what actually landed (name, size, present)
+5. **v15 automates the upload half**: a `sync` cell inventories local models, checks the remote
+   `MANIFEST.json` for drift, hardlink-stages and pushes back with
+   `kaggle datasets create/version` — policy via `H3_CACHE_UPLOAD=auto|always|dry|never`,
+   **200 GB cap auto-skips**, and *any* failure prints and continues (the run never dies on it).
+   CLI gotchas: `datasets version` has **no `-d`** — it reads `dataset-metadata.json`
+   (`{title, id, licenses}`) from the `-p` folder; `datasets list` CSV flag is `-v`;
+   existence probe = `kaggle datasets metadata <owner>/<slug>`.
+   One-time manual step: attach the created dataset to the kernel (Add Data) so `/kaggle/input`
+   holds it — next boots then mirror it via symlink instead of downloading.

@@ -1,9 +1,11 @@
 # MiniMax H3 Kaggle Generator — Comfy 2×T4
 
 Deploy a **MiniMax H3** video/audio generator on Kaggle's free `T4 ×2` machine.
-Single lane, single kernel: `adityahalde8777/minimax-h3-comfy-2xt4-generator` (**current build v14**:
-dynamic model registry + Kaggle Dataset auto-cache + preset settings; **fast smoke = 4-step turbo
-LoRA @ 864×480**; dual-GPU verified in v13 — `active: 2 ranks cuda:0+cuda:1`, both T4s 100 % / ~66 W).
+Single lane, single kernel: `adityahalde8777/minimax-h3-comfy-2xt4-generator` (**current build v15**:
+dynamic model registry + Kaggle Dataset auto-cache + preset settings + **`/h3api/*` hub API** behind
+one public Base URL; **fast smoke verified in v14** = 4-step turbo LoRA @ 864×480, 210 s/step,
+whole run 25.6 min, real MP4 out; dual-GPU verified in v13/v14 — `active: 2 ranks cuda:0+cuda:1`,
+both T4s 100 % / ~65 W).
 
 - **Runtime:** ComfyUI + `ComfyUI-H3-MultiStream` — the H3 transformer split across both T4s
   (`exchange="host"`, `exchange_chunks=8`, caches off for the 31 GB RAM box)
@@ -14,9 +16,15 @@ LoRA @ 864×480**; dual-GPU verified in v13 — `active: 2 ranks cuda:0+cuda:1`,
 - **Settings:** `PRESETS` cell — `fast_smoke` (turbo ON, 4 steps, 0.4 MP = 864×480) and `quality`
   (dense 20 steps, 0.98 MP = 1344×768); no negative prompt (H3 is CFG-distilled)
 - **Workflow:** official `video_minimax_h3_t2v.json`, flattened to API prompt + `H3MultiStream`
-  inserted before `BasicGuider`/`BasicScheduler`
+  inserted before `BasicGuider`/`BasicScheduler`; shared `build_prompt()` also wired for
+  first/last-frame conditioning (data-URL → `LoadImage` → subgraph input)
+- **Hub API (v15):** one tunnel → proxy on `:8190` serves the ComfyUI UI, the native `/prompt`
+  API **and** `/h3api/*` (docs, health, catalog `?refresh=1`, models, settings, select, download,
+  generate, jobs, outputs, free, gpus, import) with WebSocket passthrough
+- **Write-back (v15):** downloaded models staged (hardlinks) and pushed back to a Kaggle Dataset
+  (`MiniMax H3 model cache`) — **200 GB cap auto-skips, never fails the run**
 - **Output:** runs a real smoke generation on both GPUs, then prints a public Base URL +
-  `/prompt` endpoint (cloudflared quick tunnel)
+  hub endpoints (cloudflared quick tunnel)
 
 ## Quick start
 

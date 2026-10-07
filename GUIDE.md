@@ -29,10 +29,13 @@
 | 4 | **registry** | **live HF catalog**: full `Comfy-Org/MiniMax-H3` tree (39 files: 12 DiT / 3 TE / 3 VAE / 3 LoRA / 4 ControlNet / 10 embeddings) + 100 community repos, each file status `local`/`cached`/`remote`; scans `/kaggle/input` cache; writes `/tmp/h3_registry.json` — new upstream files/repos auto-list every boot |
 | 5 | **settings** | `PRESETS` + `ACTIVE`: `fast_smoke` = turbo ON, **4-step LoRA, 0.4 MP → 864×480**; `quality` = dense 20 steps, 0.98 MP → 1344×768; prints the exact 5 required files |
 | 6 | assets | **preset-selective**: mirror `/kaggle/input` hits via symlink (instant), HF `snapshot_download` only the missing files, **print `OK <bytes>` per file and raise if any is missing**, write `MANIFEST.json` + fetch the T2V template |
-| 7 | start | launch ComfyUI `--preview-method latent2rgb`, wait for `:8188`; start a background `nvidia-smi -l 10` monitor → `/tmp/gpus.log` |
-| 8 | submit | **apply ACTIVE settings** to the workflow (instance widgets + ResolutionSelector), convert saved workflow → API prompt (flatten subgraph), arm-check turbo (`PrimitiveBoolean → steps 4 + LoRA`), insert `H3MultiStream`, `POST /prompt` |
-| 9 | wait | poll `/history/<id>` up to **3 h**, every 120 s print comfy.log tail (tqdm ETA) + new **`[h3ms]` diagnostics** (`[GPUs]` plan, `active: 2 ranks`, per-step times) + **`[gpu]` nvidia-smi util lines**; **early raise on `UNSPLIT`**; fail on execution errors; final **assert dual-GPU** (raise unless `active: 2 ranks`) |
-| 10 | pub | cloudflared quick tunnel, verify `/history` returns 200, print READY block |
+| 7 | **convert** | shared prompt builder `build_prompt(cfg)` — applies settings (instance widgets + ResolutionSelector), optional **first/last-frame conditioning** (data-URL → `LoadImage` nodes 9001/9002 → subgraph inputs), flattens the subgraph, arm-checks turbo, inserts `H3MultiStream`; used by both the smoke cell and the hub API |
+| 8 | start | launch ComfyUI `--preview-method latent2rgb`, wait for `:8188`; start a background `nvidia-smi -l 10` monitor → `/tmp/gpus.log` |
+| 9 | **api** | **hub API + reverse proxy on `:8190`** (stdlib `ThreadingHTTPServer`): `/h3api/*` JSON endpoints + everything else piped to ComfyUI — HTTP **and** WebSocket (raw bidirectional pipe), chunked bodies, CORS; `H3_API=0` disables (pub then tunnels `:8188` directly) |
+| 10 | smoke | `build_prompt(ACTIVE)` → `POST /prompt` with `preview_method: latent2rgb` (prints build meta incl. turbo/node counts) |
+| 11 | wait | poll `/history/<id>` up to **3 h**, every 120 s print comfy.log tail (tqdm ETA) + new **`[h3ms]` diagnostics** (`[GPUs]` plan, `active: 2 ranks`, per-step times) + **`[gpu]` nvidia-smi util lines**; **early raise on `UNSPLIT`**; fail on execution errors; final **assert dual-GPU** (raise unless `active: 2 ranks`) |
+| 12 | pub | cloudflared quick tunnel → `:8190` (the hub), verify **both** `/history` and `/h3api/health` return 200, print READY block (Base URL + hub docs/generate/settings URLs); falls back to direct `:8188` if the hub failed to start |
+| 13 | **sync** | **Kaggle Dataset write-back** (`H3_CACHE_UPLOAD=auto\|always\|dry\|never`): inventory local models → **200 GB cap auto-skip** + disk guard → probe `<user>/minimax-h3-model-cache` (slug, then title search) → manifest-drift check against the remote `MANIFEST.json` → hardlink-stage (≈0 disk) → `kaggle datasets create/version`; **whole cell try/except — a failure never fails the run** |
 
 ### Model files staged (preset-selective — `fast_smoke` needs exactly these 5)
 
@@ -55,6 +58,28 @@ Resolution order per file: **already local → `/kaggle/input` dataset cache (sy
   after the model switch → `BasicGuider` + `BasicScheduler`
 - POST body carries `extra_data: {"preview_method": "latent2rgb"}`
 - **No negative prompt exists for H3** (CFG-distilled): prompt + optional first/last frame only
+
+### Hub API behind the same Base URL (v15)
+
+Every response is JSON `{"ok": true, ...}` / `{"ok": false, "error": "..."}`; full HTML reference
+at `GET /h3api/docs`.
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /h3api/health` | API + Comfy liveness, uptime, active preset |
+| `GET /h3api/catalog[?refresh=1]` | HF catalog with `local/cached/remote`; `refresh` re-queries HF live |
+| `GET /h3api/models` | on-disk files + sizes + sources + MANIFEST |
+| `GET`/`POST /h3api/settings` | presets + active settings; POST `{"preset":...}` / `{"set":{...}}` |
+| `POST /h3api/select` | switch model: downloads the new set async, **prunes superseded files** (`"prune":false` keeps them) |
+| `POST`/`GET /h3api/download` | fetch files now / download status |
+| `POST /h3api/generate` | `{prompt, preset?, set?, seed?, first_frame?, last_frame?}` → `202` + `prompt_id` |
+| `GET /h3api/jobs` | queue + last 25 history jobs |
+| `GET /h3api/outputs` | generated files + `/view` URLs |
+| `POST /h3api/free` | unload models from GPU |
+| `GET /h3api/gpus` | nvidia-smi snapshot |
+| `POST /h3api/import?path=loras/x.safetensors` | raw-bytes model upload (disk-guarded) |
+
+Native Comfy (`POST /prompt`, `GET /history`, `GET /ws`, `/view`, the web UI) is proxied unchanged.
 
 ## If it fails
 

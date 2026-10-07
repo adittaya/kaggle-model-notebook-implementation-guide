@@ -15,10 +15,13 @@ reconstruct the whole project after a context loss.
 **Date:** Oct 7 2026
 **Owner:** adityahalde8777
 **Kaggle kernel:** `adityahalde8777/minimax-h3-comfy-2xt4-generator` (the ONLY kernel; old lanes deleted)
-**Latest:** **v14 PUSHED** (dry-run green locally): dynamic registry + Dataset auto-cache +
-preset settings (`fast_smoke` = 4-step turbo @ 864×480), `/prompt` accepted offline
-(`prompt_id 918c50eb…`). **v13 still RUNNING** (dual-GPU verified live: `active: 2 ranks
-cuda:0+cuda:1`, both T4s 100 %/66 W). Next: watch v14's fast smoke → READY block.
+**Latest:** **v15 PUSHED** (all-local dry-run green): enterprise hub API + proxy (`/h3api/*` docs/
+health/catalog/models/settings/select/download/generate/jobs/outputs/free/gpus/import + WS
+passthrough on one tunnel) + Kaggle Dataset write-back (200 GB cap auto-skip, never fails) +
+shared `build_prompt()` with first/last-frame conditioning. **v14 VERIFIED on Kaggle**: 25.6-min
+run, fast smoke **210 s/step × 4**, dual-GPU (`active: 2 ranks`), real MP4, READY block, zero
+errors. Kernel currently RUNNING (v15 watch). Next: capture v15 run (hub READY URLs + sync
+behavior), then Phase C (image modality smoke).
 
 ---
 
@@ -161,7 +164,7 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 
 ## Phased plan (proper to-do)
 
-### Phase A — v14: dynamic foundation + fast verified smoke (PUSHED — watching)
+### Phase A — v14: dynamic foundation + fast verified smoke (✅ VERIFIED ON KAGGLE)
 1. ✅ **Registry cell**: live HF tree + community search → grouped catalog with
    `local/cached/remote` status — new files/repos auto-list every boot
 2. ✅ **Settings cell**: `PRESETS` + `ACTIVE` (`fast_smoke`: turbo ON, 4-step lora, 0.4 MP =
@@ -171,17 +174,33 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 4. ✅ Converter applies `ACTIVE` (instance widgets + ResolutionSelector); wait cap → 3 h;
    dual-GPU verification retained
 5. ✅ Local CPU-Comfy dry-run of the turbo prompt → **`/prompt` accepted** → pushed v14
-6. ⬜ Watch v14 smoke → capture READY block (Base URL + `/prompt` endpoint) + step timings
+6. ✅ **v14 run COMPLETE (25.6 min, zero errors)**: 5/5 files OK (41.03 GB) → turbo armed
+   (`PrimitiveBoolean ['1021']`) → `prompt_id 67580883…`, `node_errors {}` → `active: 2 ranks
+   cuda:0+cuda:1, 50 blocks, heads 28/28` → **209.6–210.9 s/step × 4** (4.1× vs 861 s/step dense)
+   → MP4 `MiniMax_H3_00001_.mp4` → READY block with Base URL printed; exchange ≈6 % of step
+   time ⇒ dense slowness is T4 compute, not split overhead
 
-### Phase B — enterprise hybrid API (v15)
-1. ⬜ Sidecar (`/h3api/*`) + reverse proxy (WebSocket passthrough for Comfy UI) behind the ONE tunnel
-2. ⬜ Endpoints: `/h3api/catalog`, `/models`, `/settings` GET/POST, `/download`, `/select`
-   (download-on-demand → Comfy `/free` unload → optional purge = clean space/GPU),
-   `/generate`, `/jobs`, `/outputs`, `/free`, `/import` (custom repo download = "upload"),
-   `/gpus` (live nvidia-smi + MultiStream evidence)
-3. ⬜ World-class JSON: consistent envelope (ok/error/code/message), job objects, presets echo
-4. ⬜ Docs: `GET /h3api/docs` (served markdown/OpenAPI) + repo `API.md` — every endpoint + helper
-5. ⬜ Kaggle Dataset write-back with **200 GB cap guard** (auto-skip when full, log + continue)
+### Phase B — enterprise hybrid API (v15) — ✅ BUILT + DRY-RUN GREEN + PUSHED (watching)
+1. ✅ Sidecar cell (`api`): stdlib `ThreadingHTTPServer` on `:8190` serves `/h3api/*`
+   **and** reverse-proxies everything else to Comfy `:8188` — raw bidirectional WebSocket pipe,
+   chunked bodies, hop-by-hop header strip, CORS; one tunnel carries Comfy UI + native API + hub;
+   `H3_API=0` disables (pub falls back to direct `:8188`)
+2. ✅ Endpoints all live: `/h3api/` index, `/docs` (HTML), `/health`, `/catalog[?refresh=1]`,
+   `/models`, `/settings` GET/POST, `/download` GET/POST, `/select` (download-on-select +
+   **prune superseded `.safetensors`**, `prune:false` opts out), `/generate` (202 + prompt_id,
+   `first_frame`/`last_frame` data-URLs), `/jobs`, `/outputs`, `/free`, `/gpus`,
+   `/import?path=…` (raw-bytes streaming upload, disk guard, traversal rejected)
+3. ✅ JSON envelope `{ok: true|false, ...}` everywhere + CORS; unknown route → 400/404 JSON
+4. ✅ Docs: `GET /h3api/docs` HTML reference served in-process (repo API doc folded into GUIDE)
+5. ✅ **sync cell**: `H3_CACHE_UPLOAD=auto|always|dry|never` — hardlink staging, manifest-drift
+   probe, slug→title dataset discovery, `create`/`version` via `dataset-metadata.json`,
+   **200 GB cap + disk guard auto-skip**, whole cell try/except ⇒ never fails the run
+6. ✅ Shared `build_prompt(cfg)` extracted into `convert` cell (one builder, smoke + API both
+   call it); first/last-frame `LoadImage` nodes 9001/9002 → subgraph input injection
+7. ✅ Local dry-run **ALL TESTS PASSED**: every endpoint, WS `101`, chunked POST, import `201`,
+   traversal `400`, prune verified, `first_frame` → 24-node prompt, sync `dry` staged 6 files
+8. ⬜ Watch v15 run → capture hub READY block (Base URL + `/h3api/docs`) + verify live endpoints
+   through the tunnel + first-time dataset upload outcome
 
 ### Phase C — modalities (v16+, one low-quality smoke each, in order)
 1. ⬜ **Image generation**: locate Flux/Comfy-Org image repos + official API template → lane → smoke
@@ -198,8 +217,10 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 
 ### Phase E — housekeeping
 1. ⬜ Move `build_full.py` into this repo (source of truth; token injected from outside git)
-2. ⬜ v13 outcome: capture step-time diagnostics (`[MultiStream] step:`), READY block; stop if stale
-3. ⬜ Perf: explain 861 s/step; levers = turbo (done in A), 0.4 MP, later VAE-split + TE cache
+2. ✅ v13/v14 outcome: step-time diagnostics (`[MultiStream] step:`) + READY block captured in
+   both runs (v13 dense 861 s/step, v14 turbo 210 s/step)
+3. ✅ Perf explained (v14): exchange ≈6 % of a step ⇒ **T4 compute-bound**; levers landed = turbo
+   + 0.4 MP (4.1× per step); untested levers = VAE-split + TE cache
 4. ⬜ Dataset cache bootstrap: first write-back populates the 200 GB dataset → later boots = instant
 5. ⬜ Rotate the GitHub PAT pasted in chat earlier; keep HF token out of the public repo
 
@@ -240,6 +261,14 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 7 | HF token: Kaggle Secret first, runtime-assembled fallback; never in public git | user provided token for fast downloads; repo is public |
 | Oct 7 | **No `negative_prompt` in H3 API schema** | H3 is CFG-distilled (CFG 1); source has prompt-only conditioning |
 | Oct 7 | Enterprise API = sidecar `/h3api/*` + proxy (WS passthrough) on the same tunnel as Comfy | one Base URL for Comfy UI, native API, and the management API + docs |
+| Oct 7 | Hub + proxy in **one stdlib `ThreadingHTTPServer` on `:8190`** (in-process, no extra process); tunnel that port; `H3_API=0` kill-switch falls back to `:8188` | one port/one tunnel/no supervision; stdlib = zero install risk on the kernel image |
+| Oct 7 | Raw socket **bidirectional WebSocket pipe** + hop-by-hop header strip + chunked-body reader in the proxy | Comfy UI's `/ws` must survive proxying; `http.client` can't do WS upgrades |
+| Oct 7 | `/h3api/select` **prunes superseded `.safetensors` by default** (`prune:false` opts out), only in the 4 model dirs | user pattern: switching models must free disk + GPU, never bloat |
+| Oct 7 | Extract `build_prompt(cfg)` into a `convert` cell — smoke **and** API both call it | one builder, two callers: the dry-run prompt and the live `/generate` can't drift apart |
+| Oct 7 | `/generate` accepts `first_frame`/`last_frame` as **data-URLs** → written to disk → `LoadImage` 9001/9002 injected at subgraph inputs 0/1 | keeps the API self-contained (no file-upload round trip needed for conditioning) |
+| Oct 7 | Write-back cell wrapped **entirely** in try/except with `auto\|always\|dry\|never` policy; hardlink staging; manifest-drift probe; 200 GB + disk guards auto-skip | user directive: cache-full must auto-skip and **never fail the run** |
+| Oct 7 | Notebook-cell escapes **doubled** in the build script (`b"\\r\\n"` → `b"\\\\r\\\\n"`) + `ast.parse` every *generated* cell | v15 pre-push: the outer triple-quoted string ate the backslashes → generated cell had an unterminated bytes literal (build script itself parsed fine) |
+| Oct 7 | Kaggle dataset CLI: `version -p FOLDER` (reads `dataset-metadata.json`; **no `-d`**), `list -s X -v`, existence probe = `datasets metadata <ref>` | verified against the installed CLI while wiring the sync cell |
 
 ---
 
@@ -277,6 +306,11 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 7 | Traced turbo wiring + resolution/duration/negative-prompt facts in template & Comfy source | one boolean flips LoRA+steps; 0.4→864×480; 17k+5 snapping; no negative prompt |
 | Oct 7 | Started local CPU torch + ComfyUI install for offline `/prompt` dry-runs | in progress (`/tmp/opencode/pip.log`) |
 | Oct 7 | AGENT.md rewritten as full master-context file (this) | Done |
+| Oct 7 | v14 built (registry + settings + preset-selective assets + symlink cache) and pushed | PUSHED |
+| Oct 7 | **v14 VERIFIED on Kaggle — Phase A complete**: run 25.6 min / zero stderr errors; 5/5 `OK` (41.03 GB, HF token, minutes); registry auto-listed 39 core + 100 community; `fast_smoke` applied; turbo armed `['1021']`; `prompt_id 67580883… node_errors {}`; `active: 2 ranks cuda:0+cuda:1, 50 blocks, 28/28`; **209.6–210.9 s/step × 4**; both T4s 100 % / 64.9+62.1 W; MP4 `MiniMax_H3_00001_.mp4`; READY Base URL `https://poem-smile-fell-ddr.trycloudflare.com` | ✅ all six MDs updated (commit `a9defb6`) |
+| Oct 7 | v15 built (14 cells): `convert` (`build_prompt` + frame injection), `api` (hub `:8190` + proxy + WS), `sync` (dataset write-back); local CPU dry-run **ALL TESTS PASSED** (every endpoint, WS `101`, chunked, import `201`, traversal `400`, prune, sync `dry`) | ✅ |
+| Oct 7 | v15 pushed to Kaggle (kernel version 15) | RUNNING — watching |
+| Oct 7 | Six-MD docs pass for v14 verification + v15 hub API (README/GUIDE/CONCLUSION/ERROR_PLAYBOOK/BUILD_YOUR_OWN/AGENT) | this commit |
 
 ---
 

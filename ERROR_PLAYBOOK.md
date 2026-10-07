@@ -44,6 +44,8 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
 | Non-string link ids in the prompt | `KeyError prompt[o_id]` (JSON keys are always `str`) | `["1017", 0]` everywhere |
 | Frontend-only widget keys (`fixed`, `control_after_generate`) | `invalid_input_type` / unknown input | schema-filter every widget name |
 | Broken cloudflared fetch (curl + stale pinned URL) | tunnel never starts, no READY block | `latest/download/...` with fallback + size check |
+| Generated cell had `SyntaxError: unterminated string literal` at `b"\r\n"` | the build script's **triple-quoted** string consumed `\r\n`/`\n` as *real* control chars, so the emitted notebook code contained raw newlines inside a bytes literal — the build script itself still parsed fine | double every escape meant for the notebook (`b"\\r\\n"` in the build script); **`ast.parse` every generated cell**, not just the build script |
+| `kaggle datasets version -d <ref>` → CLI error / wrong target | `-d` on `datasets version` means `--delete-old-versions`, not the dataset — the command reads `dataset-metadata.json` from the `-p` folder | write `{title, id, licenses}` into `dataset-metadata.json` in the staging folder; `list` CSV needs `-v` (not `--csv`); existence probe = `kaggle datasets metadata <owner>/<slug>` |
 
 ### Debugging signals that actually solved things
 
@@ -64,9 +66,17 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
   in the Kaggle output. **Verified working in v13:** `2 rank(s): cuda:0 (primary), cuda:1` +
   `active: 2 ranks` + both cards `100 % / 65.9 W` (T4's ~70 W ceiling) with 10.4/8.6 GiB
   resident — the canonical healthy pattern to compare against.
+- **Fast-smoke healthy reference (v14, 25.6-min run):** 5/5 `OK <bytes>` (41.03 GB) ->
+  `turbo path armed: PrimitiveBoolean ['1021']` -> `submitted: ... node_errors {}` ->
+  `active: 2 ranks` -> ~210 s/step x 4 -> `smoke status: success completed: True` ->
+  `found: /tmp/ComfyUI/output/video/MiniMax_H3_00001_.mp4` -> READY block with Base URL.
+  If your run deviates from that sequence, start from the first divergence.
 - **Dry-run the notebook cells locally before pushing**: run every cell against a local ComfyUI
-  (CPU build) — registry/settings/assets/submit all execute for free and `/prompt` validation is
-  the real `validate_prompt`. Gotcha: on a CPU-only torch box Comfy crashes at import with
+  (CPU build) — registry/settings/assets/convert/submit/API all execute for free and `/prompt`
+  validation is the real `validate_prompt`. The v15 harness goes further: after the cells it
+  **exercises every `/h3api/*` endpoint, the HTTP proxy, a WebSocket `101` handshake, a chunked
+  POST, and the sync cell's `dry` policy** — all green before the push. Gotcha: on a CPU-only
+  torch box Comfy crashes at import with
   `Torch not compiled with CUDA enabled` unless you start it with `--cpu` (the harness patches
   the start cell; the Kaggle cell is untouched because T4s exist there).
 - **Size timeouts from measurements, not estimates**: v12 ran at 861 s/step (≈4.8 h job) under a
