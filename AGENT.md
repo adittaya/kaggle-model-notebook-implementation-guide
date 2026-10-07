@@ -80,3 +80,4 @@ Keep the current kernel status up to date at the top.
 | Oct 7 | Added ERROR_PLAYBOOK.md documenting the xet-download / patched-downloader failure chain and the canonical fix | ✅ |
 | Oct 7 | Rebuilt primary generator notebook with T4x2 probe cell; WanGP single-T4 remains stable fallback; dual H3 MultiStream lane is experimental next | ✅ |
 | Oct 7 | pushed a separate comfy 2xT4 kernel (ComfyUI + H3 MultiStream) so we can smoke on both T4s | BUILDING |
+| Oct 7 | deleted all non-comfy kernels; only minimax-h3-comfy-2xt4-generator remains | ✅ |
