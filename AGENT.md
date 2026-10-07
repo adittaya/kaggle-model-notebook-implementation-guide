@@ -14,6 +14,7 @@ Keep the current kernel status up to date at the top.
 | Area | Status |
 |---|---|
 | Notebook | `minimax_h3_api.ipynb` pushed (v6) |
+| MultiGPU experiment | v2 running |
 | Model predownload fix | ✅ `HF_HUB_DISABLE_XET=1`, assets staged to `/tmp/Wan2GP/ckpts` |
 | WanGP single-T4 worker | ✅ stable, smoke test in progress on last run |
 | Cloudflare tunnel + FastAPI | ✅ working when single-T4 path passes smoke test |
@@ -59,6 +60,8 @@ Keep the current kernel status up to date at the top.
 | Oct 7 | v4 switched to `/resolve/main/` URLs | Surfaced: HF xet unable to locate on Hub |
 | Oct 7 | v5 set `HF_HUB_DISABLE_XET` | Still failed in WanGP downloader path |
 | Oct 7 | v6 pre-download assets in notebook | ✅ All 12 assets downloaded; smoke test entered; final validation pending |
+| Oct 7 | MultiGPU experiment v1 | probe finished: 2× T4 cc7.5 14.6G, PHB topology, host~10.0 GB/s vs p2p~9.3 GB/s; failed only on cell syntax typo |
+| Oct 7 | MultiGPU experiment v2 | pushed to `adityahalde8777/minimax-h3-multigpu-experiment`; typo fixed |
 
 ---
 
