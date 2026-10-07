@@ -75,3 +75,4 @@ Keep the current kernel status up to date at the top.
 | Oct 7 | Notebook predownload now prefers /kaggle/input datasets; documented in GUIDE/BUILD_YOUR_OWN | ✅ |
 | Oct 7 | v1 full run: READY block printed, URL/key valid, ~80 min; cleanup cell killed server → cleanup now guarded by H3_SHUTDOWN=1 | ✅ |
 | Oct 7 | v7 pushed (guarded cleanup + dataset-aware predownload) as the primary API path | RUNNING |
+| Oct 7 | v8 prepared: predownload cell now writes MANIFEST.json + mirrors /kaggle/input first | NEXT PUSH |
