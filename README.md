@@ -1,14 +1,33 @@
 # MiniMax H3 Kaggle Generator — Comfy 2×T4
 
 Deploy a **MiniMax H3** video/audio generator on Kaggle's free `T4 ×2` machine.
-This repository is now single-lane: the ComfyUI 0.35-compatible generator
-(`minimax_h3_comfy2.ipynb`) with one H3 MultiStream node splitting the H3
-transformer across both rigs.
+Single lane, single kernel: `adityahalde8777/minimax-h3-comfy-2xt4-generator`.
 
-- Fastest path: `kaggle kernels push -p .` (pushes the single Comfy kernel)
-- Details on caching / dataset detection / errors:
-  - `GUIDE.md`
-  - `ERROR_PLAYBOOK.md`
-- Task & decision history: `AGENT.md`
-- What we found and what we build next: `CONCLUSION.md`
-- How to reproduce the same technology for your own models: `BUILD_YOUR_OWN.md`
+- **Runtime:** ComfyUI + `ComfyUI-H3-MultiStream` — the H3 transformer split across both T4s
+  (`exchange="host"`, `exchange_chunks=8`, caches off for the 31 GB RAM box)
+- **Models:** `Comfy-Org/MiniMax-H3` (int8 convrot DiT, NVFP4/AWQ text encoder, int8 video VAE)
+- **Workflow:** official `video_minimax_h3_t2v.json`, flattened to API prompt + `H3MultiStream`
+  inserted before `BasicGuider`/`BasicScheduler`
+- **Quality:** 0.98 MP → **1344×768**, dense (turbo/TeaCache/Spectrum/FBC off)
+- **Output:** runs a real smoke generation on both GPUs, then prints a public Base URL +
+  `/prompt` endpoint (cloudflared quick tunnel)
+
+## Quick start
+
+```bash
+python3 /tmp/opencode/build_full.py      # regenerate the notebook
+kaggle kernels push -p .                 # push the single kernel
+kaggle kernels status adityahalde8777/minimax-h3-comfy-2xt4-generator
+kaggle kernels logs  adityahalde8777/minimax-h3-comfy-2xt4-generator
+```
+
+## Docs (update ALL of them after any significant change)
+
+| File | Purpose |
+|---|---|
+| `README.md` | this at-a-glance page |
+| `GUIDE.md` | step-by-step run + cell-by-cell map |
+| `BUILD_YOUR_OWN.md` | reproduce the same stack for your own model |
+| `AGENT.md` | mandatory task + decision log |
+| `CONCLUSION.md` | findings, hard numbers, open questions |
+| `ERROR_PLAYBOOK.md` | every failure chain (downloads + `/prompt`) and its fix |
