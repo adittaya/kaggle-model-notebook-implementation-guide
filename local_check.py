@@ -90,6 +90,24 @@ for c in nb["cells"]:
 ncells = len([c for c in nb["cells"] if c["cell_type"] == "code"])
 check("rebuild + ast all cells", ast_ok == ncells, f"{ast_ok}/{ncells} code cells")
 
+# 1b. nbformat no-warnings baseline — v21/v21b died invisibly because cells had NO id
+#     fields and the Kaggle runner had promoted nbformat's MissingIDFieldWarning to a
+#     hard error (zero logs, zero artifacts). Every cell must carry a unique id and
+#     nbformat.validate must pass with ZERO warnings before we even think about pushing.
+import warnings
+try:
+    import nbformat
+    _ids = [c.get("id") for c in nb["cells"]]
+    _have = bool(_ids) and all(_ids) and len(set(_ids)) == len(_ids)
+    with warnings.catch_warnings(record=True) as _w:
+        warnings.simplefilter("always")
+        nbformat.validate(nb)
+    _bad = [str(x.message)[:70] for x in _w]
+    check("nbformat validate (no warnings)", _have and not _bad,
+          f"{len(nb['cells'])} cells, ids unique, warnings={_bad or 'none'}")
+except Exception as e:  # pragma: no cover
+    check("nbformat validate (no warnings)", False, f"{type(e).__name__}: {e}")
+
 # ------------------------------------------------------------------ 2. exec convert cell
 src = open(os.path.join(REPO, "build_full.py")).read()
 m = re.search(r"^convert = r''' (.*?) '''$", src, re.S | re.M)

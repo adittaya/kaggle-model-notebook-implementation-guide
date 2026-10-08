@@ -3,8 +3,11 @@
 Deploy a **MiniMax H3** video/audio generator **+ Flux image generation + MiniMax Music 3 music
 generation + use-case tasks** on Kaggle's
 free `T4 ×2` machine.
-Single lane, single kernel: `adityahalde8777/minimax-h3-comfy-2xt4-generator` (**current build v21 —
-pushed; v20 ran the full pipeline but ERRORed at the music save step → root-caused + fixed in v21**;
+Single lane, single kernel: `adityahalde8777/minimax-h3-comfy-2xt4-generator` (**current build v22 —
+pushed; v20 ran the full pipeline but ERRORed at the music save step → root-caused + fixed in v21;
+v21/v21b then died BEFORE any cell ran — **the notebook had no cell `id` fields** and nbformat's
+`MissingIDFieldWarning` had become a hard error on the runner → zero log, zero artifacts; v22 adds
+unique cell ids (`nbformat.validate` clean) + the speech-to-text task + conditional smokes**;
 v19 ran COMPLETE — v18/v17/v16 verified — see below**:
 dynamic model registry + Kaggle Dataset auto-cache + preset settings + **`/h3api/*` hub API** behind
 one public Base URL; **fast smoke verified in v14–v18** = 4-step turbo LoRA @ 864×480, 194–210 s/step,
@@ -22,7 +25,9 @@ cell **idled on `manifest match`** (write-back done); **v20 PROVED the numpy hea
 lane end-to-end** — AR sampling to 57 %, tiled decode, lazy switch — but ERRORed at the last op:
 `SaveAudioAdvanced.execute() missing 'format'`; **v21 FIXED that** (DynamicCombo option-key must be
 a plain string `"flac"` in the API prompt; a dict silently drops the input) — root cause proven on
-a local CPU ComfyUI before the push; **`build_full.py` now lives in this repo** (survives host restarts)).
+a local CPU ComfyUI before the push; **v21/v21b died invisibly** (2-byte log, zero artifacts) — the
+runner rejected the ID-less notebook; **v22 carries the `id` fix + `transcribe` task + conditional
+smokes**; **`build_full.py` now lives in this repo** (survives host restarts)).
 
 - **Runtime:** ComfyUI + `ComfyUI-H3-MultiStream` — the H3 transformer split across both T4s
   (`exchange="host"`, `exchange_chunks=8`, caches off for the 31 GB RAM box)
@@ -36,13 +41,23 @@ a local CPU ComfyUI before the push; **`build_full.py` now lives in this repo** 
   `h3_music_*.flac`); 14.33 GB models from `Comfy-Org/MiniMax-Music-3`; **v21**: SaveAudioAdvanced
   `format` (an `IO.DynamicCombo`) is sent as the plain option-key string `"flac"` in the API
   prompt (mp3/opus add the dotted `format.quality` sub-input) — the dict form silently drops it
+- **Transcription lane (v22):** `POST /h3api/task` `{"task":"transcribe"}` — **faster-whisper
+  (CTranslate2, CPU int8, no torch)** with the full **~100-language** Whisper set: `model`
+  (tiny/base/small/medium/large-v3, default `small`), auto language detect or `language:<code>`,
+  `task: transcribe|translate`, outputs `txt`/`srt`/`vtt` (word timestamps + VAD), data-URL
+  plumbing reuses the task engine; pinned `faster-whisper==1.2.1 av==13.1.0` (fw 1.2.1 needs
+  PyAV 13.x's `metadata_errors` kwarg, removed in av≥19)
 - **Use-case tasks (v17):** `POST /h3api/task` — background remover + element extractor (rembg u2net),
-  4× upscaler (Real-ESRGAN through Comfy's GPU), video→frames/GIF, audio extract/trim, ffprobe;
-  8 tasks, uniform `{ok, outputs, saved, view, meta}` envelope
-- **Smoke schedule (v17/v20):** `H3_SMOKE` env (default `image,video,music`) — one low-quality
+  4× upscaler (Real-ESRGAN through Comfy's GPU), video→frames/GIF, audio extract/trim, ffprobe,
+  **speech-to-text (v22)**; 9 tasks, uniform `{ok, outputs, saved, view, meta}` envelope
+- **Smoke schedule (v17/v20/v22):** `H3_SMOKE` env (default `image,video,music`) — one low-quality
   smoke per modality, image first (PNG proves the lane), then video (dual-GPU assertion + MP4),
   then music (audio `.flac` assertion); per-modality wait budgets (image 1800 s / video 10800 s /
-  music 3600 s)
+  music 3600 s); **v22 conditional smokes** — a lane whose **runtime contract (config + model
+  files, fingerprinted) is unchanged since its last pass is SKIPPED** (`SMOKE SKIPPED (previously
+  proven)`, still counted in `SMOKE PASSED`); state persists via `models/smoke_state.json` through
+  the cache dataset. `H3_SMOKE_MODE=all` forces the full suite (use after infra changes), `=none`
+  fast-boots unproven
 - **Registry:** live HF catalog query every boot (H3 core 39 files + flux image tree + **Music-3
   tree** + task assets + 100 community repos auto-listed); availability shown as `local` /
   `cached` / `remote`
