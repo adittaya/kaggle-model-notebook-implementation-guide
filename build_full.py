@@ -90,6 +90,19 @@ r=subprocess.run([sys.executable,"-m","pip","install","rembg[cpu]==2.0.85"],
                  capture_output=True,text=True)
 print("rembg install rc=%d"%r.returncode)
 print(((r.stdout or "")+(r.stderr or ""))[-700:])   # always show tail (a numpy move shows here)
+# speech-to-text task (transcribe): faster-whisper on CTranslate2 (CPU int8, ~100 languages).
+# av MUST be pinned 13.x (fw 1.2.1 calls av.open(metadata_errors=...) which av>=19 removed).
+r=subprocess.run([sys.executable,"-m","pip","install","-q","faster-whisper==1.2.1","av==13.1.0"],
+                 capture_output=True,text=True)
+print("stt install rc=%d"%r.returncode)
+print(((r.stdout or "")+(r.stderr or ""))[-400:])
+def _stt_probe():
+    p=subprocess.run([sys.executable,"-c",
+        "import av,ctranslate2,faster_whisper;print('ct2',ctranslate2.__version__)"],
+        capture_output=True,text=True,timeout=120)
+    return p.returncode==0,(p.stdout or p.stderr or "").strip()[-200:]
+_sttok,_stterr=_stt_probe()
+print("stt deps health:","OK" if _sttok else "FAIL -> "+_stterr)
 # numpy/rembg health + heal: a MIXED numpy (disk files upgraded in place by a subprocess
 # `pip install` while THIS kernel pre-loaded numpy) breaks scipy and rembg with
 # `cannot import name '_slice' from 'numpy._core.umath'` — the disk may stay self-consistent
@@ -1425,6 +1438,82 @@ def T_probe(b):
         "meta":{"duration":fmt.get("duration"),"format":fmt.get("format_name"),
                 "size":fmt.get("size"),"bit_rate":fmt.get("bit_rate"),"streams":streams}})
 
+# ---- transcription task: faster-whisper (CTranslate2 CPU int8, ~100 languages) ----
+_STT=None; _STT_ERR=""            # module ref / init error (rembg pattern)
+_STT_MODELS={}                    # loaded WhisperModel cache by size (per-run)
+_STT_SIZES=("tiny.en","tiny","base.en","base","small.en","small","medium",
+            "large-v2","large-v3","large")
+_STT_DLROOT="/tmp/ComfyUI/models/stt"
+def _stt_init():
+    global _STT,_STT_ERR
+    if _STT is not None: return _STT
+    try:
+        import faster_whisper as _fw
+        _STT=_fw
+    except Exception as e:
+        _STT=False; _STT_ERR="%s: %s"%(type(e).__name__,e)
+    return _STT
+def _stt_model(size):
+    m=_STT_MODELS.get(size)
+    if m is None:
+        if not _STT: _stt_init()
+        os.makedirs(_STT_DLROOT,exist_ok=True)
+        m=_STT.WhisperModel(size,device="cpu",compute_type="int8",
+                            download_root=_STT_DLROOT)
+        _STT_MODELS[size]=m
+    return m
+def T_transcribe(b):
+    if not _stt_init():
+        return _j(503,{"ok":False,"error":"speech-to-text unavailable: "+(_STT_ERR or "install failed")})
+    src,err=_src(b,("audio","video","media"))
+    if err: return err
+    size=str(b.get("model") or "small").lower()
+    if size not in _STT_SIZES:
+        return _j(400,{"ok":False,"error":"model must be one of: "+", ".join(_STT_SIZES)})
+    lang=str(b.get("language") or "").strip().lower()
+    if lang and not re.fullmatch(r"[a-z]{1,8}",lang):
+        return _j(400,{"ok":False,"error":"language must be a Whisper code like 'en','hi','fr' or '' for auto-detect"})
+    tt=str(b.get("task") or "transcribe").lower()
+    if tt not in ("transcribe","translate"):
+        return _j(400,{"ok":False,"error":"task must be transcribe or translate"})
+    fmt=str(b.get("format") or "txt").lower()
+    if fmt not in ("txt","srt","vtt"):
+        return _j(400,{"ok":False,"error":"format must be txt, srt or vtt"})
+    wts=bool(b.get("word_timestamps",True)); vad=bool(b.get("vad_filter",True))
+    t0=time.time()
+    try:
+        m=_stt_model(size)
+        segs,info=m.transcribe(str(src),language=(lang or None),task=tt,
+                               word_timestamps=wts,vad_filter=vad)
+        segs=list(segs)
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return _j(500,{"ok":False,"error":"transcribe failed: %s"%e})
+    def _stamp(t,sep):
+        h=int(t//3600); mi=int(t%3600//60); s=t%60
+        return "%02d:%02d:%06.3f"%(h,mi,s) if sep=="," else "%02d:%02d:%02d%03d"%(
+            h,mi,int(s),int(round((s-int(s))*1000)))
+    text="".join((s.text or "") for s in segs).strip()
+    if fmt=="txt":
+        blob=text
+    elif fmt=="srt":
+        blob="\n".join("%d\n%s --> %s\n%s"%(i,_stamp(s.start,","),_stamp(s.end,","),
+                      (s.text or "").strip())
+              for i,s in enumerate(segs,1) if s.start is not None)
+    else:
+        blob="WEBVTT\n\n"+"\n\n".join("%s --> %s\n%s"%(_stamp(s.start,"."),_stamp(s.end,"."),
+                  (s.text or "").strip()) for s in segs if s.start is not None)
+    raw=blob.encode("utf-8")
+    d=Path("/tmp/ComfyUI/output/tasks"); d.mkdir(parents=True,exist_ok=True)
+    name="trans_%d.%s"%(int(time.time()),fmt)
+    p=d/name; p.write_bytes(raw)
+    return _j(200,{"ok":True,"task":"transcribe","outputs":[_durl(raw,"text/plain")],
+        "saved":[name],"view":[_view(p)],
+        "meta":{"model":size,"format":fmt,"language":info.language or "",
+                "language_probability":round(float(getattr(info,"language_probability",0) or 0),4),
+                "duration":getattr(info,"duration",None),"segments":len(segs),
+                "text":text[:900],"elapsed":round(time.time()-t0,1)}})
+
 TASK_INFO={
  "bg_remove":{"kind":"image","desc":"background remover: cut out the subject, transparent PNG",
    "input":"image (data URL)","opts":"model (u2net|u2netp|isnet-general-use|u2net_human_seg|birefnet-general), alpha_matting"},
@@ -1442,17 +1531,22 @@ TASK_INFO={
    "input":"media (data URL) or video_path/audio_path","opts":"start (s), duration (s)"},
  "probe":{"kind":"media","desc":"ffprobe: duration, streams, codecs, size",
    "input":"media (data URL) or video_path/audio_path","opts":"-"},
+ "transcribe":{"kind":"audio","desc":"speech-to-text (faster-whisper, ~100 languages) with auto language detect",
+   "input":"media (data URL) or video_path/audio_path",
+   "opts":"model (tiny/base/small/medium/large-v3, default small), language (auto or code like 'hi'), task (transcribe|translate), format (txt|srt|vtt, default txt), word_timestamps, vad_filter"},
 }
 TASKS={"bg_remove":T_bg_remove,"extract":T_extract,"upscale":T_upscale,
        "video_frames":T_video_frames,"video_gif":T_video_gif,
-       "audio_extract":T_audio_extract,"audio_trim":T_audio_trim,"probe":T_probe}
+       "audio_extract":T_audio_extract,"audio_trim":T_audio_trim,"probe":T_probe,
+       "transcribe":T_transcribe}
 
 def H_tasks(o):
     avail={"bg_remove":_REMBG is not None,"extract":_REMBG is not None,
            "upscale":(MODELS/"upscale_models/RealESRGAN_x4plus.pth").exists(),
            "video_frames":bool(FFMPEG),"video_gif":bool(FFMPEG),
            "audio_extract":bool(FFMPEG),"audio_trim":bool(FFMPEG),
-           "probe":bool(FFPROBE)}
+           "probe":bool(FFPROBE),
+           "transcribe":bool(_stt_init())}
     tasks={k:dict(v,available=bool(avail.get(k))) for k,v in TASK_INFO.items()}
     return _j(200,{"ok":True,"tasks":tasks,
         "runtime":{"rembg":_REMBG is not None,"rembg_error":_RembgErr,
@@ -1552,7 +1646,11 @@ Preset <code>music_smoke</code> switches modality to MiniMax Music 3 generation
 <tr><td><code>audio_trim</code></td><td>Trim a time range</td><td><code>video_path</code>/<code>audio_path</code> or data URL</td>
  <td><code>start</code> (s), <code>duration</code> (s)</td></tr>
 <tr><td><code>probe</code></td><td>ffprobe: duration, streams, codecs</td><td><code>video_path</code>/<code>audio_path</code> or data URL</td>
- <td>-</td></tr></table>
+ <td>-</td></tr>
+<tr><td><code>transcribe</code></td><td>Speech-to-text (faster-whisper, ~100 languages, auto language detect)</td>
+ <td><code>video_path</code>/<code>audio_path</code> or data URL</td>
+ <td><code>model</code> (tiny/base/small/medium/large-v3, default small), <code>language</code> (auto or code like <code>"hi"</code>),
+ <code>task</code> (transcribe|translate), <code>format</code> (txt|srt|vtt, default txt), <code>word_timestamps</code>, <code>vad_filter</code></td></tr></table>
 <pre>curl -X POST "$BASE/h3api/task" -H 'Content-Type: application/json' -d '{"task":"extract","image":"data:image/png;base64,...","max_elements":4}'</pre>
 <p>Responses: <code>{"ok":true,"outputs":["data:..."],"saved":["file.png"],"view":["/view?..."],"meta":{...}}</code>
 (<code>extract</code> also returns <code>elements[]</code> with bboxes). Saved files land in
