@@ -83,6 +83,9 @@ a local CPU ComfyUI before the push; **`build_full.py` now lives in this repo** 
 
 ```bash
 python3 build_full.py                    # regenerate the notebook (build script lives in this repo)
+python3 local_check.py                   # pre-push gate: ast + build 3 lanes vs fixture (no deps)
+# full gate (recommended before a push that touches convert/_flatten):
+#   /path/to/ComfyUI/venv/bin/python local_check.py --live http://127.0.0.1:8191 --comfy /path/to/ComfyUI
 kaggle kernels push -p .                 # push the single kernel
 kaggle kernels status adityahalde8777/minimax-h3-comfy-2xt4-generator
 kaggle kernels outputs adityahalde8777/minimax-h3-comfy-2xt4-generator -p <dir>   # log after COMPLETE

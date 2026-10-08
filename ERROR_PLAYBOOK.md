@@ -80,6 +80,9 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
   sub-inputs to inject, so a mismatched value silently drops the input after validation. API
   prompts must carry the **option-key string** (`"flac"`), plus dotted sub-input keys
   (`format.quality`); saved-workflow widget dicts (`{"format":"flac"}`) are UI form, not API form.
+  `local_check.py` (in-repo: `--live <comfy-server>` `--comfy <ComfyUI-dir>`) exercises this exact
+  executor kwargs path + real `/prompt` before every push, so this bug class dies locally, not on a
+  45-min Kaggle run.
 - A whole notebook that finishes in ~110 s, or a download subprocess with **no output and
   exit 0** ⇒ it did nothing. Verify files and sizes, never trust the exit code.
 - **Config ≠ execution for multi-GPU**: `device_count: 2` and `second_gpu=-1` only show intent.

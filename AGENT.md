@@ -443,6 +443,8 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 8 | **v20 `H3_SMOKE` default becomes `image,video,music`**; music budget 3600 s, wait cell asserts a real audio file (`auds` scan), format `flac` | user rule: one low-quality smoke per modality; music smoke = 30-step single-T4 mini run |
 | Oct 8 | **v21: `SaveAudioAdvanced.format` (and all `IO.DynamicCombo` inputs) is a PLAIN STRING in the API prompt** (`"flac"`), not the UI-widget dict `{"format":"flac"}`; mp3/opus set the dotted sub-input `format.quality`; `_flatten` now emits dotted keys whose parent input is present | v20 died on `execute() missing 'format'` — proved on a local CPU ComfyUI that the dict form silently fails the DynamicCombo option-key match and drops the input from the executor schema, while the string form validates clean and is re-nested to `{"format": ...}` by `build_nested_inputs`. Verify against the actual node schema, not the saved-workflow widget shape |
 | Oct 8 | **v21: reproduce executor behaviour before pushing** (local CPU ComfyUI install: `get_finalized_class_inputs` + `build_nested_inputs` + real `/prompt`) | the v20 failure was invisible to `node_errors` validation (validation iterates the expanded schema only — a dropped dynamic input passes silently and dies at execute). The only reliable gate is the executor path itself |
+| Oct 8 | **v21: `local_check.py` is the standing pre-push gate** (in-repo): rebuild+ast → exec `convert` cell with `tests/objinfo_fixture.json` (real core schemas + H3MultiStream from the Comfy-H3-MultiStream pack) → structural asserts per lane → **DynamicCombo kwargs deep sim** (flac/mp3/v20-regression) → optional `--live URL --comfy DIR` real `/prompt` validation (loader `value_not_in_list` filtered). 27/27 on the v21 tree. Run fixture mode on system python3; full mode needs a local ComfyUI venv + server | the expensive lesson (a silent value-form bug burned a whole 45-min GPU run) must never recur |
+| Oct 8 | **kernel-metadata gains `dataset_sources: [minimax-h3-model-cache]`** (commit `d0b0c88`) — the read-half of the cache auto-attaches from the NEXT push; `/kaggle/input/<slug>` then seeds `models/` instead of downloading | one-time manual Add Data was still pending; metadata is the repeatable equivalent |
 
 ---
 
@@ -542,7 +544,7 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
   widgets (no `widgets_values_named`) — promote via the schema-verified `MUSIC_WIDGETS` table;
   music runs single-T4, so the `active: 2 ranks` assertion applies only when the video smoke ran.
 - **`IO.DynamicCombo` inputs need the option KEY STRING in the API prompt (v21 lesson)**:
-  the saved-workflow widget value is a dict (`{"format":"flac"}`) but ComfyUI's *APIP prompt*
+  the saved-workflow widget value is a dict (`{"format":"flac"}`) but ComfyUI's *API prompt*
   must carry the plain string `"flac"`; the executor (`get_finalized_class_inputs` →
   `_expand_schema_for_dynamic`) uses it to match the option, inject that option's sub-inputs as
   **dotted keys** (`format.quality`), and `build_nested_inputs` re-nests everything into the dict
@@ -550,6 +552,13 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
   `missing positional argument` that `node_errors` validation NEVER catches (validation iterates
   only the expanded schema). Gate such nodes by exercising `get_finalized_class_inputs` +
   `build_nested_inputs` on a local CPU ComfyUI before pushing.
+- **`local_check.py` is the standing pre-push gate (v21)**: rebuild+ast → build the three smoke
+  prompts off `tests/objinfo_fixture.json` → structural asserts → DynamicCombo kwargs deep sim →
+  optional `--live` real-server `/prompt` validation. Fixture mode needs only python3; the deep
+  mode needs `--comfy DIR` (ComfyUI clone). `tests/objinfo_fixture.json` is generated from a real
+  ComfyUI `/object_info` (35 core classes + H3MultiStream hand-copied from the
+  Comfy-H3-MultiStream `__init__.py`); if it drifts from upstream, refresh it via a local server
+  and `--live` confirms. Templates auto-fetch to `/tmp` when wiped.
 - **Repo build pipeline (Oct 8)**: `build_full.py` IS the source of truth and lives in this repo;
   cells are embedded verbatim as raw `r'''…'''` strings (never regular — cell sources contain
   `\n`/`\.` sequences that regular strings would eat). Rebuild → ast-validate → `kaggle kernels

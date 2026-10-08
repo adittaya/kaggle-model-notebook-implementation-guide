@@ -11,7 +11,10 @@
 
 1. `cd /home/limitlessjourney829/kaggle/minimax-h3-api`
 2. `python3 build_full.py`  ← regenerates `minimax_h3_full_comfy.ipynb`
-3. Validate: every code cell must pass `ast.parse`
+3. Validate: `python3 local_check.py` (ast + build the 3 smoke lanes vs `tests/objinfo_fixture.json`
+   + structural asserts). For any change touching `convert`/`_flatten`/widget shapes, also run the
+   full gate from a local ComfyUI: `…/ComfyUI/venv/bin/python local_check.py --live http://127.0.0.1:8191
+   --comfy …/ComfyUI` (deep DynamicCombo kwargs sim + real `/prompt` validation; §"Validation before push")
 4. `kaggle kernels push -p .`
 5. Monitor: `kaggle kernels status adityahalde8777/minimax-h3-comfy-2xt4-generator`
 6. Logs after COMPLETE: `kaggle kernels output adityahalde8777/minimax-h3-comfy-2xt4-generator -p <dir>`

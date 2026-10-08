@@ -117,6 +117,13 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       Sub-inputs of the chosen option (e.g. mp3 → `quality`) are dotted keys (`format.quality`).
       Gate it: run `get_finalized_class_inputs` + `build_nested_inputs` on a local ComfyUI and
       eyeball what `execute()` actually receives before pushing
+- [ ] **Ship a pre-push gate script, not just a checklist** (v21): `local_check.py` in-repo rebuilds
+      the notebook, `ast`-parses every cell, execs the converter cell against a committed
+      `tests/objinfo_fixture.json` (real core schemas + the custom pack's `H3MultiStream`), asserts
+      the three smoke lanes structurally, runs the DynamicCombo kwargs deep sim, and — with a local
+      ComfyUI running — POSTs each prompt to `/prompt` and asserts the ONLY errors are
+      loader-name `value_not_in_list` (empty local model dir). A value-shape bug like v20's `format`
+      dict was *invisible to every checklist*; only executing the real executor path catches it.
 - [ ] **Separate builder per workflow shape**: a flat template (flux) does not belong inside a
       subgraph flattener — branch `build_prompt(cfg)` on `cfg["modality"]` (video / image / music,
       v20) and keep the verified path untouched; share `load_info()` schema filtering,
