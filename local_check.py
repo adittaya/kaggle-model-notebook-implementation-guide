@@ -108,6 +108,33 @@ try:
 except Exception as e:  # pragma: no cover
     check("nbformat validate (no warnings)", False, f"{type(e).__name__}: {e}")
 
+# 1c. v22.1 guard: the faster-whisper install line must pin av in the 17..18 band, never
+#     13/19. ComfyUI's requirements.txt declares av>=17.0.0 (it imports av in 6 comfy_extras
+#     modules at boot) and fw 1.2.1 needs av<19 (metadata_errors kwarg) — the v22 av==13.1.0
+#     pin violated ComfyUI's requirement in the server's own site-packages and the ComfyUI
+#     process never listened. Match only quoted version literals, not prose comments.
+def _cell_with(mark):
+    for c in nb["cells"]:
+        sc = "".join(c.get("source", []))
+        if c["cell_type"] == "code" and mark in sc:
+            return sc
+    return ""
+_ins_cell = _cell_with('mark("cell:install:start")')
+_avs = re.findall(r'"av==([0-9]+(?:\.[0-9]+)*)"', _ins_cell)
+_av_ok = bool(_avs) and all(int(v.split(".")[0]) in (17, 18) for v in _avs)
+check("install: faster-whisper av pin in 17..18 (not 13/19)", _av_ok,
+      f"av version literals: {_avs or 'none'}")
+
+# 1d. v22.1 guard: the ComfyUI boot watchdog must be present so a boot failure prints the
+#     /tmp/comfy.log tail + process exit code (the v23 run died silently for a full 363 s
+#     window because the server's stderr went to a file). Heartbeat + tail + relaunch.
+_st_cell = _cell_with('mark("cell:start:start")')
+_wd_ok = all(k in _st_cell for k in ("comfy.log tail (final)",
+                                     "boot t=%ds alive=yes",
+                                     "relaunching Comfy once"))
+check("start: Comfy boot watchdog present (heartbeat/tail/relaunch)", _wd_ok,
+      f"start cell {len(_st_cell)} chars")
+
 # ------------------------------------------------------------------ 2. exec convert cell
 src = open(os.path.join(REPO, "build_full.py")).read()
 m = re.search(r"^convert = r''' (.*?) '''$", src, re.S | re.M)
