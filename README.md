@@ -2,18 +2,19 @@
 
 Deploy a **MiniMax H3** video/audio generator **+ Flux image generation + use-case tasks** on Kaggle's
 free `T4 ×2` machine.
-Single lane, single kernel: `adityahalde8777/minimax-h3-comfy-2xt4-generator` (**current build v18 — pushed,
-run in progress; v16 VERIFIED, v17 partial — see below**:
+Single lane, single kernel: `adityahalde8777/minimax-h3-comfy-2xt4-generator` (**current build v19 — pushed,
+RUNNING after **v18 ran COMPLETE — the first fully green end-to-end run**; v16/v17/base verified — see below**:
 dynamic model registry + Kaggle Dataset auto-cache + preset settings + **`/h3api/*` hub API** behind
-one public Base URL; **fast smoke verified in v14/v15/v16** = 4-step turbo LoRA @ 864×480, 194–210 s/step,
-whole run ~25–33 min, real MP4 out; **hub API + tunnel verified in v15/v16** (all endpoints live, self-tested
-through the tunnel); **dataset write-back verified in v16** — `kagglehub upload OK ->
-adityahalde8777/minimax-h3-model-cache (530 s)`, 42 GB cached; dual-GPU verified in v13–v16 —
-`active: 2 ranks cuda:0+cuda:1`, both T4s 100 % / ~65 W; **v17 proved the multi-modality lanes on
-Kaggle** — image smoke PNG + video MP4 @ 204–206 s/step × 4 in one run, pub self-test 11/11 `200`,
-upscale + video_frames tasks `200` — but a **mixed-numpy `_slice` ImportError** killed
-bg_remove/extract (scipy/rembg) at the last step → **v18 adds a probe + auto-heal of numpy in the
-install cell and a `TASKS_HEALTHY` gate** so the run always completes; **local dry-run 59/59**).
+one public Base URL; **fast smoke verified in v14–v18** = 4-step turbo LoRA @ 864×480, 194–210 s/step,
+whole run ~25–33 min, real MP4 out; **hub API + tunnel verified in v15–v18** (all endpoints live, self-tested
+through the tunnel); **dataset write-back verified in v16+v18** — `kagglehub upload OK ->
+adityahalde8777/minimax-h3-model-cache` (v16: 530 s create, v18: 716 s version 2), 59.3 GB cached;
+dual-GPU verified in v13–v18 — `active: 2 ranks cuda:0+cuda:1`, both T4s 100 % / ~65 W; **v17/v18
+proved the multi-modality lanes on Kaggle** — image smoke PNG + video MP4 @ 204–206 s/step × 4 in one
+run, pub self-test green, upscale + video_frames tasks `200`, `TASK SMOKE PASSED` in v18 with sync
+running (bg_remove/extract were warn-only against a **self-inflicted in-kernel numpy re-import bug**
+that v19 fixes with a non-destructive verify + first-error log); **v19 adds retry-once to all pub
+POSTs**; **`build_full.py` now lives in this repo** (survives host restarts)).
 
 - **Runtime:** ComfyUI + `ComfyUI-H3-MultiStream` — the H3 transformer split across both T4s
   (`exchange="host"`, `exchange_chunks=8`, caches off for the 31 GB RAM box)
@@ -36,25 +37,31 @@ install cell and a `TASKS_HEALTHY` gate** so the run always completes; **local d
 - **Workflow:** official `video_minimax_h3_t2v.json`, flattened to API prompt + `H3MultiStream`
   inserted before `BasicGuider`/`BasicScheduler`; shared `build_prompt()` also wired for
   first/last-frame conditioning (data-URL → `LoadImage` → subgraph input)
-- **Hub API (v15/v17):** one tunnel → proxy on `:8190` serves the ComfyUI UI, the native `/prompt`
+- **Hub API (v15/v19):** one tunnel → proxy on `:8190` serves the ComfyUI UI, the native `/prompt`
   API **and** `/h3api/*` (docs, health, catalog `?refresh=1`, models, settings, select, download,
   generate, jobs, outputs, free, gpus, import, **tasks**) with WebSocket passthrough; the run
-  **self-tests every endpoint live through the tunnel** (retry-once probes, v17) **plus a task
-  smoke** before printing READY
-- **Write-back (v15/v16 ✅ verified):** downloaded models staged (hardlinks) and pushed back to a
+  **self-tests every endpoint live through the tunnel** (retry-once probes, v17; POSTs got the
+  same retry-once treatment in v19) **plus a task smoke** before printing READY
+- **Write-back (v15/v16/v18 ✅ verified):** downloaded models staged (hardlinks) and pushed back to a
   Kaggle Dataset (`minimax-h3-model-cache`) via **kagglehub's native in-notebook auth** (owner from
-  `whoami`, embedded kernel owner as fallback, classic CLI as second fallback) — first run created
-  the dataset and pushed 42 GB in 530 s; **200 GB cap auto-skips, never fails the run**
+  `whoami`, embedded kernel owner as fallback, classic CLI as second fallback) — v16 created the
+  dataset (42 GB, 530 s), **v18 pushed version 2** (716 s, manifest drift 5→6) after the
+  `TASKS_HEALTHY` gate let a degraded-but-healthy run finish; **200 GB cap auto-skips, never fails
+  the run**
+- **Resilience (v18/v19):** install cell probes the exact CPU-task imports in a subprocess and
+  auto-heals numpy with a same-version `force-reinstall`; in-kernel verify is **non-destructive**
+  and prints the real first error; `TASKS_HEALTHY` gates bg_remove/extract to warn-only when the
+  environment is broken (upscale stays REQUIRED) so **the run always completes**; pub POSTs retry once
 - **Output:** runs a real smoke generation on both GPUs, then prints a public Base URL +
   hub endpoints (cloudflared quick tunnel)
 
 ## Quick start
 
 ```bash
-python3 /tmp/opencode/build_full.py      # regenerate the notebook
+python3 build_full.py                    # regenerate the notebook (build script lives in this repo)
 kaggle kernels push -p .                 # push the single kernel
 kaggle kernels status adityahalde8777/minimax-h3-comfy-2xt4-generator
-kaggle kernels logs  adityahalde8777/minimax-h3-comfy-2xt4-generator
+kaggle kernels outputs adityahalde8777/minimax-h3-comfy-2xt4-generator -p <dir>   # log after COMPLETE
 ```
 
 ## Docs (update ALL of them after any significant change)

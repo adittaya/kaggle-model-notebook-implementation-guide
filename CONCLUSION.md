@@ -144,22 +144,57 @@
   and torch/Comfy work normally. v17's pub cell (correctly) raised on the required image tasks →
   **the sync cell never ran** (no write-back, no manifest probe — cell order matters).
 
-### v18 — numpy probe + auto-heal + TASKS_HEALTHY gate — PUSHED, run in progress
+### v18 — numpy probe + auto-heal + TASKS_HEALTHY gate — ✅ VERIFIED ON KAGGLE (first COMPLETE run)
 - **Install cell** always prints the pip tail (v17 discarded it on rc=0 — hiding whether the
   resolve moved numpy), then probes the exact imports in a subprocess
   (`from numpy._core.strings import *; from scipy import ndimage; import rembg`); on failure it
   prints numpy diagnostics (`__path__`, `numpy-*.dist-info` list, `_slice` presence per file) and
   **auto-heals** with `pip install --force-reinstall --no-deps numpy==<current version>`, re-probes,
-  and finally verifies **in-kernel** (dropping any stale in-memory `numpy*` modules first) →
-  `TASKS_HEALTHY`.
+  and finally verifies **in-kernel** → `TASKS_HEALTHY`.
 - **Pub task smoke gate**: bg_remove/extract are required only when `TASKS_HEALTHY` (warn-only
-  otherwise, with the real import error already printed by the api cell via `rembg_error`);
-  upscale stays always-required (it doesn't touch scipy), video tasks stay warn-only →
+  otherwise); upscale stays always-required (it doesn't touch scipy), video tasks stay warn-only →
   **the run can no longer be killed by an environment bug in a secondary feature**, and sync
   always runs.
 - `/h3api/tasks` now reports `runtime.healthy` + `runtime.rembg_error` so clients see the state.
-- Local dry-run: **59/59** again (install cell is skipped locally → `TASKS_HEALTHY` defaults to
-  required, and local rembg is healthy).
+
+#### v18 run result on Kaggle (COMPLETED — first fully green end-to-end run)
+
+**The degradation-first design did exactly its job:**
+- ✅ `task deps health: OK` — the subprocess probe passed, **no mixed numpy this boot** (the v17
+  directory mix did NOT recur); no heal needed.
+- ❌→✅ **in-kernel verify FAILED** but was **root-caused as self-inflicted**: the v18
+  `_kernel_verify` *popped* `numpy*` from `sys.modules` and re-imported in the same long-lived
+  process, which is itself broken — locally reproduced even on a healthy numpy 2.4.6
+  (`ImportError: cannot load module more than once per process`); on Kaggle the re-import walks
+  the newer-style `multiarray._override___module__` and dies on
+  `AttributeError: 'numpy.ufunc' object has no attribute '__module__'`. So a small install-time
+  failure escalated into *total* in-kernel numpy loss (warm-up, api `import rembg`, every task
+  re-importing the poisoned numpy) for the whole boot → `TASKS_HEALTHY=False`. **The gate held**:
+  upscale (REQUIRED) `200 ok=True`, video_frames `200` (3 outputs), bg_remove/extract
+  `WARN tolerated` → **`TASK SMOKE PASSED`** → pub did not raise.
+- ✅ **sync finally ran** (the v17 casualty): `cache inventory: 62 files, 59.3 GB` →
+  `manifest drift: 5 remote vs 6 local files -> upload` → `staged 6 model files` →
+  **`kagglehub upload OK -> adityahalde8777/minimax-h3-model-cache (716 s)`** → dataset
+  **version 2** (nvfp4 15.7 G + turbo 4step lora 1.96 G + MANIFEST + placeholder dirs).
+- ✅ Everything else green: `DUAL-GPU CONFIRMED`, `SMOKE PASSED: ['image','video']`, pub GET
+  self-test all `200`. Run reported **COMPLETED** (kernel done, not ERROR).
+- Two client-side flakes exposed: `POST /h3api/settings` had **no retry** (single attempt failed),
+  and the bg_remove task POST died with `Network is unreachable` (tunnel blip) — GETs already
+  retried, the POSTs didn't.
+
+### v19 — non-destructive in-kernel verify + retry-once POSTs — PUSHED (Oct 8)
+- **`_kernel_verify` no longer touches `sys.modules`**: ONE attempt, print the **first** error +
+  traceback tail, return False → `TASKS_HEALTHY=False` → graceful warn-only. The "fix by
+  re-importing stem C extensions in the kernel process" idea is gone — the subprocess probe is
+  the only place files are re-tested after a heal. This boots the diagnostic that v18 lacked:
+  the log will now show *which exact import* fails in-kernel and why.
+- **Pub POSTs share one `_post` helper with retry-once** (settings + bg_remove/extract/upscale/
+  video_frames task smoke) matching the GET probes' behavior.
+- **Phase E happened early**: `build_full.py` moved into the repo (the host restart wiped
+  `/tmp/opencode`); reconstructed verbatim from the committed v18 notebook; rebuild verified
+  byte-identical against `git show HEAD`.
+- Dry-run gate for v19 is the trimmed local check (ast + `_kernel_verify` healthy/failure-path
+  micro-test); the full 59/59 `dryrun.py` harness is slated for reconstruction in the repo.
 
 ## 2026-10-07 — retired lanes (kept for history)
 

@@ -12,27 +12,35 @@ reconstruct the whole project after a context loss.
 4. Never commit raw tokens to this public repo (HF token / GitHub PAT live outside git or assembled
    at runtime).
 
-**Date:** Oct 7 2026
+**Date:** Oct 8 2026
 **Owner:** adityahalde8777
 **Kaggle kernel:** `adityahalde8777/minimax-h3-comfy-2xt4-generator` (the ONLY kernel; old lanes deleted)
-**Latest:** **v17 RUN FAILED (one root cause) → v18 PUSHED, run in progress.** v17 proved almost
-everything: image smoke **PNG out**, video smoke **MP4 out @ 204.2–206.0 s/step × 4**,
-`DUAL-GPU CONFIRMED`, `SMOKE PASSED: ['image','video']`, pub self-test **11/11 green**
-(`outputs` + `gpus` now `200` — the v16 URLError retry fix **verified**), tasks `upscale 200`
-(GPU path) + `video_frames 200` live — but **bg_remove/extract failed** on `ImportError:
-cannot import name '_slice' from 'numpy._core.umath'` → pub raised → **sync cell never ran**
-(no write-back this boot). Root cause: a **mixed numpy dir** (`strings.py` from a newer numpy
-imports `_slice`; `umath.py` still 2.1.3-consistent — plain `import numpy` works, `scipy` and
-`rembg` die); the rembg pip tail was **discarded on rc=0** so the numpy move was invisible.
-**v18 fix**: install cell now (1) always prints the pip tail, (2) probes the exact imports in a
-subprocess, (3) **auto-heals** with `pip force-reinstall --no-deps numpy==<ver>` + numpy
-diagnostics (`__path__`, dist-info list, per-file `_slice` markers), (4) verifies **in-kernel**
-(stale-module drop + retry) → `TASKS_HEALTHY`; pub requires bg_remove/extract **only when
-healthy** (warn otherwise, upscale always required); `/h3api/tasks` reports `rembg_error` +
-`healthy`; api keeps the real import error in the failure text. Dry-run **59/59** again.
-Prior verified baseline: **v16** (32.9 min, 194–196 s/step × 4, first 42 GB dataset upload).
-Next: watch v18 → on success verify sync probe (`manifest match` vs re-upload) → six-MD pass →
-music lane (v19), transcription (v20).
+**Latest:** **v18 COMPLETED (first green end-to-end run) → v19 PUSHED, RUNNING.** v18 run result
+(the design worked): `task deps health: OK` (subprocess probe — *no* mixed numpy this boot),
+`DUAL-GPU CONFIRMED`, `SMOKE PASSED: ['image','video']`, pub self-test green incl. the no-op
+**POST /h3api/settings** (still single-attempt), task smoke = **`TASK SMOKE PASSED`** — upscale
+`200 ok=True` (REQUIRED) + video_frames `200` (3 outputs), bg_remove/extract FAILED but
+`WARN tolerated … (install cell reported task deps unhealthy after heal)` → graceful, no raise;
+**sync cell RAN**: `cache inventory: 62 files, 59.3 GB` → `manifest drift: 5 remote vs 6 local
+files -> upload` → `kagglehub upload OK -> adityahalde8777/minimax-h3-model-cache (716 s)`
+→ **dataset version 2** (nvfp4 15.7 G + turbo 4step lora 1.96 G + MANIFEST + placeholders)
+→ run **COMPLETED** (kernel done, not ERROR). The in-kernel verify FAILED on
+`AttributeError: 'numpy.ufunc' object has no attribute '__module__'` → `TASKS_HEALTHY=False`
+— root cause was **self-inflicted**: the v18 verify *popped* numpy from `sys.modules` and
+re-imported it in the same process, which is itself broken (verified locally: even a healthy
+numpy dies on pop+reimport, `cannot load module more than once per process`) — so a real (but
+tiny) install-time hiccup turned into total in-kernel numpy loss (warm-up, api import, every
+task). **v19 fix**: `_kernel_verify` is **non-destructive** (one attempt, prints the FIRST
+error + traceback tail, returns False → graceful), and the pub cell gets a shared `_post`
+**retry-once** helper for POST settings + all task POSTs (v18's bg_remove request died with
+`Network is unreachable` — client-side tunnel blip; upscale/video_frames fine). Also **Phase E:
+`build_full.py` now lives IN this repo** (reconstructed verbatim from the v18 notebook after
+the host restart wiped `/tmp/opencode`; rebuild reproduces the notebook byte-identical).
+Prior verified baseline: **v17** (31 min, PNG+MP4, 11/11 self-test, mixed-numpy blocked tasks)
+and **v16** (32.9 min, first 42 GB dataset upload). Next: watch v19 → verify (a) in-kernel
+first-error diagnostic is logged, (b) `TASK SMOKE PASSED` with either healthy bg_remove/extract
+or a clean warn, (c) sync idles (`manifest match` now that the dataset is populated) → then
+music lane (v20), transcription (v21).
 
 ---
 
@@ -43,11 +51,11 @@ The product is an **all-in-one generation hub** on one public Base URL, not just
 | Modality | Models (candidates) | Status |
 |---|---|---|
 | **Video generation** | MiniMax H3 (FL2VA/Ref2VA, turbo/dense), H3-Max-style variants | ✅ H3 lane in production |
-| **Image generation** | Flux family (Comfy-Org repos), community Fluxes | 🟡 **v17 smoke proven on Kaggle** (PNG + MP4, dual-GPU); v18 rerunning |
-| **Image/audio use-case tasks** | bg remover, element extractor, upscaler, frame/GIF/audio tools | 🟡 v17 live: upscale + video_frames `200`; bg_remove/extract blocked by mixed-numpy on Kaggle → **v18 auto-heal** |
-| **Music generation** | `audio_minimax_music_3` Comfy template (MinimaxMusic), LTx community | ⬜ Phase C (v18) |
+| **Image generation** | Flux family (Comfy-Org repos), community Fluxes | ✅ v18 smoke proven on Kaggle (PNG + MP4, dual-GPU, **run COMPLETED**) |
+| **Image/audio use-case tasks** | bg remover, element extractor, upscaler, frame/GIF/audio tools | 🟡 upscale + video_frames green on Kaggle; bg_remove/extract blocked by the in-kernel numpy re-import bug → **v19 non-destructive verify + first-error log** |
+| **Music generation** | `audio_minimax_music_3` Comfy template (MinimaxMusic), LTx community | ⬜ Phase C (v20) |
 | **Sound / soundtrack** | H3 native audio track (already joint audio+video), music models | ⬜ Phase C |
-| **Transcription (ASR)** | to research (Whisper-class on Comfy / community) | ⬜ Phase C research (v19) |
+| **Transcription (ASR)** | to research (Whisper-class on Comfy / community) | ⬜ Phase C research (v21) |
 | **Text generation** | ❌ explicitly NOT needed | — |
 
 Requirements distilled from user messages:
@@ -75,10 +83,11 @@ Requirements distilled from user messages:
 
 | Path | What |
 |---|---|
-| `/tmp/opencode/build_full.py` | **Notebook generator** (edit → `python3 build_full.py` writes the `.ipynb`). MUST be moved into this repo (Phase E) |
-| `/home/limitlessjourney829/kaggle/minimax-h3-api/minimax_h3_full_comfy.ipynb` | generated notebook (pushed with `kaggle kernels push -p .`) |
+| `/home/limitlessjourney829/kaggle/minimax-h3-api/build_full.py` | **Notebook generator — NOW IN THE REPO (Phase E done)**; edit → `python3 build_full.py` writes the `.ipynb`; cells embedded verbatim as raw `r'''…'''` blocks; `H3_NB_OUT` overrides the output path |
+| `/home/limitlessjourney829/kaggle/minimax-h3-api/minimax_h3_full_comfy.ipynb` | generated notebook (pushed with `kaggle kernels push -p .`; **never hand-edited**) |
 | `/home/limitlessjourney829/kaggle/minimax-h3-api/kernel-metadata.json` | kernel metadata (private, GPU, internet, T4) |
-| `/tmp/opencode/h3_t2v.json` | official template `video_minimax_h3_t2v.json` (local copy, converter dry-runs) |
+| `/home/limitlessjourney829/kaggle/minimax-h3-api/dryrun.py` (⬜ to rebuild) | local CPU dry-run harness (was `/tmp/opencode/dryrun.py`, 59/59; **lost with the host restart — MUST be reconstructed**) |
+| `/tmp/opencode/h3_t2v.json` (⚠ wiped with restart — re-fetch on need) | official template `video_minimax_h3_t2v.json` (local copy, converter dry-runs) |
 | `/tmp/opencode/ComfyUI/` | local ComfyUI clone (CPU dry-runs; needs pip CPU install) |
 | `/tmp/opencode/Comfy-H3-MultiStream/` | node-pack clone (docs, perf, split.py log lines) |
 | Repo | https://github.com/adittaya/kaggle-model-notebook-implementation-guide (public) |
@@ -225,7 +234,7 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
    MP4 out → **Phase B VERIFIED**
 
 ### Phase C — modalities (v16+, one low-quality smoke each, in order)
-1. 🟡 **Image generation + use-case tasks (v17 tested on Kaggle → v18 healing rerun)** —
+1. 🟡 **Image generation + use-case tasks (v17 tested → v18 healed+COMPLETED → v19 diagnostic rerun)** —
    **v17 run result (partial pass)**: image smoke produced `h3_image_00001_.png`, video smoke
    `MiniMax_H3_00001_.mp4` @ 204–206 s/step × 4 dual-GPU, `SMOKE PASSED`, pub self-test
    **11/11 `200`** (incl. the two v16 stragglers), tasks `upscale`/`video_frames` green —
@@ -234,7 +243,22 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
    `strings.py` + 2.1.3 `umath.py`; `import numpy` fine, scipy/rembg dead) → pub raised →
    sync skipped. **v18**: install-cell probe + `force-reinstall --no-deps numpy==<ver>` heal +
    `TASKS_HEALTHY` gate (bg_remove/extract warn-only when unhealthy, upscale always required).
-   **Design (as shipped in v17)**: template `flux_schnell.json` (Comfy-Org/workflow_templates) =
+   **v18 run result (FIRST COMPLETE)**: subprocess probe `task deps health: OK` (no mixed numpy
+   this boot) but **in-kernel verify FAILED** on `AttributeError: 'numpy.ufunc' object has no
+   attribute '__module__'` → `TASKS_HEALTHY=False`. Root cause = **self-inflicted** v18 bug:
+   `_kernel_verify` popped `numpy*` from `sys.modules` and re-imported in the same process —
+   pop+reimport is itself broken (locally reproduced: `ImportError: cannot load module more
+   than once per process` on 2.4.6; on Kaggle the re-import walks the newer-style
+   `multiarray._override___module__` and dies setting `ufunc.__module__`). Result: warm-up,
+   api `import rembg`, and every task re-imported the now-poisoned numpy → bg_remove/extract
+   down for the whole boot. The **`TASKS_HEALTHY` gate absorbed it**: upscale (REQUIRED) green,
+   video_frames green, bg_remove/extract `WARN tolerated` → `TASK SMOKE PASSED` → **sync RAN**:
+   `inventory 62 files, 59.3 GB` → `manifest drift: 5 remote vs 6 local -> upload` →
+   `kagglehub upload OK (716 s)` → **dataset version 2** → run **COMPLETED**. **v19 fix**:
+   `_kernel_verify` non-destructive (one attempt, prints first error + traceback tail, no
+   sys.modules surgery) + `_post` retry-once helper in pub (settings POST + task POSTs; v18's
+   bg_remove died client-side with `Network is unreachable` tunnel blip).
+   **Design (as shipped in v17, unchanged by v19)**: template `flux_schnell.json` (Comfy-Org/workflow_templates) =
    9 flat nodes, **no subgraph**, KSampler `4 steps, cfg 1, euler/simple`, latent 1024²,
    `CheckpointLoaderSimple` → **`Comfy-Org/flux1-schnell` / `flux1-schnell-fp8.safetensors`
    (17.24 GB, ONE file at repo root → downloaded into `models/checkpoints/`)**:
@@ -293,13 +317,22 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 4. ⬜ `/h3api/import {repo, files}` for arbitrary models; catalog auto-grows
 
 ### Phase E — housekeeping
-1. ⬜ Move `build_full.py` into this repo (source of truth; token injected from outside git)
+1. ✅ **`build_full.py` moved into this repo** (v19) — reconstructed verbatim from the v18
+   notebook after the host restart wiped `/tmp/opencode`; rebuild verified byte-identical against
+   `git show HEAD:minimax_h3_full_comfy.ipynb`; cells embedded as raw `r'''…'''` blocks, variable
+   names = `title_md, secrets, preflight, install, registry, settings, assets, convert, start,
+   api, smoke, wait, pub, sync`; writer emits `source:[src]` single-element lists
 2. ✅ v13/v14 outcome: step-time diagnostics (`[MultiStream] step:`) + READY block captured in
    both runs (v13 dense 861 s/step, v14 turbo 210 s/step)
 3. ✅ Perf explained (v14): exchange ≈6 % of a step ⇒ **T4 compute-bound**; levers landed = turbo
    + 0.4 MP (4.1× per step); untested levers = VAE-split + TE cache
-4. ⬜ Dataset cache bootstrap: first write-back populates the 200 GB dataset → later boots = instant
-5. ⬜ Rotate the GitHub PAT pasted in chat earlier; keep HF token out of the public repo
+4. 🟡 **Dataset cache bootstrap partially done**: v16 created it (42 GB), **v18 created version 2**
+   (nvfp4 15.7 G + turbo lora + MANIFEST). Next boots still need the **one-time manual step**:
+   attach `minimax-h3-model-cache` via Add Data so `/kaggle/input` populates and sync idles on
+   `manifest match`
+5. ⬜ Rebuild `dryrun.py` into the repo (lost with the host restart) so v20+ keeps the local
+   59/59 gate
+6. ⬜ Rotate the GitHub PAT pasted in chat earlier; keep HF token out of the public repo
 
 ---
 
@@ -365,6 +398,9 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 7 | **`TASKS_HEALTHY` gate on the pub task smoke**: bg_remove/extract REQUIRED only when the probe+heal succeeded (warn-only otherwise), upscale always required, video tasks warn-only; `/h3api/tasks` exposes `healthy` + `rembg_error` | a secondary feature (bg_remove) must not block READY and the write-back cell for the whole stack when the environment is the problem — but a *healthy* environment must prove the feature works; the run still completes and the log still shows the exact import error |
 | Oct 7 | **Always print the pip tail, even on rc=0** (was: print output only on failure) | v17's discarded pip output hid whether the rembg resolve moved numpy — the single most important diagnostic line was thrown away by a "keep logs clean" default |
 | Oct 7 | Cell-order fact: **sync only runs if pub succeeds** — a pub raise silently skips write-back | gates before READY must be calibrated to *environment-dependent* features; core-generation failures stay fatal, environment-conditional ones degrade with a loud warning |
+| Oct 8 | **v19: `_kernel_verify` is non-destructive — ONE attempt, print the FIRST error + traceback tail, return False, NEVER touch `sys.modules`** | v18's pop-and-reimport verify was self-inflicted damage: removing `numpy*` from a long-lived kernel and re-importing is broken by itself (locally: `cannot load module more than once per process`; on Kaggle: `ufunc.__module__` AttributeError) — a small install hiccup escalated into total in-kernel numpy loss for the whole boot. The useful behavior is diagnosis (log what actually failed) + graceful `TASKS_HEALTHY=False` |
+| Oct 8 | **v19: all pub POSTs (settings + task smoke) share one `_post` helper with retry-once + `e.reason` logging** | v18: `bg_remove` task request died client-side with `Network is unreachable` (tunnel blip) and `POST /h3api/settings` failed on the single attempt — GET probes already retry, the POSTs must too, so a healthy state can't false-fail |
+| Oct 8 | **Kaggle Dataset v18 outcome keeps versioning as-is**: manifest drift probe is authoritative — a populated dataset makes later boots idle on `manifest match` and upload only on real drift | v18 uploaded version 2 (716 s) from a `5 remote vs 6 local` drift; no manual seesaw of inventory counts needed |
 
 ---
 
@@ -417,7 +453,10 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 7 | **v17 built** (image branch + task engine + smoke schedule + pub retry/task smoke) → `ast`-validated 14 cells → local dry-run **59/59 ALL TESTS PASSED** (incl. real `upscale 4× 256→1024²`, bg_remove alpha extent, extract bbox, 8 tasks, path-escape 400, pub `TASK SMOKE PASSED`) | ✅ two dry-run bugs fixed en route: `T_upscale` forgot the `{"prompt": …}` wrapper; image generate test ran after the prune test deleted the flux placeholder |
 | Oct 7 | **v17 pushed** (kernel version 17) — image lane + use-case tasks + self-test retry | RUN **PARTIAL FAIL at 31 min**: image smoke PNG ✅, video MP4 @ 204–206 s/step × 4 ✅ dual-GPU ✅, `SMOKE PASSED` ✅, pub self-test **11/11 `200`** ✅ (outputs+gpus retry fix verified), tasks upscale/video_frames ✅ — but bg_remove/extract hit the **mixed-numpy `_slice` ImportError** → pub raised → sync skipped; root-caused from the downloaded log |
 | Oct 7 | **v18 built** — numpy probe + auto-heal + in-kernel verify in the install cell, `TASKS_HEALTHY` gate in pub, `rembg_error`/`healthy` in `/h3api/tasks`, pip tail always printed → rebuilt, 13 cells `ast`-validated, dry-run **59/59** | ✅ |
-| Oct 7 | **v18 pushed** (kernel version 18) | RUNNING — watching; success = `TASKS_HEALTHY = True` (or explicit heal line) + `TASK SMOKE PASSED` + **sync runs** (probe → manifest drift → second upload of ~58 GB) |
+| Oct 7 | **v18 pushed** (kernel version 18) — probe + heal + TASKS_HEALTHY gate | ✅ PUSHED |
+| Oct 8 | **v18 run COMPLETED — FIRST GREEN END-TO-END**: `task deps health: OK` (no mixed numpy this boot); **in-kernel verify FAILED** (`AttributeError: 'numpy.ufunc' object has no attribute '__module__'` → `TASKS_HEALTHY=False`) — root-caused as **self-inflicted pop+reimport bug** + reproduced locally; `DUAL-GPU CONFIRMED`, `SMOKE PASSED: ['image','video']`; task smoke upscale REQUIRED ✅ + video_frames ✅, bg_remove/extract `WARN tolerated` → **`TASK SMOKE PASSED`**; **sync RAN**: `inventory 62 files, 59.3 GB` → drift 5 vs 6 → **`kagglehub upload OK (716 s)` → dataset version 2**; run **COMPLETED** (kernel done, no ERROR); foundation log `/tmp/opencode/v18out/` | ✅ all six MDs pass pending (commit this round) |
+| Oct 8 | **v19 built**: `_kernel_verify` non-destructive (first-error traceback, no sys.modules surgery) + `_post` retry-once for settings/task POSTs; `build_full.py` reconstructed into the repo (byte-identical rebuild verified; 13 cells ast-validated) | ✅ |
+| Oct 8 | **v19 pushed** (kernel version 19) | RUNNING — success = first-error diagnostic visible in install cell (`in-kernel task deps import FAIL: <real cause>`), `TASK SMOKE PASSED` (healthy or clean warn), sync idles on `manifest match` (dataset now populated) |
 
 ---
 
@@ -435,5 +474,18 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 - Reproduce Kaggle failures locally when possible (local CPU ComfyUI dry-run = minutes vs a kernel round trip).
 - H3 specifics: no negative prompt; `embedding:<name>` in prompt; duration 5 s min trained; turbo
   = one boolean; template defaults are the int8/nvfp4 quant set.
+- **NEVER pop-and-reimport numpy (or any non-trivial extension module) inside the long-lived
+  kernel process** — a same-process re-import after `sys.modules` removal is broken by design
+  (`cannot load module more than once per process` on multi/ext single-phase init; on Kaggle it
+  walks `multiarray._override___module__` and dies with `'numpy.ufunc' object has no attribute
+  '__module__'`). "Verify in a fresh interpreter, report in the kernel" — the subprocess probe is
+  the heal's executor; the kernel only prints what it sees, never "fixes" itself by reloading C
+  extensions (v19).
+- **Repo build pipeline (Oct 8)**: `build_full.py` IS the source of truth and lives in this repo;
+  cells are embedded verbatim as raw `r'''…'''` strings (never regular — cell sources contain
+  `\n`/`\.` sequences that regular strings would eat). Rebuild → ast-validate → `kaggle kernels
+  push -p .` → commit/push repo + all six MDs. If the host restarts, `/tmp/opencode` dies —
+  recover the generator from the committed notebook (reconstruct: read `cells[].source`, join,
+  emit raw strings, verify byte-identical against `git show HEAD:…ipynb`).
 - After any change: rebuild → `ast`-validate all cells → `kaggle kernels push -p .` →
   `git add -A && git commit && git push` → **update all six MD files**.

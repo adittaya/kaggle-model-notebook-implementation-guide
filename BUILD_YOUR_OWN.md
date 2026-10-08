@@ -129,14 +129,32 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       subprocess (`from numpy._core.strings import *; from scipy import ndimage; import rembg`),
       and on failure resync numpy with `pip install --force-reinstall --no-deps numpy==<version>`
       (a same-version reinstall rewrites every file from one wheel — re-consistent by
-      construction), then verify in-kernel too (drop stale `numpy*` from `sys.modules` first).
-      Survive a permanent failure: gate *secondary-feature* task requirements behind the health
-      flag (`TASKS_HEALTHY`) so a bad environment can't block READY — or the write-back cell
-      that runs after it — while core generation stays mandatory
+      construction). Then run a **non-destructive in-kernel verify** (v19: ONE attempt, print the
+      first error + traceback tail, never reload C extensions in the kernel). Survive a permanent
+      failure: gate *secondary-feature* task requirements behind the health flag (`TASKS_HEALTHY`)
+      so a bad environment can't block READY — or the write-back cell that runs after it — while
+      core generation stays mandatory. **v18 lesson**: do NOT "fix" an in-kernel import failure by
+      popping the module from `sys.modules` and re-importing — same-process re-import of a stem
+      C-extension module is broken by itself (`cannot load module more than once per process`;
+      on Kaggle it dies inside `multiarray._override___module__` with `'numpy.ufunc' object has no
+      attribute '__module__'`), turning one small install hiccup into total in-kernel numpy loss
+      for the whole boot. Subprocess = the only place on-disk files get re-tested; the kernel only
+      reports.
 - [ ] **Never discard pip output on rc=0**: a "clean" install can silently shuffle numpy in the
       resolve (v17: a mixed `strings.py`/`umath.py` broke scipy and rembg while `import numpy`
       kept working — the one diagnostic line that would have shown it was thrown away). Always
       log the tail; it's the cheapest lifelong log line you print
+- [ ] **Retry-once EVERY client-side request you self-test with — GETs AND POSTs** (v19): GET
+      probes retried since v17, but v18's `POST /h3api/settings` (single attempt) and a `POST
+      /h3api/task` that died with `Network is unreachable` (tunnel blip) both false-failed a
+      healthy stack. One shared `_post` helper (retry, `e.reason` log, raise only after both
+      attempts) for all self-test POSTs keeps task smoke honest
+- [ ] **Keep the notebook generator inside the repo (Phase E)**: `/tmp` may be wiped by a host
+      restart (it happened — the generator and dry-run harness died with it). Commit the build
+      script; embed each cell as a raw `r'''…'''` string (regular strings eat the `\n`/`\.`
+      sequences living in cell sources); a wrong embedding was caught by diffing the rebuilt
+      notebook against `git show HEAD:….ipynb` — make that diff part of the gate after any
+      structural change
 - [ ] **Double escapes meant for the notebook**: cell code with `"\n"` / `b"\r\n"` sits inside the
       build script's triple-quoted string, which consumes the backslashes — write `\\n` there, and
       `ast.parse` every **generated** cell (the build script parsing cleanly proves nothing)
