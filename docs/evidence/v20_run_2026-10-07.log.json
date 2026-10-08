@@ -1,0 +1,652 @@
+[{"stream_name":"stderr","time":6.552385281,"data":"/usr/local/lib/python3.13/dist-packages/nbformat/validator.py:434: MissingIDFieldWarning: Cell is missing an id field, this will become a hard error in future nbformat versions. You may want to use `normalize()` on your notebooks before validations (available since nbformat 5.1.4). Previous versions of nbformat are fixing this issue transparently, and will stop doing so in the future.\n"}
+,{"stream_name":"stderr","time":6.552426922,"data":"  _validate(nbdict, ref, version, version_minor, relax_add_props)\n"}
+,{"stream_name":"stderr","time":7.517217671,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":7.5172442,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":7.517249915,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":7.517254833,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stderr","time":8.141607279,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":8.141635747,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":8.141642389,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":8.141646443,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stdout","time":9.439131442,"data":"HF_TOKEN fallback active (rate-limit-free downloads)\n"}
+,{"stream_name":"stdout","time":17.374569554,"data":"torch: 2.11.0+cu128 cuda: 12.8\n"}
+,{"stream_name":"stdout","time":17.374608198,"data":"device_count: 2\n"}
+,{"stream_name":"stdout","time":17.876400723,"data":"GPU0: Tesla T4 14.6GB free=14.5GB\n"}
+,{"stream_name":"stdout","time":17.876445695,"data":"GPU1: Tesla T4 14.6GB free=14.5GB\n"}
+,{"stream_name":"stdout","time":17.876452258,"data":"RAM total=31.3GB avail=29.6GB\n"}
+,{"stream_name":"stdout","time":17.876456013,"data":"/tmp free: 1069.921443939209 GiB\n"}
+,{"stream_name":"stdout","time":17.87646008,"data":"\t\u001b[4mGPU0\tGPU1\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\n"}
+,{"stream_name":"stdout","time":17.87646483,"data":"GPU0\t X \tPHB\t0-3\t0\t\tN/A\n"}
+,{"stream_name":"stdout","time":17.876468685,"data":"GPU1\tPHB\t X \t0-3\t0\t\tN/A\n"}
+,{"stream_name":"stdout","time":17.876473322,"data":"\n"}
+,{"stream_name":"stdout","time":17.876476544,"data":"Legend:\n"}
+,{"stream_name":"stdout","time":17.876479846,"data":"\n"}
+,{"stream_name":"stdout","time":17.8764835,"data":"  X    = Self\n"}
+,{"stream_name":"stdout","time":17.876487103,"data":"  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n"}
+,{"stream_name":"stdout","time":17.87649102,"data":"  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n"}
+,{"stream_name":"stdout","time":17.876494901,"data":"  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n"}
+,{"stream_name":"stdout","time":17.876498474999998,"data":"  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n"}
+,{"stream_name":"stdout","time":17.87650254,"data":"  PIX  = Connection traversing at most a single PCIe bridge\n"}
+,{"stream_name":"stdout","time":17.876506855,"data":"  NV#  = Connection traversing a bonded set of # NVLinks\n"}
+,{"stream_name":"stdout","time":17.876526265,"data":"\n"}
+,{"stream_name":"stderr","time":17.920148676,"data":"Cloning into '/tmp/ComfyUI'...\n"}
+,{"stream_name":"stderr","time":18.122391104,"data":"Cloning into '/tmp/ComfyUI'...\n"}
+,{"stream_name":"stderr","time":18.122414802,"data":"\n"}
+,{"stream_name":"stderr","time":18.122419589,"data":"Cloning into '/tmp/ComfyUI'...\n"}
+,{"stream_name":"stdout","time":22.14775973,"data":"Collecting comfyui-frontend-package==1.55.14 (from -r /tmp/ComfyUI/requirements.txt (line 1))\n"}
+,{"stream_name":"stdout","time":22.19086476,"data":"  Downloading comfyui_frontend_package-1.55.14-py3-none-any.whl.metadata (118 bytes)\n"}
+,{"stream_name":"stdout","time":22.349566451,"data":"Collecting comfyui-frontend-package==1.55.14 (from -r /tmp/ComfyUI/requirements.txt (line 1))\n"}
+,{"stream_name":"stdout","time":22.349584943,"data":"  Downloading comfyui_frontend_package-1.55.14-py3-none-any.whl.metadata (118 bytes)\n"}
+,{"stream_name":"stdout","time":22.374239401,"data":"Collecting comfyui-workflow-templates==0.11.78 (from -r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":22.385453948,"data":"  Downloading comfyui_workflow_templates-0.11.78-py3-none-any.whl.metadata (24 kB)\n"}
+,{"stream_name":"stdout","time":22.530137745,"data":"Collecting comfyui-embedded-docs==0.5.13 (from -r /tmp/ComfyUI/requirements.txt (line 3))\n"}
+,{"stream_name":"stdout","time":22.54678407,"data":"  Downloading comfyui_embedded_docs-0.5.13-py3-none-any.whl.metadata (5.3 kB)\n"}
+,{"stream_name":"stdout","time":22.562319866,"data":"Requirement already satisfied: torch in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 4)) (2.11.0+cu128)\n"}
+,{"stream_name":"stdout","time":22.576080449,"data":"Collecting comfyui-workflow-templates==0.11.78 (from -r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":22.57609672,"data":"  Downloading comfyui_workflow_templates-0.11.78-py3-none-any.whl.metadata (24 kB)\n"}
+,{"stream_name":"stdout","time":22.576101204,"data":"Collecting comfyui-embedded-docs==0.5.13 (from -r /tmp/ComfyUI/requirements.txt (line 3))\n"}
+,{"stream_name":"stdout","time":22.576104853,"data":"  Downloading comfyui_embedded_docs-0.5.13-py3-none-any.whl.metadata (5.3 kB)\n"}
+,{"stream_name":"stdout","time":22.576109114,"data":"Requirement already satisfied: torch in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 4)) (2.11.0+cu128)\n"}
+,{"stream_name":"stdout","time":22.654766877,"data":"Collecting torchsde (from -r /tmp/ComfyUI/requirements.txt (line 5))\n"}
+,{"stream_name":"stdout","time":22.665042084,"data":"  Downloading torchsde-0.2.6-py3-none-any.whl.metadata (5.3 kB)\n"}
+,{"stream_name":"stdout","time":22.683709943,"data":"Requirement already satisfied: torchvision in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 6)) (0.26.0+cu128)\n"}
+,{"stream_name":"stdout","time":22.690199331,"data":"Requirement already satisfied: numpy\u003e=1.25.0 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 7)) (2.1.3)\n"}
+,{"stream_name":"stdout","time":22.691576698,"data":"Requirement already satisfied: einops in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 8)) (0.8.2)\n"}
+,{"stream_name":"stdout","time":22.694459751,"data":"Requirement already satisfied: transformers\u003e=4.50.3 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 9)) (5.16.1)\n"}
+,{"stream_name":"stdout","time":22.696058817,"data":"Requirement already satisfied: tokenizers\u003e=0.13.3 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 10)) (0.23.1)\n"}
+,{"stream_name":"stdout","time":22.697964023,"data":"Requirement already satisfied: sentencepiece in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 11)) (0.2.2)\n"}
+,{"stream_name":"stdout","time":22.699269957,"data":"Requirement already satisfied: safetensors\u003e=0.4.2 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 12)) (0.8.0)\n"}
+,{"stream_name":"stdout","time":22.700679742,"data":"Requirement already satisfied: aiohttp\u003e=3.11.8 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 13)) (3.14.3)\n"}
+,{"stream_name":"stdout","time":22.705637023,"data":"Requirement already satisfied: yarl\u003e=1.18.0 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 14)) (1.24.5)\n"}
+,{"stream_name":"stdout","time":22.706623436,"data":"Requirement already satisfied: pyyaml in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 15)) (6.0.3)\n"}
+,{"stream_name":"stdout","time":22.707929067,"data":"Requirement already satisfied: Pillow in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 16)) (12.3.0)\n"}
+,{"stream_name":"stdout","time":22.714469373,"data":"Requirement already satisfied: scipy in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 17)) (1.16.3)\n"}
+,{"stream_name":"stdout","time":22.71744636,"data":"Requirement already satisfied: tqdm in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 18)) (4.67.3)\n"}
+,{"stream_name":"stdout","time":22.718919644,"data":"Requirement already satisfied: psutil in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 19)) (5.9.5)\n"}
+,{"stream_name":"stdout","time":22.720017634,"data":"Requirement already satisfied: alembic in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 20)) (1.20.0)\n"}
+,{"stream_name":"stdout","time":22.721440513,"data":"Requirement already satisfied: SQLAlchemy\u003e=2.0.0 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 21)) (2.0.52)\n"}
+,{"stream_name":"stdout","time":22.722565121,"data":"Requirement already satisfied: filelock in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 22)) (3.32.5)\n"}
+,{"stream_name":"stdout","time":22.84921899,"data":"Collecting av\u003e=17.0.0 (from -r /tmp/ComfyUI/requirements.txt (line 23))\n"}
+,{"stream_name":"stdout","time":22.856649944,"data":"Collecting torchsde (from -r /tmp/ComfyUI/requirements.txt (line 5))\n"}
+,{"stream_name":"stdout","time":22.856662905,"data":"  Downloading torchsde-0.2.6-py3-none-any.whl.metadata (5.3 kB)\n"}
+,{"stream_name":"stdout","time":22.856665774,"data":"Requirement already satisfied: torchvision in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 6)) (0.26.0+cu128)\n"}
+,{"stream_name":"stdout","time":22.85666832,"data":"Requirement already satisfied: numpy\u003e=1.25.0 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 7)) (2.1.3)\n"}
+,{"stream_name":"stdout","time":22.856671129,"data":"Requirement already satisfied: einops in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 8)) (0.8.2)\n"}
+,{"stream_name":"stdout","time":22.856673492,"data":"Requirement already satisfied: transformers\u003e=4.50.3 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 9)) (5.16.1)\n"}
+,{"stream_name":"stdout","time":22.856675892,"data":"Requirement already satisfied: tokenizers\u003e=0.13.3 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 10)) (0.23.1)\n"}
+,{"stream_name":"stdout","time":22.856684637,"data":"Requirement already satisfied: sentencepiece in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 11)) (0.2.2)\n"}
+,{"stream_name":"stdout","time":22.856687272,"data":"Requirement already satisfied: safetensors\u003e=0.4.2 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 12)) (0.8.0)\n"}
+,{"stream_name":"stdout","time":22.856689647,"data":"Requirement already satisfied: aiohttp\u003e=3.11.8 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 13)) (3.14.3)\n"}
+,{"stream_name":"stdout","time":22.856692099,"data":"Requirement already satisfied: yarl\u003e=1.18.0 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 14)) (1.24.5)\n"}
+,{"stream_name":"stdout","time":22.856694441,"data":"Requirement already satisfied: pyyaml in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 15)) (6.0.3)\n"}
+,{"stream_name":"stdout","time":22.85669679,"data":"Requirement already satisfied: Pillow in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 16)) (12.3.0)\n"}
+,{"stream_name":"stdout","time":22.856699112,"data":"Requirement already satisfied: scipy in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 17)) (1.16.3)\n"}
+,{"stream_name":"stdout","time":22.856701512,"data":"Requirement already satisfied: tqdm in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 18)) (4.67.3)\n"}
+,{"stream_name":"stdout","time":22.856704357,"data":"Requirement already satisfied: psutil in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 19)) (5.9.5)\n"}
+,{"stream_name":"stdout","time":22.856706721,"data":"Requirement already satisfied: alembic in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 20)) (1.20.0)\n"}
+,{"stream_name":"stdout","time":22.856709094,"data":"Requirement already satisfied: SQLAlchemy\u003e=2.0.0 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 21)) (2.0.52)\n"}
+,{"stream_name":"stdout","time":22.856711744000002,"data":"Requirement already satisfied: filelock in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 22)) (3.32.5)\n"}
+,{"stream_name":"stdout","time":22.856714075,"data":"Collecting av\u003e=17.0.0 (from -r /tmp/ComfyUI/requirements.txt (line 23))\n"}
+,{"stream_name":"stdout","time":22.85820768,"data":"  Downloading av-19.0.1-cp312-abi3-manylinux_2_28_x86_64.whl.metadata (5.0 kB)\n"}
+,{"stream_name":"stdout","time":22.96722188,"data":"Collecting comfy-kitchen==0.2.37 (from -r /tmp/ComfyUI/requirements.txt (line 24))\n"}
+,{"stream_name":"stdout","time":22.977388291,"data":"  Downloading comfy_kitchen-0.2.37-cp312-abi3-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (18 kB)\n"}
+,{"stream_name":"stdout","time":23.060216191,"data":"Collecting comfy-aimdo==0.5.5 (from -r /tmp/ComfyUI/requirements.txt (line 25))\n"}
+,{"stream_name":"stdout","time":23.06023398,"data":"  Downloading av-19.0.1-cp312-abi3-manylinux_2_28_x86_64.whl.metadata (5.0 kB)\n"}
+,{"stream_name":"stdout","time":23.060238422,"data":"Collecting comfy-kitchen==0.2.37 (from -r /tmp/ComfyUI/requirements.txt (line 24))\n"}
+,{"stream_name":"stdout","time":23.060242166,"data":"  Downloading comfy_kitchen-0.2.37-cp312-abi3-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (18 kB)\n"}
+,{"stream_name":"stdout","time":23.070293084,"data":"  Downloading comfy_aimdo-0.5.5-cp39-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (4.4 kB)\n"}
+,{"stream_name":"stdout","time":23.090667158,"data":"Requirement already satisfied: requests in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 26)) (2.34.2)\n"}
+,{"stream_name":"stdout","time":23.129201544,"data":"Collecting simpleeval\u003e=1.0.0 (from -r /tmp/ComfyUI/requirements.txt (line 27))\n"}
+,{"stream_name":"stdout","time":23.139334791,"data":"  Downloading simpleeval-1.0.8-py3-none-any.whl.metadata (20 kB)\n"}
+,{"stream_name":"stdout","time":23.158908002,"data":"Requirement already satisfied: blake3 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 28)) (1.0.10)\n"}
+,{"stream_name":"stdout","time":23.159972583,"data":"Requirement already satisfied: cryptography in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 29)) (50.0.1)\n"}
+,{"stream_name":"stdout","time":23.161722933,"data":"Requirement already satisfied: kornia\u003e=0.7.1 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 32)) (0.8.3)\n"}
+,{"stream_name":"stdout","time":23.261357808,"data":"Collecting comfy-aimdo==0.5.5 (from -r /tmp/ComfyUI/requirements.txt (line 25))\n"}
+,{"stream_name":"stdout","time":23.261374481,"data":"  Downloading comfy_aimdo-0.5.5-cp39-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (4.4 kB)\n"}
+,{"stream_name":"stdout","time":23.261379130999998,"data":"Requirement already satisfied: requests in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 26)) (2.34.2)\n"}
+,{"stream_name":"stdout","time":23.261383179,"data":"Collecting simpleeval\u003e=1.0.0 (from -r /tmp/ComfyUI/requirements.txt (line 27))\n"}
+,{"stream_name":"stdout","time":23.261387145,"data":"  Downloading simpleeval-1.0.8-py3-none-any.whl.metadata (20 kB)\n"}
+,{"stream_name":"stdout","time":23.261390809,"data":"Requirement already satisfied: blake3 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 28)) (1.0.10)\n"}
+,{"stream_name":"stdout","time":23.26139463,"data":"Requirement already satisfied: cryptography in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 29)) (50.0.1)\n"}
+,{"stream_name":"stdout","time":23.261398359,"data":"Requirement already satisfied: kornia\u003e=0.7.1 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 32)) (0.8.3)\n"}
+,{"stream_name":"stdout","time":23.263671817,"data":"Collecting spandrel (from -r /tmp/ComfyUI/requirements.txt (line 33))\n"}
+,{"stream_name":"stdout","time":23.275939644,"data":"  Downloading spandrel-0.4.2-py3-none-any.whl.metadata (15 kB)\n"}
+,{"stream_name":"stdout","time":23.294836552,"data":"Requirement already satisfied: pydantic~=2.0 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 34)) (2.13.5)\n"}
+,{"stream_name":"stdout","time":23.34799868,"data":"Collecting pydantic-settings~=2.0 (from -r /tmp/ComfyUI/requirements.txt (line 35))\n"}
+,{"stream_name":"stdout","time":23.356957427,"data":"  Downloading pydantic_settings-2.15.0-py3-none-any.whl.metadata (3.9 kB)\n"}
+,{"stream_name":"stdout","time":23.372076459,"data":"Requirement already satisfied: PyOpenGL\u003e=3.1.8 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 36)) (3.1.10)\n"}
+,{"stream_name":"stdout","time":23.403057676,"data":"Collecting comfy-angle (from -r /tmp/ComfyUI/requirements.txt (line 37))\n"}
+,{"stream_name":"stdout","time":23.413944598,"data":"  Downloading comfy_angle-0.1.1-py3-none-manylinux_2_28_x86_64.whl.metadata (2.2 kB)\n"}
+,{"stream_name":"stdout","time":23.46551872,"data":"Collecting spandrel (from -r /tmp/ComfyUI/requirements.txt (line 33))\n"}
+,{"stream_name":"stdout","time":23.465534684,"data":"  Downloading spandrel-0.4.2-py3-none-any.whl.metadata (15 kB)\n"}
+,{"stream_name":"stdout","time":23.465548205,"data":"Requirement already satisfied: pydantic~=2.0 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 34)) (2.13.5)\n"}
+,{"stream_name":"stdout","time":23.465552521,"data":"Collecting pydantic-settings~=2.0 (from -r /tmp/ComfyUI/requirements.txt (line 35))\n"}
+,{"stream_name":"stdout","time":23.4655562,"data":"  Downloading pydantic_settings-2.15.0-py3-none-any.whl.metadata (3.9 kB)\n"}
+,{"stream_name":"stdout","time":23.465559873,"data":"Requirement already satisfied: PyOpenGL\u003e=3.1.8 in /usr/local/lib/python3.13/dist-packages (from -r /tmp/ComfyUI/requirements.txt (line 36)) (3.1.10)\n"}
+,{"stream_name":"stdout","time":23.465564169,"data":"Collecting comfy-angle (from -r /tmp/ComfyUI/requirements.txt (line 37))\n"}
+,{"stream_name":"stdout","time":23.4655677,"data":"  Downloading comfy_angle-0.1.1-py3-none-manylinux_2_28_x86_64.whl.metadata (2.2 kB)\n"}
+,{"stream_name":"stdout","time":23.552282261,"data":"Collecting comfyui-workflow-templates-core==0.3.369 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":23.56373606,"data":"  Downloading comfyui_workflow_templates_core-0.3.369-py3-none-any.whl.metadata (260 bytes)\n"}
+,{"stream_name":"stdout","time":23.641993089,"data":"Collecting comfyui-workflow-templates-json==0.1.104 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":23.654820374,"data":"  Downloading comfyui_workflow_templates_json-0.1.104-py3-none-any.whl.metadata (266 bytes)\n"}
+,{"stream_name":"stdout","time":23.724765502,"data":"Collecting comfyui-workflow-templates-media-api==0.3.84 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":23.734846556,"data":"  Downloading comfyui_workflow_templates_media_api-0.3.84-py3-none-any.whl.metadata (290 bytes)\n"}
+,{"stream_name":"stdout","time":23.754036586,"data":"Collecting comfyui-workflow-templates-core==0.3.369 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":23.754053051,"data":"  Downloading comfyui_workflow_templates_core-0.3.369-py3-none-any.whl.metadata (260 bytes)\n"}
+,{"stream_name":"stdout","time":23.754057627999998,"data":"Collecting comfyui-workflow-templates-json==0.1.104 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":23.754061577,"data":"  Downloading comfyui_workflow_templates_json-0.1.104-py3-none-any.whl.metadata (266 bytes)\n"}
+,{"stream_name":"stdout","time":23.754065246,"data":"Collecting comfyui-workflow-templates-media-api==0.3.84 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":23.754068909,"data":"  Downloading comfyui_workflow_templates_media_api-0.3.84-py3-none-any.whl.metadata (290 bytes)\n"}
+,{"stream_name":"stdout","time":23.809519431,"data":"Collecting comfyui-workflow-templates-media-video==0.3.101 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":23.821199976,"data":"  Downloading comfyui_workflow_templates_media_video-0.3.101-py3-none-any.whl.metadata (283 bytes)\n"}
+,{"stream_name":"stdout","time":23.913856216,"data":"Collecting comfyui-workflow-templates-media-image==0.3.160 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":23.925063206,"data":"  Downloading comfyui_workflow_templates_media_image-0.3.160-py3-none-any.whl.metadata (283 bytes)\n"}
+,{"stream_name":"stdout","time":24.011474726,"data":"Collecting comfyui-workflow-templates-media-video==0.3.101 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":24.0114933,"data":"  Downloading comfyui_workflow_templates_media_video-0.3.101-py3-none-any.whl.metadata (283 bytes)\n"}
+,{"stream_name":"stdout","time":24.011498368,"data":"Collecting comfyui-workflow-templates-media-image==0.3.160 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":24.01150295,"data":"  Downloading comfyui_workflow_templates_media_image-0.3.160-py3-none-any.whl.metadata (283 bytes)\n"}
+,{"stream_name":"stdout","time":24.020837194,"data":"Collecting comfyui-workflow-templates-media-other==0.3.229 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":24.031717535,"data":"  Downloading comfyui_workflow_templates_media_other-0.3.229-py3-none-any.whl.metadata (306 bytes)\n"}
+,{"stream_name":"stdout","time":24.093936599,"data":"Collecting comfyui-workflow-templates-media-assets-01==0.1.48 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":24.10450815,"data":"  Downloading comfyui_workflow_templates_media_assets_01-0.1.48-py3-none-any.whl.metadata (290 bytes)\n"}
+,{"stream_name":"stdout","time":24.157979207,"data":"Collecting comfyui-workflow-templates-media-assets-02==0.1.11 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":24.216117222,"data":"  Downloading comfyui_workflow_templates_media_assets_02-0.1.11-py3-none-any.whl.metadata (290 bytes)\n"}
+,{"stream_name":"stdout","time":24.222724094,"data":"Collecting comfyui-workflow-templates-media-other==0.3.229 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":24.22277119,"data":"  Downloading comfyui_workflow_templates_media_other-0.3.229-py3-none-any.whl.metadata (306 bytes)\n"}
+,{"stream_name":"stdout","time":24.222775994,"data":"Collecting comfyui-workflow-templates-media-assets-01==0.1.48 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":24.222779093,"data":"  Downloading comfyui_workflow_templates_media_assets_01-0.1.48-py3-none-any.whl.metadata (290 bytes)\n"}
+,{"stream_name":"stdout","time":24.222782832,"data":"Collecting comfyui-workflow-templates-media-assets-02==0.1.11 (from comfyui-workflow-templates==0.11.78-\u003e-r /tmp/ComfyUI/requirements.txt (line 2))\n"}
+,{"stream_name":"stdout","time":24.22278708,"data":"  Downloading comfyui_workflow_templates_media_assets_02-0.1.11-py3-none-any.whl.metadata (290 bytes)\n"}
+,{"stream_name":"stdout","time":24.245157785,"data":"Requirement already satisfied: typing-extensions\u003e=4.10.0 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (4.16.0)\n"}
+,{"stream_name":"stdout","time":24.246404093,"data":"Requirement already satisfied: setuptools\u003c82 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (81.0.0)\n"}
+,{"stream_name":"stdout","time":24.247969526,"data":"Requirement already satisfied: sympy\u003e=1.13.3 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (1.14.0)\n"}
+,{"stream_name":"stdout","time":24.249373089,"data":"Requirement already satisfied: networkx\u003e=2.5.1 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (3.6.1)\n"}
+,{"stream_name":"stdout","time":24.250393633,"data":"Requirement already satisfied: jinja2 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (3.1.6)\n"}
+,{"stream_name":"stdout","time":24.252344691,"data":"Requirement already satisfied: fsspec\u003e=0.8.5 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (2025.12.0)\n"}
+,{"stream_name":"stdout","time":24.253895502,"data":"Requirement already satisfied: cuda-toolkit==12.8.1 in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.8.1)\n"}
+,{"stream_name":"stdout","time":24.25582982,"data":"Requirement already satisfied: cuda-bindings\u003c13,\u003e=12.9.4 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.9.7)\n"}
+,{"stream_name":"stdout","time":24.257101936,"data":"Requirement already satisfied: nvidia-cudnn-cu12==9.19.0.56 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (9.19.0.56)\n"}
+,{"stream_name":"stdout","time":24.258419082,"data":"Requirement already satisfied: nvidia-cusparselt-cu12==0.7.1 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (0.7.1)\n"}
+,{"stream_name":"stdout","time":24.259665645,"data":"Requirement already satisfied: nvidia-nccl-cu12==2.28.9 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (2.28.9)\n"}
+,{"stream_name":"stdout","time":24.260892226,"data":"Requirement already satisfied: nvidia-nvshmem-cu12==3.4.5 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (3.4.5)\n"}
+,{"stream_name":"stdout","time":24.262152441,"data":"Requirement already satisfied: triton==3.6.0 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (3.6.0)\n"}
+,{"stream_name":"stdout","time":24.288291012,"data":"Requirement already satisfied: nvidia-cublas-cu12==12.8.4.1.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.8.4.1)\n"}
+,{"stream_name":"stdout","time":24.2895708,"data":"Requirement already satisfied: nvidia-cuda-runtime-cu12==12.8.90.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.8.90)\n"}
+,{"stream_name":"stdout","time":24.290890469,"data":"Requirement already satisfied: nvidia-cufft-cu12==11.3.3.83.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (11.3.3.83)\n"}
+,{"stream_name":"stdout","time":24.29222175,"data":"Requirement already satisfied: nvidia-cufile-cu12==1.13.1.3.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (1.13.1.3)\n"}
+,{"stream_name":"stdout","time":24.293588664,"data":"Requirement already satisfied: nvidia-cuda-cupti-cu12==12.8.90.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.8.90)\n"}
+,{"stream_name":"stdout","time":24.294928041,"data":"Requirement already satisfied: nvidia-curand-cu12==10.3.9.90.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (10.3.9.90)\n"}
+,{"stream_name":"stdout","time":24.29653748,"data":"Requirement already satisfied: nvidia-cusolver-cu12==11.7.3.90.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (11.7.3.90)\n"}
+,{"stream_name":"stdout","time":24.297889116,"data":"Requirement already satisfied: nvidia-cusparse-cu12==12.5.8.93.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.5.8.93)\n"}
+,{"stream_name":"stdout","time":24.299240197,"data":"Requirement already satisfied: nvidia-nvjitlink-cu12==12.8.93.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.8.93)\n"}
+,{"stream_name":"stdout","time":24.300579427,"data":"Requirement already satisfied: nvidia-cuda-nvrtc-cu12==12.8.93.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.8.93)\n"}
+,{"stream_name":"stdout","time":24.301889195,"data":"Requirement already satisfied: nvidia-nvtx-cu12==12.8.90.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.8.90)\n"}
+,{"stream_name":"stdout","time":24.42916825,"data":"Collecting trampoline\u003e=0.1.2 (from torchsde-\u003e-r /tmp/ComfyUI/requirements.txt (line 5))\n"}
+,{"stream_name":"stdout","time":24.442654405,"data":"  Downloading trampoline-0.1.2-py3-none-any.whl.metadata (10 kB)\n"}
+,{"stream_name":"stdout","time":24.447501438,"data":"Requirement already satisfied: typing-extensions\u003e=4.10.0 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (4.16.0)\n"}
+,{"stream_name":"stdout","time":24.447519042,"data":"Requirement already satisfied: setuptools\u003c82 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (81.0.0)\n"}
+,{"stream_name":"stdout","time":24.447524398,"data":"Requirement already satisfied: sympy\u003e=1.13.3 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (1.14.0)\n"}
+,{"stream_name":"stdout","time":24.447529077,"data":"Requirement already satisfied: networkx\u003e=2.5.1 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (3.6.1)\n"}
+,{"stream_name":"stdout","time":24.447533157,"data":"Requirement already satisfied: jinja2 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (3.1.6)\n"}
+,{"stream_name":"stdout","time":24.447537171,"data":"Requirement already satisfied: fsspec\u003e=0.8.5 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (2025.12.0)\n"}
+,{"stream_name":"stdout","time":24.44755224,"data":"Requirement already satisfied: cuda-toolkit==12.8.1 in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.8.1)\n"}
+,{"stream_name":"stdout","time":24.447555724,"data":"Requirement already satisfied: cuda-bindings\u003c13,\u003e=12.9.4 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.9.7)\n"}
+,{"stream_name":"stdout","time":24.447558467,"data":"Requirement already satisfied: nvidia-cudnn-cu12==9.19.0.56 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (9.19.0.56)\n"}
+,{"stream_name":"stdout","time":24.447561458,"data":"Requirement already satisfied: nvidia-cusparselt-cu12==0.7.1 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (0.7.1)\n"}
+,{"stream_name":"stdout","time":24.447563993,"data":"Requirement already satisfied: nvidia-nccl-cu12==2.28.9 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (2.28.9)\n"}
+,{"stream_name":"stdout","time":24.447567278,"data":"Requirement already satisfied: nvidia-nvshmem-cu12==3.4.5 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (3.4.5)\n"}
+,{"stream_name":"stdout","time":24.447569906,"data":"Requirement already satisfied: triton==3.6.0 in /usr/local/lib/python3.13/dist-packages (from torch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (3.6.0)\n"}
+,{"stream_name":"stdout","time":24.44757246,"data":"Requirement already satisfied: nvidia-cublas-cu12==12.8.4.1.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.8.4.1)\n"}
+,{"stream_name":"stdout","time":24.447575368,"data":"Requirement already satisfied: nvidia-cuda-runtime-cu12==12.8.90.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.8.90)\n"}
+,{"stream_name":"stdout","time":24.447578268,"data":"Requirement already satisfied: nvidia-cufft-cu12==11.3.3.83.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (11.3.3.83)\n"}
+,{"stream_name":"stdout","time":24.447581122,"data":"Requirement already satisfied: nvidia-cufile-cu12==1.13.1.3.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (1.13.1.3)\n"}
+,{"stream_name":"stdout","time":24.447583957,"data":"Requirement already satisfied: nvidia-cuda-cupti-cu12==12.8.90.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.8.90)\n"}
+,{"stream_name":"stdout","time":24.44758679,"data":"Requirement already satisfied: nvidia-curand-cu12==10.3.9.90.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (10.3.9.90)\n"}
+,{"stream_name":"stdout","time":24.44759214,"data":"Requirement already satisfied: nvidia-cusolver-cu12==11.7.3.90.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (11.7.3.90)\n"}
+,{"stream_name":"stdout","time":24.447595173,"data":"Requirement already satisfied: nvidia-cusparse-cu12==12.5.8.93.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.5.8.93)\n"}
+,{"stream_name":"stdout","time":24.447598032,"data":"Requirement already satisfied: nvidia-nvjitlink-cu12==12.8.93.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.8.93)\n"}
+,{"stream_name":"stdout","time":24.447600858,"data":"Requirement already satisfied: nvidia-cuda-nvrtc-cu12==12.8.93.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.8.93)\n"}
+,{"stream_name":"stdout","time":24.447603745,"data":"Requirement already satisfied: nvidia-nvtx-cu12==12.8.90.* in /usr/local/lib/python3.13/dist-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == \"Linux\"-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (12.8.90)\n"}
+,{"stream_name":"stdout","time":24.447606886,"data":"Collecting trampoline\u003e=0.1.2 (from torchsde-\u003e-r /tmp/ComfyUI/requirements.txt (line 5))\n"}
+,{"stream_name":"stdout","time":24.447609466,"data":"  Downloading trampoline-0.1.2-py3-none-any.whl.metadata (10 kB)\n"}
+,{"stream_name":"stdout","time":24.498407521,"data":"Requirement already satisfied: huggingface-hub\u003c2.0,\u003e=1.5.0 in /usr/local/lib/python3.13/dist-packages (from transformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (1.29.0)\n"}
+,{"stream_name":"stdout","time":24.502693969,"data":"Requirement already satisfied: packaging\u003e=20.0 in /usr/local/lib/python3.13/dist-packages (from transformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (26.3)\n"}
+,{"stream_name":"stdout","time":24.505221919,"data":"Requirement already satisfied: regex\u003e=2025.10.22 in /usr/local/lib/python3.13/dist-packages (from transformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (2025.11.3)\n"}
+,{"stream_name":"stdout","time":24.507400593,"data":"Requirement already satisfied: typer in /usr/local/lib/python3.13/dist-packages (from transformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (0.27.2)\n"}
+,{"stream_name":"stdout","time":24.525680533,"data":"Requirement already satisfied: aiohappyeyeballs\u003e=2.5.0 in /usr/local/lib/python3.13/dist-packages (from aiohttp\u003e=3.11.8-\u003e-r /tmp/ComfyUI/requirements.txt (line 13)) (2.7.1)\n"}
+,{"stream_name":"stdout","time":24.526748006,"data":"Requirement already satisfied: aiosignal\u003e=1.4.0 in /usr/local/lib/python3.13/dist-packages (from aiohttp\u003e=3.11.8-\u003e-r /tmp/ComfyUI/requirements.txt (line 13)) (1.4.0)\n"}
+,{"stream_name":"stdout","time":24.528176503,"data":"Requirement already satisfied: attrs\u003e=17.3.0 in /usr/local/lib/python3.13/dist-packages (from aiohttp\u003e=3.11.8-\u003e-r /tmp/ComfyUI/requirements.txt (line 13)) (26.1.0)\n"}
+,{"stream_name":"stdout","time":24.530178762,"data":"Requirement already satisfied: frozenlist\u003e=1.1.1 in /usr/local/lib/python3.13/dist-packages (from aiohttp\u003e=3.11.8-\u003e-r /tmp/ComfyUI/requirements.txt (line 13)) (1.8.0)\n"}
+,{"stream_name":"stdout","time":24.53173808,"data":"Requirement already satisfied: multidict\u003c7.0,\u003e=4.5 in /usr/local/lib/python3.13/dist-packages (from aiohttp\u003e=3.11.8-\u003e-r /tmp/ComfyUI/requirements.txt (line 13)) (6.7.1)\n"}
+,{"stream_name":"stdout","time":24.533580587,"data":"Requirement already satisfied: propcache\u003e=0.2.0 in /usr/local/lib/python3.13/dist-packages (from aiohttp\u003e=3.11.8-\u003e-r /tmp/ComfyUI/requirements.txt (line 13)) (0.5.2)\n"}
+,{"stream_name":"stdout","time":24.541529506,"data":"Requirement already satisfied: idna\u003e=2.0 in /usr/local/lib/python3.13/dist-packages (from yarl\u003e=1.18.0-\u003e-r /tmp/ComfyUI/requirements.txt (line 14)) (3.19)\n"}
+,{"stream_name":"stdout","time":24.572867092,"data":"Requirement already satisfied: Mako in /usr/local/lib/python3.13/dist-packages (from alembic-\u003e-r /tmp/ComfyUI/requirements.txt (line 20)) (1.4.3)\n"}
+,{"stream_name":"stdout","time":24.579865091,"data":"Requirement already satisfied: greenlet\u003e=1 in /usr/local/lib/python3.13/dist-packages (from SQLAlchemy\u003e=2.0.0-\u003e-r /tmp/ComfyUI/requirements.txt (line 21)) (3.5.5)\n"}
+,{"stream_name":"stdout","time":24.588555239,"data":"Requirement already satisfied: charset_normalizer\u003c4,\u003e=2 in /usr/local/lib/python3.13/dist-packages (from requests-\u003e-r /tmp/ComfyUI/requirements.txt (line 26)) (3.4.9)\n"}
+,{"stream_name":"stdout","time":24.590251595,"data":"Requirement already satisfied: urllib3\u003c3,\u003e=1.26 in /usr/local/lib/python3.13/dist-packages (from requests-\u003e-r /tmp/ComfyUI/requirements.txt (line 26)) (2.8.0)\n"}
+,{"stream_name":"stdout","time":24.591376893,"data":"Requirement already satisfied: certifi\u003e=2023.5.7 in /usr/local/lib/python3.13/dist-packages (from requests-\u003e-r /tmp/ComfyUI/requirements.txt (line 26)) (2026.7.22)\n"}
+,{"stream_name":"stdout","time":24.597798408,"data":"Requirement already satisfied: cffi\u003e=2.0.0 in /usr/local/lib/python3.13/dist-packages (from cryptography-\u003e-r /tmp/ComfyUI/requirements.txt (line 29)) (2.1.1)\n"}
+,{"stream_name":"stdout","time":24.604232908,"data":"Requirement already satisfied: kornia-rs\u003e=0.1.9 in /usr/local/lib/python3.13/dist-packages (from kornia\u003e=0.7.1-\u003e-r /tmp/ComfyUI/requirements.txt (line 32)) (0.2.0)\n"}
+,{"stream_name":"stdout","time":24.617734557,"data":"Requirement already satisfied: annotated-types\u003e=0.6.0 in /usr/local/lib/python3.13/dist-packages (from pydantic~=2.0-\u003e-r /tmp/ComfyUI/requirements.txt (line 34)) (0.8.0)\n"}
+,{"stream_name":"stdout","time":24.618911375,"data":"Requirement already satisfied: pydantic-core==2.46.5 in /usr/local/lib/python3.13/dist-packages (from pydantic~=2.0-\u003e-r /tmp/ComfyUI/requirements.txt (line 34)) (2.46.5)\n"}
+,{"stream_name":"stdout","time":24.620462236,"data":"Requirement already satisfied: typing-inspection\u003e=0.4.2 in /usr/local/lib/python3.13/dist-packages (from pydantic~=2.0-\u003e-r /tmp/ComfyUI/requirements.txt (line 34)) (0.4.4)\n"}
+,{"stream_name":"stdout","time":24.629648318,"data":"Requirement already satisfied: python-dotenv\u003e=0.21.0 in /usr/local/lib/python3.13/dist-packages (from pydantic-settings~=2.0-\u003e-r /tmp/ComfyUI/requirements.txt (line 35)) (1.2.3)\n"}
+,{"stream_name":"stdout","time":24.6468524,"data":"Requirement already satisfied: pycparser in /usr/local/lib/python3.13/dist-packages (from cffi\u003e=2.0.0-\u003ecryptography-\u003e-r /tmp/ComfyUI/requirements.txt (line 29)) (3.0)\n"}
+,{"stream_name":"stdout","time":24.653756537,"data":"Requirement already satisfied: cuda-pathfinder~=1.1 in /usr/local/lib/python3.13/dist-packages (from cuda-bindings\u003c13,\u003e=12.9.4-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (1.8.0)\n"}
+,{"stream_name":"stdout","time":24.681697346,"data":"Requirement already satisfied: click\u003c9.0.0,\u003e=8.4.2 in /usr/local/lib/python3.13/dist-packages (from huggingface-hub\u003c2.0,\u003e=1.5.0-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (8.5.0)\n"}
+,{"stream_name":"stdout","time":24.684160793,"data":"Requirement already satisfied: hf-xet\u003c2.0.0,\u003e=1.5.2 in /usr/local/lib/python3.13/dist-packages (from huggingface-hub\u003c2.0,\u003e=1.5.0-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (1.6.0)\n"}
+,{"stream_name":"stdout","time":24.685466771,"data":"Requirement already satisfied: httpx\u003c1,\u003e=0.23.0 in /usr/local/lib/python3.13/dist-packages (from huggingface-hub\u003c2.0,\u003e=1.5.0-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (0.28.1)\n"}
+,{"stream_name":"stdout","time":24.700321519,"data":"Requirement already satisfied: huggingface-hub\u003c2.0,\u003e=1.5.0 in /usr/local/lib/python3.13/dist-packages (from transformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (1.29.0)\n"}
+,{"stream_name":"stdout","time":24.700338015,"data":"Requirement already satisfied: packaging\u003e=20.0 in /usr/local/lib/python3.13/dist-packages (from transformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (26.3)\n"}
+,{"stream_name":"stdout","time":24.700343044,"data":"Requirement already satisfied: regex\u003e=2025.10.22 in /usr/local/lib/python3.13/dist-packages (from transformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (2025.11.3)\n"}
+,{"stream_name":"stdout","time":24.700347294,"data":"Requirement already satisfied: typer in /usr/local/lib/python3.13/dist-packages (from transformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (0.27.2)\n"}
+,{"stream_name":"stdout","time":24.700351477,"data":"Requirement already satisfied: aiohappyeyeballs\u003e=2.5.0 in /usr/local/lib/python3.13/dist-packages (from aiohttp\u003e=3.11.8-\u003e-r /tmp/ComfyUI/requirements.txt (line 13)) (2.7.1)\n"}
+,{"stream_name":"stdout","time":24.700355586,"data":"Requirement already satisfied: aiosignal\u003e=1.4.0 in /usr/local/lib/python3.13/dist-packages (from aiohttp\u003e=3.11.8-\u003e-r /tmp/ComfyUI/requirements.txt (line 13)) (1.4.0)\n"}
+,{"stream_name":"stdout","time":24.700359574,"data":"Requirement already satisfied: attrs\u003e=17.3.0 in /usr/local/lib/python3.13/dist-packages (from aiohttp\u003e=3.11.8-\u003e-r /tmp/ComfyUI/requirements.txt (line 13)) (26.1.0)\n"}
+,{"stream_name":"stdout","time":24.700363866,"data":"Requirement already satisfied: frozenlist\u003e=1.1.1 in /usr/local/lib/python3.13/dist-packages (from aiohttp\u003e=3.11.8-\u003e-r /tmp/ComfyUI/requirements.txt (line 13)) (1.8.0)\n"}
+,{"stream_name":"stdout","time":24.700368022,"data":"Requirement already satisfied: multidict\u003c7.0,\u003e=4.5 in /usr/local/lib/python3.13/dist-packages (from aiohttp\u003e=3.11.8-\u003e-r /tmp/ComfyUI/requirements.txt (line 13)) (6.7.1)\n"}
+,{"stream_name":"stdout","time":24.700372003,"data":"Requirement already satisfied: propcache\u003e=0.2.0 in /usr/local/lib/python3.13/dist-packages (from aiohttp\u003e=3.11.8-\u003e-r /tmp/ComfyUI/requirements.txt (line 13)) (0.5.2)\n"}
+,{"stream_name":"stdout","time":24.700375654,"data":"Requirement already satisfied: idna\u003e=2.0 in /usr/local/lib/python3.13/dist-packages (from yarl\u003e=1.18.0-\u003e-r /tmp/ComfyUI/requirements.txt (line 14)) (3.19)\n"}
+,{"stream_name":"stdout","time":24.700379337,"data":"Requirement already satisfied: Mako in /usr/local/lib/python3.13/dist-packages (from alembic-\u003e-r /tmp/ComfyUI/requirements.txt (line 20)) (1.4.3)\n"}
+,{"stream_name":"stdout","time":24.700393658,"data":"Requirement already satisfied: greenlet\u003e=1 in /usr/local/lib/python3.13/dist-packages (from SQLAlchemy\u003e=2.0.0-\u003e-r /tmp/ComfyUI/requirements.txt (line 21)) (3.5.5)\n"}
+,{"stream_name":"stdout","time":24.700397803,"data":"Requirement already satisfied: charset_normalizer\u003c4,\u003e=2 in /usr/local/lib/python3.13/dist-packages (from requests-\u003e-r /tmp/ComfyUI/requirements.txt (line 26)) (3.4.9)\n"}
+,{"stream_name":"stdout","time":24.700401698,"data":"Requirement already satisfied: urllib3\u003c3,\u003e=1.26 in /usr/local/lib/python3.13/dist-packages (from requests-\u003e-r /tmp/ComfyUI/requirements.txt (line 26)) (2.8.0)\n"}
+,{"stream_name":"stdout","time":24.700405546,"data":"Requirement already satisfied: certifi\u003e=2023.5.7 in /usr/local/lib/python3.13/dist-packages (from requests-\u003e-r /tmp/ComfyUI/requirements.txt (line 26)) (2026.7.22)\n"}
+,{"stream_name":"stdout","time":24.700409393,"data":"Requirement already satisfied: cffi\u003e=2.0.0 in /usr/local/lib/python3.13/dist-packages (from cryptography-\u003e-r /tmp/ComfyUI/requirements.txt (line 29)) (2.1.1)\n"}
+,{"stream_name":"stdout","time":24.700413363,"data":"Requirement already satisfied: kornia-rs\u003e=0.1.9 in /usr/local/lib/python3.13/dist-packages (from kornia\u003e=0.7.1-\u003e-r /tmp/ComfyUI/requirements.txt (line 32)) (0.2.0)\n"}
+,{"stream_name":"stdout","time":24.700417148,"data":"Requirement already satisfied: annotated-types\u003e=0.6.0 in /usr/local/lib/python3.13/dist-packages (from pydantic~=2.0-\u003e-r /tmp/ComfyUI/requirements.txt (line 34)) (0.8.0)\n"}
+,{"stream_name":"stdout","time":24.700421116,"data":"Requirement already satisfied: pydantic-core==2.46.5 in /usr/local/lib/python3.13/dist-packages (from pydantic~=2.0-\u003e-r /tmp/ComfyUI/requirements.txt (line 34)) (2.46.5)\n"}
+,{"stream_name":"stdout","time":24.700424814,"data":"Requirement already satisfied: typing-inspection\u003e=0.4.2 in /usr/local/lib/python3.13/dist-packages (from pydantic~=2.0-\u003e-r /tmp/ComfyUI/requirements.txt (line 34)) (0.4.4)\n"}
+,{"stream_name":"stdout","time":24.700428738,"data":"Requirement already satisfied: python-dotenv\u003e=0.21.0 in /usr/local/lib/python3.13/dist-packages (from pydantic-settings~=2.0-\u003e-r /tmp/ComfyUI/requirements.txt (line 35)) (1.2.3)\n"}
+,{"stream_name":"stdout","time":24.700432599,"data":"Requirement already satisfied: pycparser in /usr/local/lib/python3.13/dist-packages (from cffi\u003e=2.0.0-\u003ecryptography-\u003e-r /tmp/ComfyUI/requirements.txt (line 29)) (3.0)\n"}
+,{"stream_name":"stdout","time":24.700436623,"data":"Requirement already satisfied: cuda-pathfinder~=1.1 in /usr/local/lib/python3.13/dist-packages (from cuda-bindings\u003c13,\u003e=12.9.4-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (1.8.0)\n"}
+,{"stream_name":"stdout","time":24.700441261,"data":"Requirement already satisfied: click\u003c9.0.0,\u003e=8.4.2 in /usr/local/lib/python3.13/dist-packages (from huggingface-hub\u003c2.0,\u003e=1.5.0-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (8.5.0)\n"}
+,{"stream_name":"stdout","time":24.700445605,"data":"Requirement already satisfied: hf-xet\u003c2.0.0,\u003e=1.5.2 in /usr/local/lib/python3.13/dist-packages (from huggingface-hub\u003c2.0,\u003e=1.5.0-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (1.6.0)\n"}
+,{"stream_name":"stdout","time":24.700450225,"data":"Requirement already satisfied: httpx\u003c1,\u003e=0.23.0 in /usr/local/lib/python3.13/dist-packages (from huggingface-hub\u003c2.0,\u003e=1.5.0-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (0.28.1)\n"}
+,{"stream_name":"stdout","time":24.723318795,"data":"Requirement already satisfied: mpmath\u003c1.4,\u003e=1.1.0 in /usr/local/lib/python3.13/dist-packages (from sympy\u003e=1.13.3-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (1.3.0)\n"}
+,{"stream_name":"stdout","time":24.73502456,"data":"Requirement already satisfied: MarkupSafe\u003e=2.0 in /usr/local/lib/python3.13/dist-packages (from jinja2-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (3.0.3)\n"}
+,{"stream_name":"stdout","time":24.741179121000002,"data":"Requirement already satisfied: shellingham\u003e=1.3.0 in /usr/local/lib/python3.13/dist-packages (from typer-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (1.5.4)\n"}
+,{"stream_name":"stdout","time":24.742828271,"data":"Requirement already satisfied: rich\u003e=13.8.0 in /usr/local/lib/python3.13/dist-packages (from typer-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (13.9.4)\n"}
+,{"stream_name":"stdout","time":24.744094621,"data":"Requirement already satisfied: annotated-doc\u003e=0.0.2 in /usr/local/lib/python3.13/dist-packages (from typer-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (0.0.5)\n"}
+,{"stream_name":"stdout","time":24.75609531,"data":"Requirement already satisfied: anyio in /usr/local/lib/python3.13/dist-packages (from httpx\u003c1,\u003e=0.23.0-\u003ehuggingface-hub\u003c2.0,\u003e=1.5.0-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (4.14.2)\n"}
+,{"stream_name":"stdout","time":24.758433611,"data":"Requirement already satisfied: httpcore==1.* in /usr/local/lib/python3.13/dist-packages (from httpx\u003c1,\u003e=0.23.0-\u003ehuggingface-hub\u003c2.0,\u003e=1.5.0-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (1.0.9)\n"}
+,{"stream_name":"stdout","time":24.763580086,"data":"Requirement already satisfied: h11\u003e=0.16 in /usr/local/lib/python3.13/dist-packages (from httpcore==1.*-\u003ehttpx\u003c1,\u003e=0.23.0-\u003ehuggingface-hub\u003c2.0,\u003e=1.5.0-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (0.16.0)\n"}
+,{"stream_name":"stdout","time":24.773285823,"data":"Requirement already satisfied: markdown-it-py\u003e=2.2.0 in /usr/local/lib/python3.13/dist-packages (from rich\u003e=13.8.0-\u003etyper-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (4.2.0)\n"}
+,{"stream_name":"stdout","time":24.774337215,"data":"Requirement already satisfied: pygments\u003c3.0.0,\u003e=2.13.0 in /usr/local/lib/python3.13/dist-packages (from rich\u003e=13.8.0-\u003etyper-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (2.21.0)\n"}
+,{"stream_name":"stdout","time":24.7842215,"data":"Requirement already satisfied: mdurl~=0.1 in /usr/local/lib/python3.13/dist-packages (from markdown-it-py\u003e=2.2.0-\u003erich\u003e=13.8.0-\u003etyper-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (0.1.2)\n"}
+,{"stream_name":"stdout","time":24.811554362,"data":"Downloading comfyui_frontend_package-1.55.14-py3-none-any.whl (25.5 MB)\n"}
+,{"stream_name":"stdout","time":24.925706488,"data":"Requirement already satisfied: mpmath\u003c1.4,\u003e=1.1.0 in /usr/local/lib/python3.13/dist-packages (from sympy\u003e=1.13.3-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (1.3.0)\n"}
+,{"stream_name":"stdout","time":24.925736392,"data":"Requirement already satisfied: MarkupSafe\u003e=2.0 in /usr/local/lib/python3.13/dist-packages (from jinja2-\u003etorch-\u003e-r /tmp/ComfyUI/requirements.txt (line 4)) (3.0.3)\n"}
+,{"stream_name":"stdout","time":24.925741853,"data":"Requirement already satisfied: shellingham\u003e=1.3.0 in /usr/local/lib/python3.13/dist-packages (from typer-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (1.5.4)\n"}
+,{"stream_name":"stdout","time":24.925746429,"data":"Requirement already satisfied: rich\u003e=13.8.0 in /usr/local/lib/python3.13/dist-packages (from typer-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (13.9.4)\n"}
+,{"stream_name":"stdout","time":24.925757541,"data":"Requirement already satisfied: annotated-doc\u003e=0.0.2 in /usr/local/lib/python3.13/dist-packages (from typer-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (0.0.5)\n"}
+,{"stream_name":"stdout","time":24.925762858,"data":"Requirement already satisfied: anyio in /usr/local/lib/python3.13/dist-packages (from httpx\u003c1,\u003e=0.23.0-\u003ehuggingface-hub\u003c2.0,\u003e=1.5.0-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (4.14.2)\n"}
+,{"stream_name":"stdout","time":24.925768414,"data":"Requirement already satisfied: httpcore==1.* in /usr/local/lib/python3.13/dist-packages (from httpx\u003c1,\u003e=0.23.0-\u003ehuggingface-hub\u003c2.0,\u003e=1.5.0-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (1.0.9)\n"}
+,{"stream_name":"stdout","time":24.925773236,"data":"Requirement already satisfied: h11\u003e=0.16 in /usr/local/lib/python3.13/dist-packages (from httpcore==1.*-\u003ehttpx\u003c1,\u003e=0.23.0-\u003ehuggingface-hub\u003c2.0,\u003e=1.5.0-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (0.16.0)\n"}
+,{"stream_name":"stdout","time":24.925778373,"data":"Requirement already satisfied: markdown-it-py\u003e=2.2.0 in /usr/local/lib/python3.13/dist-packages (from rich\u003e=13.8.0-\u003etyper-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (4.2.0)\n"}
+,{"stream_name":"stdout","time":24.92578366,"data":"Requirement already satisfied: pygments\u003c3.0.0,\u003e=2.13.0 in /usr/local/lib/python3.13/dist-packages (from rich\u003e=13.8.0-\u003etyper-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (2.21.0)\n"}
+,{"stream_name":"stdout","time":24.925790193,"data":"Requirement already satisfied: mdurl~=0.1 in /usr/local/lib/python3.13/dist-packages (from markdown-it-py\u003e=2.2.0-\u003erich\u003e=13.8.0-\u003etyper-\u003etransformers\u003e=4.50.3-\u003e-r /tmp/ComfyUI/requirements.txt (line 9)) (0.1.2)\n"}
+,{"stream_name":"stdout","time":24.925794835,"data":"Downloading comfyui_frontend_package-1.55.14-py3-none-any.whl (25.5 MB)\n"}
+,{"stream_name":"stdout","time":25.069004745,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 25.5/25.5 MB 71.2 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":25.077359208,"data":"Downloading comfyui_workflow_templates-0.11.78-py3-none-any.whl (10 kB)\n"}
+,{"stream_name":"stdout","time":25.107256545,"data":"Downloading comfyui_embedded_docs-0.5.13-py3-none-any.whl (19.9 MB)\n"}
+,{"stream_name":"stdout","time":25.269964391,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 25.5/25.5 MB 71.2 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":25.269993597,"data":"Downloading comfyui_workflow_templates-0.11.78-py3-none-any.whl (10 kB)\n"}
+,{"stream_name":"stdout","time":25.269998593,"data":"Downloading comfyui_embedded_docs-0.5.13-py3-none-any.whl (19.9 MB)\n"}
+,{"stream_name":"stdout","time":25.283154553,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 19.9/19.9 MB 79.4 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":25.296012315,"data":"Downloading comfy_kitchen-0.2.37-cp312-abi3-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (59.2 MB)\n"}
+,{"stream_name":"stdout","time":25.4855633,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 19.9/19.9 MB 79.4 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":25.485604274,"data":"Downloading comfy_kitchen-0.2.37-cp312-abi3-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (59.2 MB)\n"}
+,{"stream_name":"stdout","time":25.844747086,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 59.2/59.2 MB 35.0 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":25.859373067,"data":"Downloading comfy_aimdo-0.5.5-cp39-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (432 kB)\n"}
+,{"stream_name":"stdout","time":25.878652742,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 432.7/432.7 kB 24.7 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":25.888000551,"data":"Downloading comfyui_workflow_templates_core-0.3.369-py3-none-any.whl (80 kB)\n"}
+,{"stream_name":"stdout","time":25.9062083,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 80.6/80.6 kB 4.4 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":25.920629868,"data":"Downloading comfyui_workflow_templates_json-0.1.104-py3-none-any.whl (3.8 MB)\n"}
+,{"stream_name":"stdout","time":25.963489915,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.8/3.8 MB 94.5 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":25.974399661,"data":"Downloading comfyui_workflow_templates_media_api-0.3.84-py3-none-any.whl (100.1 MB)\n"}
+,{"stream_name":"stdout","time":26.047345632,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 59.2/59.2 MB 35.0 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":26.047365598,"data":"Downloading comfy_aimdo-0.5.5-cp39-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (432 kB)\n"}
+,{"stream_name":"stdout","time":26.047370651,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 432.7/432.7 kB 24.7 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":26.047375484,"data":"Downloading comfyui_workflow_templates_core-0.3.369-py3-none-any.whl (80 kB)\n"}
+,{"stream_name":"stdout","time":26.047380236,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 80.6/80.6 kB 4.4 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":26.047385112,"data":"Downloading comfyui_workflow_templates_json-0.1.104-py3-none-any.whl (3.8 MB)\n"}
+,{"stream_name":"stdout","time":26.047389257,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.8/3.8 MB 94.5 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":26.047393877,"data":"Downloading comfyui_workflow_templates_media_api-0.3.84-py3-none-any.whl (100.1 MB)\n"}
+,{"stream_name":"stdout","time":26.96459299,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100.1/100.1 MB 20.1 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":26.980122233,"data":"Downloading comfyui_workflow_templates_media_assets_01-0.1.48-py3-none-any.whl (94.2 MB)\n"}
+,{"stream_name":"stdout","time":27.166669186,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100.1/100.1 MB 20.1 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":27.166696266,"data":"Downloading comfyui_workflow_templates_media_assets_01-0.1.48-py3-none-any.whl (94.2 MB)\n"}
+,{"stream_name":"stdout","time":28.053727898,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 94.2/94.2 MB 21.4 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":28.067265659,"data":"Downloading comfyui_workflow_templates_media_assets_02-0.1.11-py3-none-any.whl (27.4 MB)\n"}
+,{"stream_name":"stdout","time":28.255924505,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 94.2/94.2 MB 21.4 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":28.255947713,"data":"Downloading comfyui_workflow_templates_media_assets_02-0.1.11-py3-none-any.whl (27.4 MB)\n"}
+,{"stream_name":"stdout","time":28.370387394,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 27.4/27.4 MB 59.3 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":28.38373633,"data":"Downloading comfyui_workflow_templates_media_image-0.3.160-py3-none-any.whl (89.4 MB)\n"}
+,{"stream_name":"stdout","time":28.572460227,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 27.4/27.4 MB 59.3 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":28.572482844,"data":"Downloading comfyui_workflow_templates_media_image-0.3.160-py3-none-any.whl (89.4 MB)\n"}
+,{"stream_name":"stdout","time":29.46806719,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 89.4/89.4 MB 21.0 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":29.479256661,"data":"Downloading comfyui_workflow_templates_media_other-0.3.229-py3-none-any.whl (89.1 MB)\n"}
+,{"stream_name":"stdout","time":29.669858779,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 89.4/89.4 MB 21.0 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":29.669914216,"data":"Downloading comfyui_workflow_templates_media_other-0.3.229-py3-none-any.whl (89.1 MB)\n"}
+,{"stream_name":"stdout","time":30.507635666,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 89.1/89.1 MB 20.6 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":30.518478182,"data":"Downloading comfyui_workflow_templates_media_video-0.3.101-py3-none-any.whl (104.3 MB)\n"}
+,{"stream_name":"stdout","time":30.709700058,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 89.1/89.1 MB 20.6 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":30.709724162,"data":"Downloading comfyui_workflow_templates_media_video-0.3.101-py3-none-any.whl (104.3 MB)\n"}
+,{"stream_name":"stdout","time":31.684665024,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 104.3/104.3 MB 18.0 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":31.695486191,"data":"Downloading torchsde-0.2.6-py3-none-any.whl (61 kB)\n"}
+,{"stream_name":"stdout","time":31.716552954,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 61.2/61.2 kB 2.7 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":31.728573982,"data":"Downloading av-19.0.1-cp312-abi3-manylinux_2_28_x86_64.whl (35.0 MB)\n"}
+,{"stream_name":"stdout","time":31.886656326,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 104.3/104.3 MB 18.0 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":31.886694151,"data":"Downloading torchsde-0.2.6-py3-none-any.whl (61 kB)\n"}
+,{"stream_name":"stdout","time":31.886699439,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 61.2/61.2 kB 2.7 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":31.886715057,"data":"Downloading av-19.0.1-cp312-abi3-manylinux_2_28_x86_64.whl (35.0 MB)\n"}
+,{"stream_name":"stdout","time":32.100330426,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 35.0/35.0 MB 51.8 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":32.109635493,"data":"Downloading simpleeval-1.0.8-py3-none-any.whl (18 kB)\n"}
+,{"stream_name":"stdout","time":32.139862285,"data":"Downloading spandrel-0.4.2-py3-none-any.whl (320 kB)\n"}
+,{"stream_name":"stdout","time":32.162587078,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 320.8/320.8 kB 15.1 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":32.171456294,"data":"Downloading pydantic_settings-2.15.0-py3-none-any.whl (69 kB)\n"}
+,{"stream_name":"stdout","time":32.189938286,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 69.4/69.4 kB 3.6 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":32.20150006,"data":"Downloading comfy_angle-0.1.1-py3-none-manylinux_2_28_x86_64.whl (5.1 MB)\n"}
+,{"stream_name":"stdout","time":32.260856365,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.1/5.1 MB 89.7 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":32.270926809,"data":"Downloading trampoline-0.1.2-py3-none-any.whl (5.2 kB)\n"}
+,{"stream_name":"stdout","time":32.302181972,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 35.0/35.0 MB 51.8 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":32.302200082,"data":"Downloading simpleeval-1.0.8-py3-none-any.whl (18 kB)\n"}
+,{"stream_name":"stdout","time":32.302204605,"data":"Downloading spandrel-0.4.2-py3-none-any.whl (320 kB)\n"}
+,{"stream_name":"stdout","time":32.302209262,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 320.8/320.8 kB 15.1 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":32.302213516,"data":"Downloading pydantic_settings-2.15.0-py3-none-any.whl (69 kB)\n"}
+,{"stream_name":"stdout","time":32.302217133,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 69.4/69.4 kB 3.6 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":32.302221187,"data":"Downloading comfy_angle-0.1.1-py3-none-manylinux_2_28_x86_64.whl (5.1 MB)\n"}
+,{"stream_name":"stdout","time":32.302224581,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.1/5.1 MB 89.7 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":32.302228255,"data":"Downloading trampoline-0.1.2-py3-none-any.whl (5.2 kB)\n"}
+,{"stream_name":"stdout","time":36.450523318,"data":"Installing collected packages: trampoline, simpleeval, comfyui-workflow-templates-media-video, comfyui-workflow-templates-media-other, comfyui-workflow-templates-media-image, comfyui-workflow-templates-media-assets-02, comfyui-workflow-templates-media-assets-01, comfyui-workflow-templates-media-api, comfyui-workflow-templates-json, comfyui-workflow-templates-core, comfyui-frontend-package, comfyui-embedded-docs, comfy-kitchen, comfy-angle, comfy-aimdo, av, comfyui-workflow-templates, pydantic-settings, torchsde, spandrel\n"}
+,{"stream_name":"stdout","time":36.652660669,"data":"Installing collected packages: trampoline, simpleeval, comfyui-workflow-templates-media-video, comfyui-workflow-templates-media-other, comfyui-workflow-templates-media-image, comfyui-workflow-templates-media-assets-02, comfyui-workflow-templates-media-assets-01, comfyui-workflow-templates-media-api, comfyui-workflow-templates-json, comfyui-workflow-templates-core, comfyui-frontend-package, comfyui-embedded-docs, comfy-kitchen, comfy-angle, comfy-aimdo, av, comfyui-workflow-templates, pydantic-settings, torchsde, spandrel\n"}
+,{"stream_name":"stdout","time":46.026141916,"data":"Successfully installed av-19.0.1 comfy-aimdo-0.5.5 comfy-angle-0.1.1 comfy-kitchen-0.2.37 comfyui-embedded-docs-0.5.13 comfyui-frontend-package-1.55.14 comfyui-workflow-templates-0.11.78 comfyui-workflow-templates-core-0.3.369 comfyui-workflow-templates-json-0.1.104 comfyui-workflow-templates-media-api-0.3.84 comfyui-workflow-templates-media-assets-01-0.1.48 comfyui-workflow-templates-media-assets-02-0.1.11 comfyui-workflow-templates-media-image-0.3.160 comfyui-workflow-templates-media-other-0.3.229 comfyui-workflow-templates-media-video-0.3.101 pydantic-settings-2.15.0 simpleeval-1.0.8 spandrel-0.4.2 torchsde-0.2.6 trampoline-0.1.2\n"}
+,{"stream_name":"stdout","time":46.228856247,"data":"Successfully installed av-19.0.1 comfy-aimdo-0.5.5 comfy-angle-0.1.1 comfy-kitchen-0.2.37 comfyui-embedded-docs-0.5.13 comfyui-frontend-package-1.55.14 comfyui-workflow-templates-0.11.78 comfyui-workflow-templates-core-0.3.369 comfyui-workflow-templates-json-0.1.104 comfyui-workflow-templates-media-api-0.3.84 comfyui-workflow-templates-media-assets-01-0.1.48 comfyui-workflow-templates-media-assets-02-0.1.11 comfyui-workflow-templates-media-image-0.3.160 comfyui-workflow-templates-media-other-0.3.229 comfyui-workflow-templates-media-video-0.3.101 pydantic-settings-2.15.0 simpleeval-1.0.8 spandrel-0.4.2 torchsde-0.2.6 trampoline-0.1.2\n"}
+,{"stream_name":"stderr","time":46.252998472,"data":"Cloning into '/tmp/ComfyUI/custom_nodes/ComfyUI-H3-MultiStream'...\n"}
+,{"stream_name":"stderr","time":46.455844152,"data":"Cloning into '/tmp/ComfyUI/custom_nodes/ComfyUI-H3-MultiStream'...\n"}
+,{"stream_name":"stderr","time":46.455868319,"data":"\n"}
+,{"stream_name":"stderr","time":46.455879696,"data":"Cloning into '/tmp/ComfyUI/custom_nodes/ComfyUI-H3-MultiStream'...\n"}
+,{"stream_name":"stderr","time":49.399322532,"data":"ERROR: Could not open requirements file: [Errno 2] No such file or directory: '/tmp/ComfyUI/custom_nodes/ComfyUI-H3-MultiStream/requirements.txt'\n"}
+,{"stream_name":"stderr","time":49.608775525,"data":"ERROR: Could not open requirements file: [Errno 2] No such file or directory: '/tmp/ComfyUI/custom_nodes/ComfyUI-H3-MultiStream/requirements.txt'\n"}
+,{"stream_name":"stderr","time":49.608817552,"data":"\n"}
+,{"stream_name":"stderr","time":49.60882495,"data":"ERROR: Could not open requirements file: [Errno 2] No such file or directory: '/tmp/ComfyUI/custom_nodes/ComfyUI-H3-MultiStream/requirements.txt'\n"}
+,{"stream_name":"stdout","time":71.02953228,"data":"rembg install rc=0\n"}
+,{"stream_name":"stdout","time":71.029555927,"data":"compatible.\n"}
+,{"stream_name":"stdout","time":71.029571751,"data":"google-colab 1.0.0 requires requests==2.32.4, but you have requests 2.34.2 which is incompatible.\n"}
+,{"stream_name":"stdout","time":71.029575319,"data":"dopamine-rl 4.1.2 requires gym\u003c=0.25.2, but you have gym 0.26.2 which is incompatible.\n"}
+,{"stream_name":"stdout","time":71.02957893,"data":"moviepy 1.0.3 requires decorator\u003c5.0,\u003e=4.0.2, but you have decorator 5.3.1 which is incompatible.\n"}
+,{"stream_name":"stdout","time":71.029606257,"data":"cuml-cu12 26.2.0 requires numba\u003c0.62.0,\u003e=0.60.0, but you have numba 0.68.0 which is incompatible.\n"}
+,{"stream_name":"stdout","time":71.029610974,"data":"cudf-cu12 26.2.1 requires numba\u003c0.62.0,\u003e=0.60.0, but you have numba 0.68.0 which is incompatible.\n"}
+,{"stream_name":"stdout","time":71.029622186,"data":"pytensor 2.38.3 requires numba\u003c=0.65.1,\u003e=0.58, but you have numba 0.68.0 which is incompatible.\n"}
+,{"stream_name":"stdout","time":71.029625069,"data":"cucim-cu12 26.2.1 requires scikit-image\u003c0.26.0,\u003e=0.19.0, but you have scikit-image 0.26.0 which is incompatible.\n"}
+,{"stream_name":"stdout","time":71.029627769,"data":"\n"}
+,{"stream_name":"stdout","time":128.480721918,"data":"task deps health: OK\n"}
+,{"stream_name":"stdout","time":128.480782165,"data":"in-kernel task deps import FAIL: ImportError cannot import name '_slice' from 'numpy._core.umath' (/usr/local/lib/python3.13/dist-packages/numpy/_core/umath.py)\n"}
+,{"stream_name":"stdout","time":128.480791567,"data":"  last frames:   File \"/usr/local/lib/python3.13/dist-packages/numpy/_core/strings.py\", line 22, in \u003cmodule\u003e |     from numpy._core.umath import ( |     ...\u003c35 lines\u003e... |     ) | ImportError: cannot import name '_slice' from 'numpy._core.umath' (/usr/local/lib/python3.13/dist-packages/numpy/_core/umath.py)\n"}
+,{"stream_name":"stdout","time":128.480814108,"data":"in-kernel task deps import: FAIL\n"}
+,{"stream_name":"stdout","time":128.480820858,"data":"  numpy: 2.1.3 root: /usr/local/lib/python3.13/dist-packages/numpy\n"}
+,{"stream_name":"stdout","time":128.480826578,"data":"  __init__.py: True __path__: ['/usr/local/lib/python3.13/dist-packages/numpy']\n"}
+,{"stream_name":"stdout","time":128.480832204,"data":"  dist-info: ['numpy-2.5.3.dist-info']\n"}
+,{"stream_name":"stdout","time":128.480838373,"data":"  umath.py: exists=True has _slice=True\n"}
+,{"stream_name":"stdout","time":128.480844598,"data":"  strings.py: exists=True has _slice=True\n"}
+,{"stream_name":"stdout","time":128.480850429,"data":"heal: pip force-reinstall --no-deps numpy==2.1.3\n"}
+,{"stream_name":"stdout","time":134.614424531,"data":"heal rc=0      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 62.0/62.0 kB 2.1 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":134.614452983,"data":"   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.0/16.0 MB 39.0 MB/s eta 0:00:00\n"}
+,{"stream_name":"stdout","time":134.614459543,"data":"\n"}
+,{"stream_name":"stdout","time":137.780046024,"data":"task deps health after heal: OK\n"}
+,{"stream_name":"stdout","time":140.125696522,"data":"in-kernel task deps import after heal: OK\n"}
+,{"stream_name":"stdout","time":140.125730816,"data":"TASKS_HEALTHY = True\n"}
+,{"stream_name":"stdout","time":140.125735675,"data":"ComfyUI at /tmp/ComfyUI\n"}
+,{"stream_name":"stdout","time":140.325785925,"data":"core catalog: 36 files in Comfy-Org/MiniMax-H3\n"}
+,{"stream_name":"stdout","time":140.477767347,"data":"image catalog: 2 files in Comfy-Org/flux1-schnell\n"}
+,{"stream_name":"stdout","time":140.609867749,"data":"music catalog: 7 files in Comfy-Org/MiniMax-Music-3\n"}
+,{"stream_name":"stdout","time":140.609898807,"data":"dataset cache: 0 candidate files under /kaggle/input\n"}
+,{"stream_name":"stdout","time":140.609904819,"data":"\n"}
+,{"stream_name":"stdout","time":140.609909565,"data":"== (root)  (1 files, 0.0 GB) ==\n"}
+,{"stream_name":"stdout","time":140.609914465,"data":"  remote    0.00G  README.md\n"}
+,{"stream_name":"stdout","time":140.60991942,"data":"\n"}
+,{"stream_name":"stdout","time":140.609923971,"data":"== checkpoints  (2 files, 41.0 GB) ==\n"}
+,{"stream_name":"stdout","time":140.609928268,"data":"  remote   23.78G  flux1-schnell.safetensors\n"}
+,{"stream_name":"stdout","time":140.609940537,"data":"  remote   17.24G  flux1-schnell-fp8.safetensors\n"}
+,{"stream_name":"stdout","time":140.609943996,"data":"\n"}
+,{"stream_name":"stdout","time":140.609948666,"data":"== diffusion_models  (15 files, 414.2 GB) ==\n"}
+,{"stream_name":"stdout","time":140.609955431,"data":"  remote   66.28G  minimax_h3_fl2va_bf16.safetensors\n"}
+,{"stream_name":"stdout","time":140.60995768,"data":"  remote   66.28G  minimax_h3_ref2va_bf16.safetensors\n"}
+,{"stream_name":"stdout","time":140.609959926,"data":"  remote   40.23G  minimax_h3_fl2va_pruned_bf16.safetensors\n"}
+,{"stream_name":"stdout","time":140.609962101,"data":"  remote   40.23G  minimax_h3_ref2va_pruned_bf16.safetensors\n"}
+,{"stream_name":"stdout","time":140.60996428,"data":"  remote   34.04G  minimax_h3_ref2va_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":140.609966455,"data":"  remote   34.04G  minimax_h3_fl2va_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":140.609968755,"data":"  remote   20.97G  minimax_h3_fl2va_pruned_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":140.609970978,"data":"  remote   20.97G  minimax_h3_ref2va_pruned_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":140.609973179,"data":"  remote   20.96G  minimax_h3_fl2va_pruned_fp8_scaled.safetensors\n"}
+,{"stream_name":"stdout","time":140.609975374,"data":"  remote   20.96G  minimax_h3_ref2va_pruned_fp8_scaled.safetensors\n"}
+,{"stream_name":"stdout","time":140.609977678,"data":"  remote   15.98G  minimax_h3_fl2va_pruned_w6a8.safetensors\n"}
+,{"stream_name":"stdout","time":140.609979848,"data":"  remote   15.98G  minimax_h3_ref2va_pruned_w6a8.safetensors\n"}
+,{"stream_name":"stdout","time":140.609982043,"data":"  remote    9.83G  minimax_music3_dit_fp32.safetensors\n"}
+,{"stream_name":"stdout","time":140.609984311,"data":"  remote    4.91G  minimax_music3_dit_fp16.safetensors\n"}
+,{"stream_name":"stdout","time":140.609986624,"data":"  remote    2.50G  minimax_music3_dit_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":140.609988831,"data":"\n"}
+,{"stream_name":"stdout","time":140.609990869,"data":"== embeddings  (10 files, 0.0 GB) ==\n"}
+,{"stream_name":"stdout","time":140.609992998,"data":"  remote    0.00G  minimaxh3_four_seasons.safetensors\n"}
+,{"stream_name":"stdout","time":140.609995158,"data":"  remote    0.00G  minimaxh3_storm_magic.safetensors\n"}
+,{"stream_name":"stdout","time":140.609997303,"data":"  remote    0.00G  minimaxh3_spiral_ascent.safetensors\n"}
+,{"stream_name":"stdout","time":140.60999951,"data":"  remote    0.00G  minimaxh3_blooming_flowers.safetensors\n"}
+,{"stream_name":"stdout","time":140.61000168,"data":"  remote    0.00G  minimaxh3_fire_breath.safetensors\n"}
+,{"stream_name":"stdout","time":140.61000383,"data":"  remote    0.00G  minimaxh3_kiss_camera.safetensors\n"}
+,{"stream_name":"stdout","time":140.610005978,"data":"  remote    0.00G  minimaxh3_bullet_time.safetensors\n"}
+,{"stream_name":"stdout","time":140.610008129,"data":"  remote    0.00G  minimaxh3_truman_show.safetensors\n"}
+,{"stream_name":"stdout","time":140.610010273,"data":"  remote    0.00G  minimaxh3_dark_magic.safetensors\n"}
+,{"stream_name":"stdout","time":140.610012435,"data":"  remote    0.00G  minimaxh3_art_is_explosion.safetensors\n"}
+,{"stream_name":"stdout","time":140.610014623,"data":"\n"}
+,{"stream_name":"stdout","time":140.6100167,"data":"== loras  (3 files, 5.9 GB) ==\n"}
+,{"stream_name":"stdout","time":140.610018861,"data":"  remote    1.96G  minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors\n"}
+,{"stream_name":"stdout","time":140.610021225,"data":"  remote    1.96G  minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors\n"}
+,{"stream_name":"stdout","time":140.610027333,"data":"  remote    1.96G  minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors\n"}
+,{"stream_name":"stdout","time":140.610029746,"data":"\n"}
+,{"stream_name":"stdout","time":140.610031797,"data":"== model_patches  (4 files, 19.4 GB) ==\n"}
+,{"stream_name":"stdout","time":140.610033956,"data":"  remote    8.38G  minimax_h3_fun_controlnet_union_2.0_pruned_bf16.safetensors\n"}
+,{"stream_name":"stdout","time":140.610036182,"data":"  remote    4.53G  minimax_h3_fun_controlnet_union_2.0_pruned_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":140.610038434,"data":"  remote    4.22G  minimax_h3_fun_controlnet_union_pruned_bf16.safetensors\n"}
+,{"stream_name":"stdout","time":140.610040629,"data":"  remote    2.30G  minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":140.61004287,"data":"\n"}
+,{"stream_name":"stdout","time":140.61004494,"data":"== text_encoders  (6 files, 138.7 GB) ==\n"}
+,{"stream_name":"stdout","time":140.610047124,"data":"  remote   51.51G  qwen3vl_32b_minimax_h3_bf16.safetensors\n"}
+,{"stream_name":"stdout","time":140.610049321,"data":"  remote   27.14G  qwen3vl_32b_minimax_h3_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":140.610051527,"data":"  remote   18.47G  minimax_music3_text_encoder_bf16.safetensors\n"}
+,{"stream_name":"stdout","time":140.610053716,"data":"  remote   16.71G  minimax_music3_text_encoder_pruned_bf16.safetensors\n"}
+,{"stream_name":"stdout","time":140.610055938,"data":"  remote   15.69G  qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors\n"}
+,{"stream_name":"stdout","time":140.610058115,"data":"  remote    9.20G  minimax_music3_text_encoder_pruned_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":140.610060353,"data":"\n"}
+,{"stream_name":"stdout","time":140.610062448,"data":"== vae  (4 files, 8.8 GB) ==\n"}
+,{"stream_name":"stdout","time":140.610064604,"data":"  remote    5.21G  minimax_h3_video_vae_fp16.safetensors\n"}
+,{"stream_name":"stdout","time":140.610066811,"data":"  remote    2.81G  minimax_h3_video_vae_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":140.610069036,"data":"  remote    0.61G  minimax_h3_audio_vae_fp32.safetensors\n"}
+,{"stream_name":"stdout","time":140.610071238,"data":"  remote    0.22G  minimax_music3_dav.safetensors\n"}
+,{"stream_name":"stdout","time":140.610073411,"data":"\n"}
+,{"stream_name":"stdout","time":140.610075488,"data":"== task assets ==\n"}
+,{"stream_name":"stdout","time":140.61008015,"data":"  remote    0.07G  upscale_models/RealESRGAN_x4plus.pth  (Real-ESRGAN x4 - task: upscale)\n"}
+,{"stream_name":"stdout","time":140.610082544,"data":"  remote    0.18G  rembg/models/u2net/u2net.onnx  (rembg u2net - tasks: bg_remove, extract)\n"}
+,{"stream_name":"stdout","time":140.741704953,"data":"\n"}
+,{"stream_name":"stdout","time":140.741721334,"data":"== community MiniMax-H3 repos (100 total; top 20 by downloads) ==\n"}
+,{"stream_name":"stdout","time":140.741731854,"data":"  23,394,103  Comfy-Org/MiniMax-H3\n"}
+,{"stream_name":"stdout","time":140.741734624,"data":"  3,613,449  MiniMaxAI/MiniMax-H3\n"}
+,{"stream_name":"stdout","time":140.741737192,"data":"  1,669,890  unsloth/MiniMax-H3-GGUF\n"}
+,{"stream_name":"stdout","time":140.741739354,"data":"  1,511,215  lightx2v/Minimax-h3-Turbo\n"}
+,{"stream_name":"stdout","time":140.74174162,"data":"    800,242  MATLOWAI/minimax-h3-fused-turbo-int8-convrot\n"}
+,{"stream_name":"stdout","time":140.741743899,"data":"    564,875  WarmBloodAban/Minimax-h3_Singularity\n"}
+,{"stream_name":"stdout","time":140.741746149,"data":"    516,395  DeepBeepMeep/MiniMax-H3\n"}
+,{"stream_name":"stdout","time":140.74175469,"data":"    424,283  Abiray/MiniMax-H3-GGUF\n"}
+,{"stream_name":"stdout","time":140.741756979,"data":"    303,654  Abiray/MiniMax-H3-Pruned-GGUF\n"}
+,{"stream_name":"stdout","time":140.741759175,"data":"    249,582  LBH-123-AI/Minimax_h3_latent_Upscaler\n"}
+,{"stream_name":"stdout","time":140.741761445,"data":"    209,431  larryvrh/MiniMax-H3-Turbo-Lora\n"}
+,{"stream_name":"stdout","time":140.741763583,"data":"    198,197  drbaph/MiniMax-H3-Turbo-Lora-ComfyUI\n"}
+,{"stream_name":"stdout","time":140.741765859,"data":"    190,294  realrebelai/MiniMax-H3_GGUFs\n"}
+,{"stream_name":"stdout","time":140.741768015,"data":"    172,867  leejet/MiniMax-H3-GGUF\n"}
+,{"stream_name":"stdout","time":140.741770228,"data":"    121,704  Abiray/Minimax-H3-nvfp4-INT4-INT8-Convrot\n"}
+,{"stream_name":"stdout","time":140.741772568,"data":"    108,606  Alissonerdx/Minimax-H3-ComfyUI\n"}
+,{"stream_name":"stdout","time":140.741792873,"data":"    105,080  xmarre/MiniMax-H3-Pruned-Ref-Delta-Fused-r1024-ComfyUI\n"}
+,{"stream_name":"stdout","time":140.741797092,"data":"     80,573  fal/MiniMax-H3-Realism-People-LoRA\n"}
+,{"stream_name":"stdout","time":140.741800452,"data":"     64,761  joeygambino/MiniMax-H3-encoder-GGUF\n"}
+,{"stream_name":"stdout","time":140.74180436,"data":"     63,010  Winnougan/Cobijada_Minimax-H3_Hybrid_Pruned_ComfyUI\n"}
+,{"stream_name":"stdout","time":140.844976893,"data":"\n"}
+,{"stream_name":"stdout","time":140.844994271,"data":"== community FLUX repos (100 total; top 15 by downloads) ==\n"}
+,{"stream_name":"stdout","time":140.845004632,"data":"  1,177,228  Comfy-Org/flux2-dev\n"}
+,{"stream_name":"stdout","time":140.845020193,"data":"  1,044,333  Comfy-Org/flux1-dev\n"}
+,{"stream_name":"stdout","time":140.845024242,"data":"    850,532  Comfy-Org/vae-text-encorder-for-flux-klein-9b\n"}
+,{"stream_name":"stdout","time":140.845028705,"data":"    697,714  black-forest-labs/FLUX.1-dev\n"}
+,{"stream_name":"stdout","time":140.845032543,"data":"    649,336  black-forest-labs/FLUX.1-schnell\n"}
+,{"stream_name":"stdout","time":140.845035959,"data":"    633,674  Comfy-Org/vae-text-encorder-for-flux-klein-4b\n"}
+,{"stream_name":"stdout","time":140.845039805,"data":"    452,081  Comfy-Org/flux1-schnell\n"}
+,{"stream_name":"stdout","time":140.845043633,"data":"    405,342  black-forest-labs/FLUX.2-dev\n"}
+,{"stream_name":"stdout","time":140.845047638,"data":"    402,452  black-forest-labs/FLUX.2-klein-4B\n"}
+,{"stream_name":"stdout","time":140.845051517,"data":"    385,947  black-forest-labs/FLUX.1-Kontext-dev\n"}
+,{"stream_name":"stdout","time":140.845058399,"data":"    357,907  unsloth/FLUX.2-klein-9B-GGUF\n"}
+,{"stream_name":"stdout","time":140.845062125,"data":"    334,401  unsloth/FLUX.2-klein-4B-GGUF\n"}
+,{"stream_name":"stdout","time":140.845065731,"data":"    308,075  black-forest-labs/FLUX.2-klein-4b-fp8\n"}
+,{"stream_name":"stdout","time":140.845069603,"data":"    303,225  black-forest-labs/FLUX.2-klein-base-4B\n"}
+,{"stream_name":"stdout","time":140.845072656,"data":"    200,135  black-forest-labs/FLUX.2-klein-9B\n"}
+,{"stream_name":"stdout","time":140.845075758,"data":"\n"}
+,{"stream_name":"stdout","time":140.84507888,"data":"registry written to /tmp/h3_registry.json\n"}
+,{"stream_name":"stdout","time":140.873105053,"data":"ACTIVE preset: fast_smoke | modality: video\n"}
+,{"stream_name":"stdout","time":140.873122207,"data":"  turbo: True | steps: 4 | lora: minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors\n"}
+,{"stream_name":"stdout","time":140.873126837,"data":"  megapixels: 0.4 | aspect: 16:9 (Widescreen) | expected 16:9 px: (864, 480)\n"}
+,{"stream_name":"stdout","time":140.873138325,"data":"  duration: 5 s | seed: 12345\n"}
+,{"stream_name":"stdout","time":140.873141799,"data":"smoke schedule: ['image', 'video', 'music'] -\u003e presets: ['image_smoke', 'fast_smoke', 'music_smoke']\n"}
+,{"stream_name":"stdout","time":140.873145565,"data":"  boot-required files: 9\n"}
+,{"stream_name":"stdout","time":140.873148832,"data":"   - checkpoints/flux1-schnell-fp8.safetensors\n"}
+,{"stream_name":"stdout","time":140.873152292,"data":"   - diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":140.873155658,"data":"   - diffusion_models/minimax_music3_dit_fp16.safetensors\n"}
+,{"stream_name":"stdout","time":140.873159005,"data":"   - loras/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors\n"}
+,{"stream_name":"stdout","time":140.873162351,"data":"   - text_encoders/minimax_music3_text_encoder_pruned_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":140.873167431,"data":"   - text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors\n"}
+,{"stream_name":"stdout","time":140.873174132,"data":"   - vae/minimax_h3_audio_vae_fp32.safetensors\n"}
+,{"stream_name":"stdout","time":140.873176517,"data":"   - vae/minimax_h3_video_vae_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":140.87317872,"data":"   - vae/minimax_music3_dav.safetensors\n"}
+,{"stream_name":"stdout","time":140.906074859,"data":"downloading 5 files from Comfy-Org/MiniMax-H3 (HF token active)\n"}
+,{"stream_name":"stdout","time":421.844738299,"data":"downloading 1 files from Comfy-Org/flux1-schnell\n"}
+,{"stream_name":"stdout","time":590.873297982,"data":"downloading 3 music files from Comfy-Org/MiniMax-Music-3\n"}
+,{"stream_name":"stdout","time":701.618883983,"data":"OK   17236328572 checkpoints/flux1-schnell-fp8.safetensors\n"}
+,{"stream_name":"stdout","time":701.618915719,"data":"OK   20970379616 diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":701.618931148,"data":"OK   4914197682 diffusion_models/minimax_music3_dit_fp16.safetensors\n"}
+,{"stream_name":"stdout","time":701.618934454,"data":"OK   1956192992 loras/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors\n"}
+,{"stream_name":"stdout","time":701.618951525,"data":"OK   9196611886 text_encoders/minimax_music3_text_encoder_pruned_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":701.618957329,"data":"OK   15687142551 text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors\n"}
+,{"stream_name":"stdout","time":701.618962439,"data":"OK   605254808 vae/minimax_h3_audio_vae_fp32.safetensors\n"}
+,{"stream_name":"stdout","time":701.618967722,"data":"OK   2811065184 vae/minimax_h3_video_vae_int8_convrot.safetensors\n"}
+,{"stream_name":"stdout","time":701.618972077,"data":"OK   216696128 vae/minimax_music3_dav.safetensors\n"}
+,{"stream_name":"stdout","time":701.618976354,"data":"MANIFEST.json written: 9 files\n"}
+,{"stream_name":"stdout","time":704.308709935,"data":"RealESRGAN download rc=0\n"}
+,{"stream_name":"stdout","time":704.308735645,"data":"upscale model OK: 67040989 bytes\n"}
+,{"stream_name":"stderr","time":704.310004863,"data":"Downloading data from 'https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net.onnx' to file '/tmp/ComfyUI/models/rembg/models/u2net/u2net.onnx'.\n"}
+,{"stream_name":"stderr","time":704.310025951,"data":"\n"}
+,{"stream_name":"stderr","time":704.31003103,"data":"Downloading data from 'https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net.onnx' to file '/tmp/ComfyUI/models/rembg/models/u2net/u2net.onnx'.\n"}
+,{"stream_name":"stdout","time":710.580729578,"data":"rembg warm-up OK: u2net -\u003e RGBA in 0.7s\n"}
+,{"stream_name":"stdout","time":710.580769571,"data":"ffmpeg: /usr/bin/ffmpeg\n"}
+,{"stream_name":"stdout","time":711.090436155,"data":"assets staged in /tmp/ComfyUI/models, workflows at /tmp/h3_t2v.json + /tmp/flux_schnell.json + /tmp/audio_minimax_music_3.json\n"}
+,{"stream_name":"stdout","time":711.29082164,"data":"Comfy pid 234\n"}
+,{"stream_name":"stdout","time":751.18554815,"data":"ComfyUI local ready\n"}
+,{"stream_name":"stdout","time":751.354508886,"data":"hub API + proxy listening on http://127.0.0.1:8190 (docs: /h3api/docs)\n"}
+,{"stream_name":"stdout","time":751.782936086,"data":"skipping UI-only node: Note #34\n"}
+,{"stream_name":"stdout","time":751.782976712,"data":"skipping UI-only node: MarkdownNote #37\n"}
+,{"stream_name":"stdout","time":751.78298878,"data":"flattened image prompt nodes: 7\n"}
+,{"stream_name":"stdout","time":751.782994673,"data":"[image smoke] build meta: {\"nodes\": 7, \"modality\": \"image\", \"steps\": 4, \"size\": \"1024x1024\", \"cfg\": 1.0, \"checkpoint\": \"flux1-schnell-fp8.safetensors\"}\n"}
+,{"stream_name":"stdout","time":751.783000906,"data":"[image smoke] submitted: {\"prompt_id\": \"6ca42f7c-9acc-4d67-af93-d3c5b2c7368f\", \"number\": 0, \"node_errors\": {}}\n"}
+,{"stream_name":"stdout","time":752.095584064,"data":"expanded subgraph 79dd8a95-ce9d-4c14-b264-2162e8bec5ce -\u003e nodes: 21\n"}
+,{"stream_name":"stdout","time":752.095623051,"data":"skipping UI-only node: MarkdownNote #116\n"}
+,{"stream_name":"stdout","time":752.095641089,"data":"skipping UI-only node: MarkdownNote #117\n"}
+,{"stream_name":"stdout","time":752.09564632,"data":"skipping UI-only node: MarkdownNote #118\n"}
+,{"stream_name":"stdout","time":752.095651049,"data":"flattened prompt nodes: 23\n"}
+,{"stream_name":"stdout","time":752.095656366,"data":"turbo path armed: PrimitiveBoolean ['1021'] -\u003e steps 4 + LoRA\n"}
+,{"stream_name":"stdout","time":752.095661221,"data":"H3MultiStream inserted as node 9999, feeding 2 consumers; model source ['1017', 0]\n"}
+,{"stream_name":"stdout","time":752.095665731,"data":"[video smoke] build meta: {\"nodes\": 24, \"turbo\": true, \"steps\": 4, \"megapixels\": 0.4, \"aspect\": \"16:9 (Widescreen)\", \"duration\": 5, \"frames_injected\": []}\n"}
+,{"stream_name":"stdout","time":752.095671339,"data":"[video smoke] submitted: {\"prompt_id\": \"6e232fd5-b579-4544-9781-f2fc67ae473b\", \"number\": 1, \"node_errors\": {}}\n"}
+,{"stream_name":"stdout","time":752.099732625,"data":"expanded subgraph ac99f841-a3de-4329-9564-953b81cf9e16 -\u003e nodes: 11\n"}
+,{"stream_name":"stdout","time":752.099762943,"data":"skipping UI-only node: MarkdownNote #39\n"}
+,{"stream_name":"stdout","time":752.099768259,"data":"skipping UI-only node: MarkdownNote #40\n"}
+,{"stream_name":"stdout","time":752.099772602,"data":"flattened prompt nodes: 12\n"}
+,{"stream_name":"stdout","time":752.099777925,"data":"[music smoke] build meta: {\"nodes\": 12, \"modality\": \"music\", \"max_duration\": 5.0, \"steps\": 30, \"format\": \"flac\", \"tiled_decode\": true, \"unet\": \"minimax_music3_dit_fp16.safetensors\", \"clip\": \"minimax_music3_text_encoder_pruned_int8_convrot.safetensors\", \"vae\": \"minimax_music3_dav.safetensors\"}\n"}
+,{"stream_name":"stdout","time":752.099785229,"data":"[music smoke] submitted: {\"prompt_id\": \"6762231d-a277-453a-b6b4-d96b156e1967\", \"number\": 2, \"node_errors\": {}}\n"}
+,{"stream_name":"stdout","time":752.0997903,"data":"smoke jobs queued: [[\"image\", \"6ca42f7c-9acc-4d67-af93-d3c5b2c7368f\"], [\"video\", \"6e232fd5-b579-4544-9781-f2fc67ae473b\"], [\"music\", \"6762231d-a277-453a-b6b4-d96b156e1967\"]]\n"}
+,{"stream_name":"stdout","time":752.296309428,"data":"waiting for image smoke job 6ca42f7c-9acc-4d67-af93-d3c5b2c7368f\n"}
+,{"stream_name":"stdout","time":752.296346702,"data":"[image 0s] \u001b[32m[INFO]\u001b[0m VAE load device: cuda:0, offload device: cpu, dtype: torch.float32\n"}
+,{"stream_name":"stdout","time":752.296351749,"data":"   [gpu] 0, 0 %, 0 %, 207 MiB, 32.03 W\n"}
+,{"stream_name":"stdout","time":752.296355431,"data":"   [gpu] 1, 0 %, 0 %, 105 MiB, 35.38 W\n"}
+,{"stream_name":"stdout","time":842.467555453,"data":"[image] smoke status: success completed: True / None\n"}
+,{"stream_name":"stdout","time":842.46845138,"data":"waiting for video smoke job 6e232fd5-b579-4544-9781-f2fc67ae473b\n"}
+,{"stream_name":"stdout","time":842.468477523,"data":"[video 0s] \u001b[32m[INFO]\u001b[0m Found quantization metadata version 1\n"}
+,{"stream_name":"stdout","time":842.468484327,"data":"   [gpu] 0, 1 %, 0 %, 10419 MiB, 36.25 W\n"}
+,{"stream_name":"stdout","time":842.468489417,"data":"   [gpu] 1, 0 %, 0 %, 105 MiB, 35.09 W\n"}
+,{"stream_name":"stdout","time":962.49500381,"data":"[video 120s]   return torch.rms_norm(input, normalized_shape, weight, eps)\n"}
+,{"stream_name":"stdout","time":962.49511275,"data":"   [h3ms] \u001b[32m[INFO]\u001b[0m [H3 MultiStream] [MultiStream] node configured: model MiniMaxH3 on cuda:0, GPUs gpus auto, exchange host, sparse attention off (vsa off), dynamic vram kept, vram blocks off, weight cache off, RAM reserve 0.0 GiB | RAM available 7.2 of\n"}
+,{"stream_name":"stdout","time":962.495123747,"data":"   [h3ms] \u001b[32m[INFO]\u001b[0m [H3 MultiStream] [GPUs] dit: 2 rank(s): cuda:0 (primary), cuda:1 | selection: gpus auto | cuda:0 6.4 GiB free, cuda:1 14.3 GiB free\n"}
+,{"stream_name":"stdout","time":962.495128654,"data":"   [h3ms] \u001b[32m[INFO]\u001b[0m [H3 MultiStream] [MultiStream] evicted ComfyUI models from rank GPU(s): cuda:0 (primary) +4.29 GiB\n"}
+,{"stream_name":"stdout","time":962.495133345,"data":"   [h3ms] \u001b[32m[INFO]\u001b[0m [H3 MultiStream] [MultiStream] active: 2 ranks cuda:0+cuda:1, exchange host, 50 blocks, attention heads per rank 28/28, 0 per-block patch(es) captured, sparse attention off (vsa off), weight cache off | cuda:0 free 11.8/14.6 GiB | cud\n"}
+,{"stream_name":"stdout","time":962.495138308,"data":"   [gpu] 0, 100 %, 40 %, 7663 MiB, 66.43 W\n"}
+,{"stream_name":"stdout","time":962.495142495,"data":"   [gpu] 1, 100 %, 35 %, 4417 MiB, 66.18 W\n"}
+,{"stream_name":"stdout","time":1082.547218237,"data":"[video 240s]   return torch.rms_norm(input, normalized_shape, weight, eps)\n"}
+,{"stream_name":"stdout","time":1082.547340177,"data":"   [gpu] 0, 22 %, 9 %, 7663 MiB, 84.55 W\n"}
+,{"stream_name":"stdout","time":1082.547350097,"data":"   [gpu] 1, 44 %, 24 %, 4417 MiB, 84.26 W\n"}
+,{"stream_name":"stdout","time":1202.561299363,"data":"[video 360s]  25%|██▌       | 1/4 [03:36\u003c10:48, 216.32s/it,  Model Initialization complete!  ]\n"}
+,{"stream_name":"stdout","time":1202.561337005,"data":"   [h3ms] \u001b[32m[INFO]\u001b[0m [H3 MultiStream] [MultiStream] sigma 1.0000 step: 15424 tokens x 50 blocks on cuda:0+cuda:1, 214.0s (exchange host x8: 15.4s/3.1s, 25.74 GiB moved), weight cache off, step split peak 3.7 GiB / 3.3 GiB, GPU used 7.5/15 GiB + 4.3/15 GiB\n"}
+,{"stream_name":"stdout","time":1202.56134442,"data":"   [gpu] 0, 4 %, 0 %, 7663 MiB, 40.05 W\n"}
+,{"stream_name":"stdout","time":1202.561348827,"data":"   [gpu] 1, 4 %, 0 %, 4641 MiB, 40.86 W\n"}
+,{"stream_name":"stdout","time":1322.584728019,"data":"[video 480s]  25%|██▌       | 1/4 [03:36\u003c10:48, 216.32s/it,  Model Initialization complete!  ]\n"}
+,{"stream_name":"stdout","time":1322.584765798,"data":"   [gpu] 0, 3 %, 0 %, 7663 MiB, 59.59 W\n"}
+,{"stream_name":"stdout","time":1322.584771171,"data":"   [gpu] 1, 0 %, 0 %, 4641 MiB, 57.11 W\n"}
+,{"stream_name":"stdout","time":1442.609161591,"data":"[video 600s]  50%|█████     | 2/4 [07:06\u003c07:06, 213.08s/it]\n"}
+,{"stream_name":"stdout","time":1442.609240694,"data":"   [h3ms] \u001b[32m[INFO]\u001b[0m [H3 MultiStream] [MultiStream] sigma 0.9730 step: 15424 tokens x 50 blocks on cuda:0+cuda:1, 212.8s (exchange host x8: 19.9s/2.7s, 25.74 GiB moved), weight cache off, step split peak 3.7 GiB / 3.3 GiB, GPU used 7.5/15 GiB + 4.5/15 GiB\n"}
+,{"stream_name":"stdout","time":1442.609247683,"data":"   [gpu] 1, 72 %, 49 %, 4641 MiB, 61.65 W\n"}
+,{"stream_name":"stdout","time":1442.609251267,"data":"   [gpu] 0, 100 %, 38 %, 7695 MiB, 67.47 W\n"}
+,{"stream_name":"stdout","time":1562.628586084,"data":"[video 720s]  75%|███████▌  | 3/4 [10:38\u003c03:32, 212.71s/it]\n"}
+,{"stream_name":"stdout","time":1562.62861448,"data":"   [h3ms] \u001b[32m[INFO]\u001b[0m [H3 MultiStream] [MultiStream] sigma 0.9231 step: 15424 tokens x 50 blocks on cuda:0+cuda:1, 212.5s (exchange host x8: 20.0s/2.7s, 25.74 GiB moved), weight cache off, step split peak 3.7 GiB / 3.3 GiB, GPU used 7.5/15 GiB + 4.5/15 GiB\n"}
+,{"stream_name":"stdout","time":1562.628620618,"data":"   [gpu] 0, 100 %, 30 %, 7695 MiB, 67.31 W\n"}
+,{"stream_name":"stdout","time":1562.628630478,"data":"   [gpu] 1, 100 %, 21 %, 4641 MiB, 66.96 W\n"}
+,{"stream_name":"stdout","time":1682.654486229,"data":"[video 840s]  75%|███████▌  | 3/4 [10:38\u003c03:32, 212.71s/it]\n"}
+,{"stream_name":"stdout","time":1682.654522806,"data":"   [gpu] 0, 100 %, 42 %, 7695 MiB, 67.12 W\n"}
+,{"stream_name":"stdout","time":1682.654527897,"data":"   [gpu] 1, 100 %, 32 %, 4641 MiB, 65.40 W\n"}
+,{"stream_name":"stdout","time":1802.671559475,"data":"[video 960s] \u001b[32m[INFO]\u001b[0m Model MiniMaxH3VideoVAE prepared for dynamic VRAM loading. 2677MB Staged. 0 patches attached. Force pre-loaded 128 weights: 691 KB.\n"}
+,{"stream_name":"stdout","time":1802.671709287,"data":"   [h3ms] \u001b[32m[INFO]\u001b[0m [H3 MultiStream] [MultiStream] sigma 0.8000 step: 15424 tokens x 50 blocks on cuda:0+cuda:1, 213.3s (exchange host x8: 21.1s/2.7s, 25.74 GiB moved), weight cache off, step split peak 3.7 GiB / 3.3 GiB, GPU used 7.5/15 GiB + 4.5/15 GiB\n"}
+,{"stream_name":"stdout","time":1802.671720614,"data":"   [gpu] 0, 100 %, 58 %, 7537 MiB, 66.63 W\n"}
+,{"stream_name":"stdout","time":1802.671726252,"data":"   [gpu] 1, 0 %, 0 %, 295 MiB, 33.80 W\n"}
+,{"stream_name":"stdout","time":1922.693577406,"data":"[video] smoke status: success completed: True / None\n"}
+,{"stream_name":"stdout","time":1922.693620845,"data":"waiting for music smoke job 6762231d-a277-453a-b6b4-d96b156e1967\n"}
+,{"stream_name":"stdout","time":1922.69362583,"data":"[music 0s] \u001b[32m[INFO]\u001b[0m Model MiniMaxMusic3TEModel prepared for dynamic VRAM loading. 8758MB Staged. 0 patches attached. Force pre-loaded 154 weights: 674 KB.\n"}
+,{"stream_name":"stdout","time":1922.69362963,"data":"   [gpu] 0, 0 %, 0 %, 5377 MiB, 45.22 W\n"}
+,{"stream_name":"stdout","time":1922.693632574,"data":"   [gpu] 1, 0 %, 0 %, 295 MiB, 30.28 W\n"}
+,{"stream_name":"stdout","time":2042.713337975,"data":"[music 120s] AR sampling:  57%|█████▋    | 72/126 [01:25\u003c01:03,  1.17s/it]\n"}
+,{"stream_name":"stdout","time":2042.713471358,"data":"   [gpu] 0, 100 %, 43 %, 12519 MiB, 67.80 W\n"}
+,{"stream_name":"stdout","time":2042.713479695,"data":"   [gpu] 1, 0 %, 0 %, 309 MiB, 29.50 W\n"}
+,{"stream_name":"stdout","time":2142.580819917,"data":"[music] smoke status: error completed: False / None\n"}
+,{"stream_name":"stderr","time":2145.538896016,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":2145.539521698,"data":"  File \"\u003cstring\u003e\", line 1, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":2145.539534329,"data":"    import sys;import papermill as pm;pm.execute_notebook(\"__notebook__.ipynb\",\"__notebook__.ipynb\",progress_bar=False,log_output=True,stdout_file=sys.stdout,stderr_file=sys.stderr,allow_errors=False,timeout=43200)\n"}
+,{"stream_name":"stderr","time":2145.539555815,"data":"                                      ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":2145.539558902,"data":"  File \"/usr/local/lib/python3.13/dist-packages/papermill/execute.py\", line 131, in execute_notebook\n"}
+,{"stream_name":"stderr","time":2145.539561635,"data":"    raise_for_execution_errors(nb, output_path)\n"}
+,{"stream_name":"stderr","time":2145.539563865,"data":"    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":2145.53956604,"data":"  File \"/usr/local/lib/python3.13/dist-packages/papermill/execute.py\", line 251, in raise_for_execution_errors\n"}
+,{"stream_name":"stderr","time":2145.539568464,"data":"    raise error\n"}
+,{"stream_name":"stderr","time":2145.539570615,"data":"papermill.exceptions.PapermillExecutionError: \n"}
+,{"stream_name":"stderr","time":2145.539572798,"data":"---------------------------------------------------------------------------\n"}
+,{"stream_name":"stderr","time":2145.539575111,"data":"Exception encountered at \"In [11]\":\n"}
+,{"stream_name":"stderr","time":2145.539577394,"data":"---------------------------------------------------------------------------\n"}
+,{"stream_name":"stderr","time":2145.539579685,"data":"RuntimeError                              Traceback (most recent call last)\n"}
+,{"stream_name":"stderr","time":2145.539581908,"data":"/tmp/ipykernel_23/881593376.py in \u003ccell line: None\u003e()\n"}
+,{"stream_name":"stderr","time":2145.539584307,"data":"     35     print(\"[%s] smoke status:\"%mod,st.get(\"status_str\"),\"completed:\",st.get(\"completed\"),\"/\",st.get(\"remaining\"))\n"}
+,{"stream_name":"stderr","time":2145.539587037,"data":"     36     if st.get(\"status_str\")==\"error\":\n"}
+,{"stream_name":"stderr","time":2145.539590243,"data":"---\u003e 37         raise RuntimeError(\"%s smoke run had execution errors: \"%mod+json.dumps(st)[:2000])\n"}
+,{"stream_name":"stderr","time":2145.539606811,"data":"     38     results[mod]=got\n"}
+,{"stream_name":"stderr","time":2145.539610712,"data":"     39 \n"}
+,{"stream_name":"stderr","time":2145.539614452,"data":"\n"}
+,{"stream_name":"stderr","time":2145.539621268,"data":"RuntimeError: music smoke run had execution errors: {\"status_str\": \"error\", \"completed\": false, \"messages\": [[\"execution_start\", {\"prompt_id\": \"6762231d-a277-453a-b6b4-d96b156e1967\", \"timestamp\": 1791423652027}], [\"execution_cached\", {\"nodes\": [], \"prompt_id\": \"6762231d-a277-453a-b6b4-d96b156e1967\", \"timestamp\": 1791423652030}], [\"execution_error\", {\"prompt_id\": \"6762231d-a277-453a-b6b4-d96b156e1967\", \"node_id\": \"35\", \"node_type\": \"SaveAudioAdvanced\", \"executed\": [\"1009\", \"1006\", \"1007\", \"1003\", \"1011\", \"1005\", \"1010\", \"1004\", \"1002\", \"1001\"], \"exception_message\": \"SaveAudioAdvanced.execute() missing 1 required positional argument: 'format'\\n\", \"exception_type\": \"TypeError\", \"traceback\": [\"  File \\\"/tmp/ComfyUI/execution.py\\\", line 548, in execute\\n    output_data, output_ui, has_subgraph, has_pending_tasks = await get_output_data(prompt_id, unique_id, obj, input_data_all, execution_block_cb=execution_block_cb, pre_execute_cb=pre_execute_cb, v3_data=v3_data)\\n                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n\", \"  File \\\"/tmp/ComfyUI/execution.py\\\", line 353, in get_output_data\\n    return_values = await _async_map_node_over_list(prompt_id, unique_id, obj, input_data_all, obj.FUNCTION, allow_interrupt=True, execution_block_cb=execution_block_cb, pre_execute_cb=pre_execute_cb, v3_data=v3_data)\\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n\", \"  File \\\"/tmp/ComfyUI/execution.py\\\", line 327, in _async_map_node_over_list\\n    await process_inputs(input_dict, i)\\n\", \"  File \\\"/tmp/ComfyUI/execution.py\\\", line 315, in process_inputs\\n    result = f(**inputs)\\n\", \"  File \\\"/tmp/ComfyUI/comfy_api/internal/__init__.py\\\", line 149, in wrapped_func\\n    return method(locked_class, **inputs)\\n\", \n"}
+,{"stream_name":"stderr","time":2145.539648563,"data":"\n"}
+,{"stream_name":"stderr","time":2148.919398055,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":2148.919425016,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":2149.265154736,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":2149.265176977,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":2151.158170188,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to notebook\n"}
+,{"stream_name":"stderr","time":2151.289531659,"data":"[NbConvertApp] Writing 305292 bytes to __notebook__.ipynb\n"}
+,{"stream_name":"stderr","time":2153.704247177,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to html\n"}
+,{"stream_name":"stderr","time":2154.944910009,"data":"[NbConvertApp] Writing 962150 bytes to __results__.html\n"}
+]
