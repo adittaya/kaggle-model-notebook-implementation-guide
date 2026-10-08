@@ -223,13 +223,13 @@
   subprocess probe stayed OK), and the **cure verified**: `pip force-reinstall --no-deps
   numpy==<the version the kernel loaded>` (2.1.3) then BOTH probes return OK.
 
-### v20 — Music 3 lane + the proven numpy heal — PUSHED (Oct 8)
+### v20 — Music 3 lane + the proven numpy heal (Oct 8)
 - **Install cell heals on EITHER probe**: the subprocess-only heal had a blind spot v19 exposed —
   the disk can be consistent while the kernel is broken. Now the heal fires when the subprocess
   probe OR the in-kernel verify fails, force-reinstalls numpy to the **in-kernel loaded version**
   (`numpy.__version__` in-process, not whatever pip resolved), then re-verifies both. Locally
   verified end-to-end: preload 2.1.3 → rembg resolve upgraded disk to 2.5.3 → subprocess OK /
-  kernel FAIL → heal to 2.1.3 → both OK.
+  kernel FAIL → heal to 2.1.3 → both OK. **v20 verified the heal IN PRODUCTION** (see result).
 - **Music lane (MiniMax Music 3)**: `build_prompt()` gains a `music` branch (`_build_music`)
   using **ComfyUI core nodes only** (`comfy_extras/nodes_minimax_music.py` + `nodes_audio.py` +
   `nodes_logic.py`) — no custom pack, no MultiStream, single T4. `audio_minimax_music_3.json`
@@ -242,7 +242,7 @@
   `VAEDecodeAudioTiled` (tile 1536 / overlap 64) vs `VAEDecodeAudio` (lazy — one executes); seed
   → `SeedNode` → `MiniMaxMusic3TextEncode.seed` + `KSampler.seed`; `max_duration` →
   TextEncode + `EmptyMiniMaxMusic3LatentAudio.seconds`; subgraph output link → ComfySwitchNode →
-  `SaveAudioAdvanced.audio` with `format` as the dict `{"format":"flac"}`.
+  `SaveAudioAdvanced.audio`.
 - **Preset `music_smoke`**: max_duration 5, seed 4242, tiled decode on, `flac`; caption from
   `MUSIC_SMOKE_PROMPT` (lyric-capable). Models: `Comfy-Org/MiniMax-Music-3` (dit fp16 4.91 GB +
   TE pruned int8 convrot 9.20 GB + dav 0.22 GB = 14.33 GB) into the existing
@@ -251,9 +251,24 @@
   real audio file (`auds` scan — `h3_music_*.flac`). Registry + `/h3api/catalog` (incl.
   `?refresh=1`) carry the music tree; `/h3api/settings` and `/generate` accept `music_smoke`
   (keys `lyrics`/`max_duration`/`tiled_decode`/`format`); docs page documents it.
-- Expected outcome of the v20 run: `TASKS_HEALTHY = True` (heal fires on the nil in-kernel
-  probe if the swap recurs), `SMOKE PASSED: ['image','video','music']`, a real FLAC in output,
-  bg_remove/extract green through the tunnel.
+- **v20 run RESULT (ERROR at the last op — the heal + full music generation PROVEN in
+  production)**: install cell printed `task deps health: OK` (subprocess) yet `in-kernel task deps
+  import FAIL: … '_slice'` → heal `pip force-reinstall --no-deps numpy==2.1.3` → both probes OK →
+  **`TASKS_HEALTHY = True`** (the v20 cure works on Kaggle). All three smokes validated
+  (`node_errors: {}`); **music executed for real**: `AR sampling: 57% 72/126 [1.17s/it]`, tiled
+  decode ran, lazy `ComfySwitchNode` skipped `VAEDecodeAudio` correctly. But the run ERRORed at
+  the last op: `SaveAudioAdvanced.execute() missing 1 required positional argument: 'format'`.
+  Root cause (proven locally): `format` is an **`IO.DynamicCombo`**; the API prompt must carry the
+  option **key as a plain string** (`"flac"`), and the kernel had sent the widget dict
+  `{"format":"flac"}` — the option-key match fails silently → the input is dropped (validation
+  iterates only the expanded schema, so `node_errors` stays `{}`) → crash at execute.
+- **v21 — the save-node fix, PUSHED**: `_build_music` writes `format` as the plain option-key
+  string (mp3/opus also set the dotted `format.quality` sub-input); `_flatten` gained dotted-key
+  support. Local CPU ComfyUI proof BEFORE push: flattened prompt has `format:"flac"`, full music
+  prompt submits to a real server with **zero node_errors on SaveAudioAdvanced**,
+  `build_nested_inputs` nests to exactly `{"format":"flac"}` (mp3 → `{"format":"mp3","quality":"V0"}`),
+  and the v20 dict form reproduces the exact drop. Expected: `TASKS_HEALTHY=True`, `SMOKE PASSED:
+  ['image','video','music']` with a real `h3_music_*.flac`, bg_remove/extract green.
 
 ## 2026-10-07 — retired lanes (kept for history)
 

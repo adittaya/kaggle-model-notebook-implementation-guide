@@ -15,32 +15,32 @@ reconstruct the whole project after a context loss.
 **Date:** Oct 8 2026
 **Owner:** adityahalde8777
 **Kaggle kernel:** `adityahalde8777/minimax-h3-comfy-2xt4-generator` (the ONLY kernel; old lanes deleted)
-**Latest:** **v19 COMPLETED — all three success criteria met → v20 PUSHED (music lane + numpy he-efix).**
-v19 run result: install cell printed the precise first error — `task deps health: OK` (subprocess
-probe on fresh disk files) yet **`in-kernel task deps import FAIL: ImportError cannot import name
-'_slice' from 'numpy._core.umath'`** → `TASKS_HEALTHY = False` → bg_remove/extract warn-only (their
-POSTs retried, upscale `200` REQUIRED + video_frames `200`) → **`TASK SMOKE PASSED`** (clean warn,
-as designed); sync **idled**: `cache inventory: 62 files, 59.3 GB` → `cache dataset up to date
-(manifest match)` (no re-upload — the v18-created dataset is authoritative). **v19 lit up the v17
-mystery**: the subprocess probe (fresh interpreter) passed while the kernel failed because a
-subprocess `pip install` (rembg's dep resolve) **swapped numpy files in-place** *after* the kernel
-pre-loaded numpy 2.1.3 (torch, preflight cell) — disk becomes self-consistent new numpy
-(subprocess OK) while the kernel's already-loaded `numpy._core.umath` (old, no `_slice`) mixes with
-the new on-disk `strings.py` (imports `_slice`) → exact `_slice` ImportError. **Reproduced
-locally 1:1** (numpy 2.1.3 preload → in-place upgrade to 2.5.3 via pip while loaded → same
-`_slice` error in-kernel), and the cure verified: `pip force-reinstall --no-deps numpy==<the
-version THIS kernel loaded>` restores both probes to OK. **v20** ships that cure in the install
-cell (heal now fires when EITHER probe fails, re-pins numpy to the in-kernel loaded version, then
-re-verifies both) **and the music lane**: MiniMax Music 3 via **ComfyUI core nodes only**
-(`comfy_extras/nodes_minimax_music.py`) — no custom pack, no MultiStream, single T4 —
-`audio_minimax_music_3.json` subgraph flattened by the shared `_flatten(wf, info)` (extracted
-from the video flattener with **byte-identical output — EQUIVALENCE TEST PASS**), inner nodes'
-positional widgets promoted via the schema-verified `MUSIC_WIDGETS` table, preset `music_smoke`
-(max_duration 5, seed 4242, tiled_decode True, format `flac`, output prefix `h3_music`), and the
-default smoke schedule becomes **`image,video,music`** (music waits on `auds` for a real `.flac`).
-13 code cells `ast`-validated; equivalence + music-structure checks green. **PUSHED; running →
-verify: TASKS_HEALTHY=True (heal worked), `SMOKE PASSED: ['image','video','music']` with a
-`h3_music_*.flac` in output.** Transcription = v21 next.
+**Latest:** **v21 PUSHED — v20 run root-caused & fixed (music save-node DynamicCombo serialization).**
+v20 run result: the **numpy heal worked EXACTLY as designed** — install cell printed `task deps
+health: OK` (subprocess) yet `in-kernel task deps import FAIL: ImportError cannot import name
+'_slice' from 'numpy._core.umath'` → heal `pip force-reinstall --no-deps numpy==2.1.3`
+(kernel-loaded) → both probes re-verified `OK` → **`TASKS_HEALTHY = True`**. All three smokes
+validated (`node_errors: {}`); the **music pipeline executed for real** (AR sampling 57%
+72/126 @ 1.17 s/it, tiled decode ran, lazy `ComfySwitchNode` correctly skipped `VAEDecodeAudio`)
+— but the run ended **ERROR at the very last step**:
+`SaveAudioAdvanced.execute() missing 1 required positional argument: 'format'`.
+**Root cause (proven against a local CPU ComfyUI install, torch 2.7.1):**
+SaveAudioAdvanced.`format` is an **`IO.DynamicCombo`**, and the ComfyUI *API prompt* must carry
+the option **key as a plain string** (`"flac"`); the executor then matches that option, injects
+its sub-inputs (mp3/opus → `quality`), and **re-nests** the value into `{"format": ...}` at call
+time. v20 sent the dict `{"format":"flac"}` (the UI/widget form) → the option-key match fails
+**silently** → the input vanishes from the node's kwargs → `missing positional 'format'`. Proved
+locally: `io.get_finalized_class_inputs` + `io.build_nested_inputs` drop the dict form (repro of
+the exact v20 crash signature) and nest the string form into exactly what `execute()` reads;
+the fixed full music prompt submits to the local server with **no node_errors for node 35**.
+**v21 fix**: `_build_music` writes `format` as the plain option-key string (mp3/opus also set the
+dotted `format.quality` sub-input), and `_flatten` gained dotted-key support (emit dynamic
+sub-inputs when their parent input is present). Rebuilt (13 code cells `ast`-OK), committed,
+**PUSHED as kernel version 21** — verify: `TASKS_HEALTHY=True`, `SMOKE PASSED:
+['image','video','music']` with a real `h3_music_*.flac` in output, plus healthy
+bg_remove/extract through the tunnel.
+Prior verified baselines: **v18** (first green run) → **v19** (numpy root-cause proven) → v20
+(heal + music run to the last op).
 Prior verified baseline: **v18** (COMPLETED, first fully green run; task bug chain root-caused as
 self-inflicted pop+reimport → v19's non-destructive verify) → **v19** (above).
 
@@ -54,8 +54,8 @@ The product is an **all-in-one generation hub** on one public Base URL, not just
 |---|---|---|
 | **Video generation** | MiniMax H3 (FL2VA/Ref2VA, turbo/dense), H3-Max-style variants | ✅ H3 lane in production |
 | **Image generation** | Flux family (Comfy-Org repos), community Fluxes | ✅ v18 smoke proven on Kaggle (PNG + MP4, dual-GPU, **run COMPLETED**) |
-| **Image/audio use-case tasks** | bg remover, element extractor, upscaler, frame/GIF/audio tools | 🟡 upscale + video_frames green on Kaggle (v18/v19); bg_remove/extract blocked every boot by the **in-place numpy swap** (subprocess pip upgrades numpy after the kernel pre-loaded it → kernel-only `_slice` ImportError). **v20's heal fires on EITHER probe** (subprocess OR in-kernel), re-pinning numpy to the kernel-loaded version — expected to make bg_remove/extract green in the v20 run |
-| **Music generation** | `audio_minimax_music_3` Comfy template (MiniMax Music 3, **core** ComfyUI nodes), LTx community | ⬜→🟡 **v20 implemented + PUSHED** — preset `music_smoke` (30 steps, 5 s, flac), 14.33 GB models, smoke in default `H3_SMOKE="image,video,music"`; awaiting Kaggle verification |
+| **Image/audio use-case tasks** | bg remover, element extractor, upscaler, frame/GIF/audio tools | 🟡 upscale + video_frames green on Kaggle (v18/v19); bg_remove/extract blocked every boot by the **in-place numpy swap** (subprocess pip upgrades numpy after the kernel pre-loaded it → kernel-only `_slice` ImportError). **v20's heal fired on the in-kernel probe exactly as designed → `TASKS_HEALTHY=True`**, but the v20 run ERRORed at the music save step *before* the pub task smoke, so bg_remove/extract are **still unverified through the tunnel — expected to go green in the v21 run** (same heal) |
+| **Music generation** | `audio_minimax_music_3` Comfy template (MiniMax Music 3, **core** ComfyUI nodes), LTx community | 🟡 **v20 ran the FULL pipeline** (30-step AR sampling, tiled decode, lazy switch) but ERRORed at the save step: `SaveAudioAdvanced` missing `format` → **root-caused + proven locally** (DynamicCombo option-key must be a plain string in the API prompt) → **v21 fix PUSHED**, awaiting Kaggle verification |
 | **Sound / soundtrack** | H3 native audio track (already joint audio+video), music models | ⬜ Phase C |
 | **Transcription (ASR)** | to research (Whisper-class on Comfy / community) | ⬜ Phase C research (v21) |
 | **Text generation** | ❌ explicitly NOT needed | — |
@@ -94,7 +94,7 @@ Requirements distilled from user messages:
 | `/tmp/opencode/Comfy-H3-MultiStream/` | node-pack clone (docs, perf, split.py log lines) |
 | Repo | https://github.com/adittaya/kaggle-model-notebook-implementation-guide (public) |
 
-Notebook cell order (v20, 14 cells: title + 13 code): title → secrets → preflight → install →
+Notebook cell order (v21, 14 cells: title + 13 code): title → secrets → preflight → install →
 registry → settings → assets → convert → start → api → smoke → wait → pub → sync. The convert
 cell holds the shared `build_prompt(cfg)` (branches: video / image / music) + `_flatten`.
 
@@ -315,7 +315,11 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
    (tiled) vs VAEDecodeAudio (lazy inputs — only the chosen one executes); seed → SeedNode →
    TextEncode.seed + KSampler.seed; `max_duration` → TextEncode + EmptyLatentAudio.seconds;
    subgraph output link 62 → ComfySwitchNode out slot 0 → **SaveAudioAdvanced.audio**
-   (`format` is a *dict* `{"format":"flac|mp3|opus"}` — verified in `nodes_audio.py`). Preset
+   (`format` is an **`IO.DynamicCombo`** — the API prompt must carry the option key as a PLAIN
+   STRING `"flac"`; the executor matches the option, injects its sub-inputs (mp3/opus →
+   `quality`) and re-nests `{"format": ...}` at call time. v20 sent the dict
+   `{"format":"flac"}` → silent option-key mismatch → input dropped →
+   `missing positional 'format'`; **fixed in v21**). Preset
    `music_smoke` = max_duration 5, seed 4242, tiled_decode True, format `flac`, prefix `h3_music`;
    models from **`Comfy-Org/MiniMax-Music-3`**: dit fp16 **4.91 GB** + TE pruned int8 convrot
    **9.20 GB** + dav VAE **0.22 GB** = **14.33 GB** (also listed: dit fp32 9.8 / dit int8 2.5 /
@@ -436,7 +440,9 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 8 | **v20 music lane = ComfyUI core nodes only** (`nodes_minimax_music.py` + `nodes_audio.py` + `nodes_logic.py`), single T4, no MultiStream | MiniMax Music 3 has no custom pack; it mus not disturb the only source of 2-GPU proof (H3 video). Core nodes are schema-verified from a ComfyUI clone — no guesswork |
 | Oct 8 | **v20 music template uses positional→named widget promotion (`MUSIC_WIDGETS`)**, not `widgets_values_named` (the music subgraph is the older format) | 11 node schemas verified from source; the `""` slots skip `control_after_generate`, linked inputs always override — the flattener's shared logic then applies unchanged |
 | Oct 8 | **v20 `_flatten(wf, info)` extracted from the video flattener**; music calls the same helper | video prompts must stay byte-identical after the refactor — **enforced by an equivalence test** (old inline flatten vs `_flatten` → identical 27-node prompt + identical meta) before push |
-| Oct 8 | **v20 `H3_SMOKE` default becomes `image,video,music`**; music budget 3600 s, wait cell asserts a real audio file (`auds` scan), format `flac` via `{"format":"flac"}` dict | user rule: one low-quality smoke per modality; music smoke = 30-step single-T4 mini run; SaveAudioAdvanced's `format` is a DynamicCombo *dict* (verified in `nodes_audio.py`) |
+| Oct 8 | **v20 `H3_SMOKE` default becomes `image,video,music`**; music budget 3600 s, wait cell asserts a real audio file (`auds` scan), format `flac` | user rule: one low-quality smoke per modality; music smoke = 30-step single-T4 mini run |
+| Oct 8 | **v21: `SaveAudioAdvanced.format` (and all `IO.DynamicCombo` inputs) is a PLAIN STRING in the API prompt** (`"flac"`), not the UI-widget dict `{"format":"flac"}`; mp3/opus set the dotted sub-input `format.quality`; `_flatten` now emits dotted keys whose parent input is present | v20 died on `execute() missing 'format'` — proved on a local CPU ComfyUI that the dict form silently fails the DynamicCombo option-key match and drops the input from the executor schema, while the string form validates clean and is re-nested to `{"format": ...}` by `build_nested_inputs`. Verify against the actual node schema, not the saved-workflow widget shape |
+| Oct 8 | **v21: reproduce executor behaviour before pushing** (local CPU ComfyUI install: `get_finalized_class_inputs` + `build_nested_inputs` + real `/prompt`) | the v20 failure was invisible to `node_errors` validation (validation iterates the expanded schema only — a dropped dynamic input passes silently and dies at execute). The only reliable gate is the executor path itself |
 
 ---
 
@@ -495,7 +501,10 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 8 | **v19 pushed** (kernel version 19) | RUNNING — success = first-error diagnostic visible in install cell (`in-kernel task deps import FAIL: <real cause>`), `TASK SMOKE PASSED` (healthy or clean warn), sync idles on `manifest match` (dataset now populated) |
 | Oct 8 | **v19 VERIFIED — all three success criteria met**: (a) install printed the PRECISE first error — subprocess `task deps health: OK` yet `in-kernel task deps import FAIL: ImportError cannot import name '_slice' from 'numpy._core.umath'` → `TASKS_HEALTHY=False`; (b) task smoke upscale `200` REQUIRED + video_frames `200`, bg_remove/extract FAILED (after retry) → `WARN tolerated` → **`TASK SMOKE PASSED`**; (c) sync **`cache dataset up to date (manifest match)`** — write-back idles on the populated v2 dataset, no re-upload | ✅ log `/tmp/opencode/v19out/`. Root-caused the persistence: **subprocess pip swap of numpy in-place** after kernel preload. Locally reproduced 1:1 (2.1.3→2.5.3) + cure proven (force-reinstall to kernel-loaded version) |
 | Oct 8 | **v20 built**: install cell heals on EITHER probe (re-pins numpy to the kernel-loaded version, re-verifies both) + **music lane** (core ComfyUI nodes, `_flatten` extraction, `MUSIC_WIDGETS`, preset `music_smoke`, `H3_SMOKE=image,video,music`); rebuild 13 code cells `ast`-OK; **equivalence PASS** (video byte-identical) + music structure checks PASS | ✅ |
-| Oct 8 | **v20 pushed** (kernel version 20) — MiniMax Music 3 lane + the proven numpy heal | RUNNING — verify: `TASKS_HEALTHY=True`, `SMOKE PASSED: ['image','video','music']`, `h3_music_*.flac` in output, tasks bg_remove/extract healthy |
+| Oct 8 | **v20 pushed** (kernel version 20) — MiniMax Music 3 lane + the proven numpy heal | → v20 run: heal WORKED (`TASKS_HEALTHY=True`), all 3 smokes validated + music generated (AR 57%, tiled decode, lazy switch) but **ERROR at the save step** — see next row |
+| Oct 8 | **v20 run root-caused**: `SaveAudioAdvanced.execute() missing 1 required positional argument: 'format'`. Install: `task deps health: OK` (subprocess) / in-kernel FAIL `_slice` → heal `numpy==2.1.3` → **`TASKS_HEALTHY=True`**; image+video smokes ran; **music smoke executed** (`AR sampling: 57% 72/126 [1.17s/it]`, tiled decode node 1008 skipped by lazy switch, 1010 ran) but ERROR at node 35 = SaveAudioAdvanced — `format` field not delivered. **Proven locally** (CPU ComfyUI): `format` is `IO.DynamicCombo`; API prompt needs option-key STRING `"flac"`, v20 sent dict → dropped → missing positional | ❌ run ERROR (but: heal + full music generation verified in production!) |
+| Oct 8 | **v21 built+verified**: `_build_music` writes `format` as plain option-key string (+ dotted `format.quality` for mp3/opus); `_flatten` emits dotted dynamic sub-inputs; local CPU ComfyUI: flattened prompt has `format:"flac"`, full prompt validates on the real server with **zero node_errors on SaveAudioAdvanced**, `build_nested_inputs` nests to `{"format":"flac"}` (mp3 → `{"format":"mp3","quality":"V0"}`), v20 dict form reproduces the exact drop | ✅ FIX PROVEN, 13 cells ast-OK (commit `c66cf1f`) |
+| Oct 8 | **v21 pushed** (kernel version 21) — music save-node DynamicCombo serialization fix | RUNNING — verify: `TASKS_HEALTHY=True`, `SMOKE PASSED: ['image','video','music']`, real `h3_music_*.flac`, bg_remove/extract green (heal now proven in prod) |
 
 ---
 
@@ -529,10 +538,18 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
   kernel loaded>` — and **heal when EITHER probe fails** (subprocess-only misses this exact
   divergence). Locally reproduced 1:1 with numpy 2.1.3 → 2.5.3 in-place upgrade (v20 verified the
   heal makes both probes OK again).
-- MiniMax Music 3 lane (v20): core ComfyUI nodes only; the music template stores positional
+- MiniMax Music 3 lane (v20/v21): core ComfyUI nodes only; the music template stores positional
   widgets (no `widgets_values_named`) — promote via the schema-verified `MUSIC_WIDGETS` table;
-  `SaveAudioAdvanced.format` is a dict (`{"format":"flac"}`); music runs single-T4, so the
-  `active: 2 ranks` assertion applies only when the video smoke ran.
+  music runs single-T4, so the `active: 2 ranks` assertion applies only when the video smoke ran.
+- **`IO.DynamicCombo` inputs need the option KEY STRING in the API prompt (v21 lesson)**:
+  the saved-workflow widget value is a dict (`{"format":"flac"}`) but ComfyUI's *APIP prompt*
+  must carry the plain string `"flac"`; the executor (`get_finalized_class_inputs` →
+  `_expand_schema_for_dynamic`) uses it to match the option, inject that option's sub-inputs as
+  **dotted keys** (`format.quality`), and `build_nested_inputs` re-nests everything into the dict
+  `execute()` receives. A dict value silently fails the match → the input is dropped → a runtime
+  `missing positional argument` that `node_errors` validation NEVER catches (validation iterates
+  only the expanded schema). Gate such nodes by exercising `get_finalized_class_inputs` +
+  `build_nested_inputs` on a local CPU ComfyUI before pushing.
 - **Repo build pipeline (Oct 8)**: `build_full.py` IS the source of truth and lives in this repo;
   cells are embedded verbatim as raw `r'''…'''` strings (never regular — cell sources contain
   `\n`/`\.` sequences that regular strings would eat). Rebuild → ast-validate → `kaggle kernels

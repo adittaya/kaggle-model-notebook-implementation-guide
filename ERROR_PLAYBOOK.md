@@ -63,6 +63,7 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
 | local box | first rembg warm-up downloads weights through a **symlinked** `models/` dir | `/tmp/ComfyUI → /tmp/opencode/ComfyUI` symlink; relative/`os.path` writes resolve through it fine, but inventory code that string-compares paths may not | keep `REMBG_HOME` under the resolved `models/` path and check `Path.resolve()` when comparing |
 | **v18 Kaggle run (COMPLETED, but bg_remove/extract down all boot)** | `task deps health: OK` (subprocess probe passed — **no mixed numpy this boot**) yet the **in-kernel** verify failed with `AttributeError: 'numpy.ufunc' object has no attribute '__module__'` → `TASKS_HEALTHY=False` → warm-up, api `import rembg` and every task died for the whole boot | **self-inflicted `_kernel_verify` bug**: it *popped* `numpy*` from `sys.modules` and re-imported in the same long-lived process. Pop-and-reimport of a stem C-extension module is broken by itself: locally reproduced on a healthy numpy 2.4.6 (`ImportError: cannot load module more than once per process`); on Kaggle the re-import walks the newer-style `multiarray._override___module__` and fails setting `ufunc.__module__` on the re-init'd objects → the *verified-healthy-subprocess* state and the *broken-kernel* state diverge | v19: **never touch `sys.modules` in `_kernel_verify`** — ONE attempt, print the FIRST error + traceback tail, return False (graceful `TASKS_HEALTHY=False`). The subprocess probe is the only place on-disk files are re-validated after a heal; a kernel process only *reports*, it does not reload C extensions. The `TASKS_HEALTHY` gate already made this non-fatal (upscale REQUIRED green, sync ran, dataset version 2) |
 | **v19 Kaggle run (COMPLETED — all three diagnostic goals met)** | `task deps health: OK` (subprocess probe on a fresh interpreter) yet **`in-kernel task deps import FAIL: ImportError cannot import name '_slice' from 'numpy._core.umath'`** (first error + traceback tail printed — exactly the diagnostic v18 lacked) → `TASKS_HEALTHY=False` → bg_remove/extract FAILED (after retry-once) but `WARN tolerated` → `TASK SMOKE PASSED`; **sync idled: `cache dataset up to date (manifest match)`** | **the mixed numpy is an IN-PLACE SWAP, not a bad image**: a subprocess `pip install` (rembg's dep resolve) replaces the numpy wheel files while THIS kernel already pre-loaded numpy 2.1.3 (torch preflight). Disk then imports self-consistently (new numpy → subprocess probe OK) while the kernel's already-imported `umath` (old, no `_slice`) + new on-disk `strings.py` (imports `_slice`) mix → kernel-only failure. Reproduced 1:1 locally (in-place upgrade 2.1.3→2.5.3 while loaded → same error; subprocess stayed OK) | **v20: heal fires when EITHER probe fails**, force-reinstalling numpy to the version the KERNEL loaded (`numpy.__version__` in-process), then re-verifies both — the cure itself verified locally (after heal: subprocess OK + in-kernel OK, `TASKS_HEALTHY=True`). Lesson: a subprocess-only probe validates disk files, not the long-lived process's loaded modules — probe both |
+| **v20 Kaggle run (ERROR at the last op — numpy heal PROVEN in production)** | install: `task deps health: OK` (subprocess) yet `in-kernel task deps import FAIL: … '_slice'` → **heal `force-reinstall --no-deps numpy==2.1.3` → both probes OK → `TASKS_HEALTHY = True`**; image+video smokes green; **music smoke EXECUTED** (`AR sampling: 57% 72/126 [1.17s/it]`, tiled decode, lazy `ComfySwitchNode` correctly skipped `VAEDecodeAudio`) but the run died at the last op: `SaveAudioAdvanced.execute() missing 1 required positional argument: 'format'` | SaveAudioAdvanced.`format` is an **`IO.DynamicCombo`**: the ComfyUI API prompt must carry the option **KEY as a plain string** (`"flac"`); the kernel was sending the UI-widget dict `{"format":"flac"}`. `get_finalized_class_inputs` uses that value to *match the option* — a dict never matches → the input is **silently dropped** (validation iterates only the expanded schema, so `node_errors` stays empty) → `execute()` gets kwargs without `format` → the crash. Proved on a local CPU ComfyUI: dict form drops; string form nests (`build_nested_inputs`) to exactly what `execute()` reads | **v21: `_build_music` writes the option-key string** (`"flac"`; mp3/opus also set the dotted `format.quality` sub-input) and `_flatten` gained dotted-key support. Local proof before push: flattened prompt has `format:"flac"`, full prompt validates on a real server with **zero node_errors on SaveAudioAdvanced**, and the v20 dict form reproduces the exact drop. Lesson: widget-value shapes (saved-workflow dicts) ≠ API-prompt input values — DynamicCombo inputs are option-key strings (+ dotted sub-input keys); a missing-input that only fires at execute means the value form is wrong |
 
 ## Debugging signals that actually solved things
 
@@ -73,6 +74,12 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
   node, or int-vs-string id mismatch.
 - `value_not_in_list ... not in ['pixel_space']` ⇒ `models/vae` is **empty** (`pixel_space` is a
   built-in pseudo-VAE, `nodes.py` appends it to every VAE list), so your download never landed.
+- **A node dies at EXECUTE with "missing required positional argument" while `node_errors` was `{}`**
+  ⇒ wrong value SHAPE for a DynamicCombo / dynamic input, not a missing key: the executor
+  (`get_finalized_class_inputs`) matches the input VALUE against the option list to decide which
+  sub-inputs to inject, so a mismatched value silently drops the input after validation. API
+  prompts must carry the **option-key string** (`"flac"`), plus dotted sub-input keys
+  (`format.quality`); saved-workflow widget dicts (`{"format":"flac"}`) are UI form, not API form.
 - A whole notebook that finishes in ~110 s, or a download subprocess with **no output and
   exit 0** ⇒ it did nothing. Verify files and sizes, never trust the exit code.
 - **Config ≠ execution for multi-GPU**: `device_count: 2` and `second_gpu=-1` only show intent.
@@ -107,11 +114,16 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
   sync uploaded version 2 in 716 s); **v19 = the same sequence with a clean warn** (bg_remove/
   extract FAILED on the in-place-numpy-swap but `WARN tolerated`), and **sync idled on `manifest
   match`** (no drift); **v20 adds the third modality to that sequence** (music smoke → audio
-  file assertion) and expects `TASKS_HEALTHY=True` via the either-probe heal. When the log
+  file assertion) and **delivered `TASKS_HEALTHY=True` via the either-probe heal (PROVEN in
+  production)** but ERRORed at the music save step (the v20 chain above) — **v21 re-runs the full
+  sequence with the save-node fix**. When the log
   matches the healthy sequence up to one line, that line *is* the bug — a missing flux line
   means the image schedule didn't load (`H3_SMOKE`); a missing PNG after image smoke means the
   checkpoint never landed (`value_not_in_list` on `ckpt_name`); a missing FLAC after music smoke
-  means the MiniMax-Music-3 assets never landed or the module is wrong; a `WARN tolerated` row
+  means the MiniMax-Music-3 assets never landed or the module is wrong; a missing `format` on
+  `SaveAudioAdvanced` at the **execute** stage (node_errors still `{}`) means a DynamicCombo
+  input was sent in the wrong value form (v21 lesson — send the option-key string, not a dict);
+  a `WARN tolerated` row
   means the environment (not the feature) is broken — stay in warn-only and let the run finish.
 - **Dry-run the notebook cells locally before pushing**: run every cell against a local ComfyUI
   (CPU build) — registry/settings/assets/convert/submit/API all execute for free and `/prompt`

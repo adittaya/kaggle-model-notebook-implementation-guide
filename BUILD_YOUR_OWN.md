@@ -108,8 +108,15 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       `active: 2 ranks` assertion. **A music lane sits on CORE ComfyUI nodes** (v20:
       `nodes_minimax_music.py`) — no custom pack, no MultiStream; its template stores inner node
       widgets **positionally**, so promote them to `widgets_values_named` via a **schema-verified
-      table** (skip frontend-only slots like `control_after_generate`), and remember
-      `SaveAudioAdvanced.format` is a **dict** (`{"format":"flac"}`).
+      table** (skip frontend-only slots like `control_after_generate`).
+- [ ] **`IO.DynamicCombo` inputs in the API prompt are option-key strings** (v21, hard-won): a
+      smoke save-node like `SaveAudioAdvanced.format` takes `"flac"` (a plain string), NOT the
+      widget dict `{"format":"flac"}` — the executor matches the string against the option list to
+      choose sub-inputs and re-nests `{"format": ...}` at call time; a dict silently drops the
+      input (`node_errors` stays `{}`, crash at execute with `missing positional 'format'`).
+      Sub-inputs of the chosen option (e.g. mp3 → `quality`) are dotted keys (`format.quality`).
+      Gate it: run `get_finalized_class_inputs` + `build_nested_inputs` on a local ComfyUI and
+      eyeball what `execute()` actually receives before pushing
 - [ ] **Separate builder per workflow shape**: a flat template (flux) does not belong inside a
       subgraph flattener — branch `build_prompt(cfg)` on `cfg["modality"]` (video / image / music,
       v20) and keep the verified path untouched; share `load_info()` schema filtering,
@@ -134,7 +141,7 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       Comfy's combo lists category dirs — download with
       `snapshot_download(..., local_dir=models/<category>)` and track those paths in one shared
       set used by boot, `select`, and prune alike
-- [ ] **Probe + heal the CPU-task stack at install time** (v18/v19/v20): a Kaggle boot can't be
+- [ ] **Probe + heal the CPU-task stack at install time** (v18/v19/v20/v21): a Kaggle boot can't be
       debugged interactively, so after pip installs run the EXACT imports your CPU tasks need in
       a subprocess (`from numpy._core.strings import *; from scipy import ndimage; import rembg`)
       **AND in the kernel**, and on EITHER failure resync numpy with
@@ -147,7 +154,8 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       the kernel's loaded `umath` + new on-disk `strings.py` mix → `cannot import name '_slice'
       from 'numpy._core.umath'`; heal must re-pin to the version the KERNEL loaded
       (`numpy.__version__` in-process), verified locally (2.1.3→2.5.3 swap reproduced, heal
-      restores both probes). (2) do NOT "fix" an in-kernel import failure by popping the module
+      restores both probes) **and PROVEN in production by v20** (`TASKS_HEALTHY=True` after the
+      heal when the kernel-only FAIL hit again). (2) do NOT "fix" an in-kernel import failure by popping the module
       from `sys.modules` and re-importing — same-process re-import of a stem C-extension module
       is broken by itself (`cannot load module more than once per process`; on Kaggle it dies
       inside `multiarray._override___module__` with `'numpy.ufunc' object has no attribute
