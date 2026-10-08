@@ -364,9 +364,8 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
    idles**: `cache dataset up to date (manifest match)` (no drift → no upload). The read half
    still needs the **one-time manual step**: attach `minimax-h3-model-cache` via Add Data so
    `/kaggle/input` populates (v19 still showed `0 candidate files` → boots still download from HF)
-5. ⬜ Rebuild `dryrun.py` into the repo (lost with the host restart) so v20+ keeps the local
-   59/59 gate
-6. ⬜ Rotate the GitHub PAT pasted in chat earlier; keep HF token out of the public repo
+5. ✅ **SUPERSEDED by `local_check.py`** (v21, installed in-repo; see decision log) — old 59/59 dryrun simulation no longer needed
+6. ⬜ **Rotate the GitHub PAT embedded in `git remote -v`** (`https://adittaya:ghp_…@github.com/…`, plaintext in `.git/config`; verified NOT in shell history or any commit). After rotation: `git remote set-url origin https://github.com/adittaya/kaggle-model-notebook-implementation-guide.git` then `gh auth login` / credential helper with the fresh token.
 
 ---
 
