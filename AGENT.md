@@ -15,7 +15,7 @@ reconstruct the whole project after a context loss.
 **Date:** Oct 8 2026
 **Owner:** adityahalde8777
 **Kaggle kernel:** `adityahalde8777/minimax-h3-comfy-2xt4-generator` (the ONLY kernel; old lanes deleted)
-**Latest:** **v22.1 PUSHED (ver 24) — v22 run verified: cell-ID fix WORKED, new failure = ComfyUI boot (av pin).**
+**Latest:** **v22.1 VERIFIED — ver 24 is the FIRST COMPLETE GREEN END-TO-END RUN (92 min, 05:50→07:22 UTC Oct 8).** All 13 cells ran (`state.txt` → `cell:sync:end`); watchdog heartbeat + **`ComfyUI local ready`** (av 18.1.0 + boot watchdog CONFIRMED in prod — no silent window); `TASKS_HEALTHY=True`; **`SMOKE PASSED: ['image','music','video']`** + real `h3_music_00001.flac`; **`DUAL-GPU CONFIRMED`** (2 ranks cuda:0+cuda:1, 50 blocks, 28/28 heads); tunnel verified public + `/h3api/tasks` 200 + `TASK SMOKE PASSED`; **sync `upload OK` (1150 s)** → dataset incl. `smoke_state.json`. **Next: ver 25 = STT self-test (probe-based), pre-validated locally → then v26 = MOSS-VL `video_qa` lane (design + venv stack validation complete).**
 - **v22 run (ver 23):** **101 KB log** + `state.txt` milestones through `cell:start:start` — the
   cell-ID fix (`h3c00…h3c13`, nbformat zero-warning gate) ended the 2-byte-log invisible death;
   preflight/install/registry/settings/assets/convert all executed, numpy-heal path present,
@@ -29,14 +29,16 @@ reconstruct the whole project after a context loss.
 - **v22.1 fix:** pin **`av==18.1.0`** (band 17..18 — ComfyUI ≥17 + fw 1.2.1's `metadata_errors`
   <19 both satisfied, verified locally: Comfy boots on 18.1.0, JFK transcribes on 18.1.0) +
   start-cell **boot watchdog** (30 s heartbeat with last comfy.log line; on failure print
-  `/tmp/comfy.log` tail + exit code; ONE relaunch; extended budget). **Verify on ver 24:**
-  heartbeats in the log, `ComfyUI local ready`, `TASKS_HEALTHY=True`,
-  `SMOKE PASSED: ['image','video','music']` + real `h3_music_*.flac`, `DUAL-GPU CONFIRMED`,
-  tunnel `/tasks` green incl. transcribe, sync → dataset v4 with `smoke_state.json`.
+  `/tmp/comfy.log` tail + exit code; ONE relaunch; extended budget). **Verified on ver 24**
+  (2026-10-08, FIRST COMPLETE GREEN RUN): heartbeat `boot t=30s alive=yes`, **`ComfyUI local ready`**,
+  `TASKS_HEALTHY=True`, **`SMOKE PASSED: ['image','music','video']`** + real `h3_music_00001.flac`,
+  **`DUAL-GPU CONFIRMED`** (`active: 2 ranks cuda:0+cuda:1`, 50 blocks, 28/28 heads),
+  tunnel verified public + `/h3api/tasks` 200 + `TASK SMOKE PASSED`, sync `upload OK` → dataset
+  incl. `smoke_state.json`.
 Prior verified baselines: **v18** (first green run) → **v19** (numpy root-cause) → **v20**
 (heal + music ran to the save step; DynamicCombo `format` root-caused) → **v21** (fix pushed;
 then two invisible-death runs root-caused to missing cell ids) → **v22** (cell-ID fix proved;
-new Comfy boot failure root-caused → this push).
+new Comfy boot failure root-caused → this push) → **v22.1 (ver 24): FIRST COMPLETE GREEN RUN**.
 
 ---
 
@@ -48,10 +50,10 @@ The product is an **all-in-one generation hub** on one public Base URL, not just
 |---|---|---|
 | **Video generation** | MiniMax H3 (FL2VA/Ref2VA, turbo/dense), H3-Max-style variants | ✅ H3 lane in production |
 | **Image generation** | Flux family (Comfy-Org repos), community Fluxes | ✅ v18 smoke proven on Kaggle (PNG + MP4, dual-GPU, **run COMPLETED**) |
-| **Image/audio use-case tasks** | bg remover, element extractor, upscaler, frame/GIF/audio tools | 🟡 upscale + video_frames green on Kaggle (v18/v19); bg_remove/extract blocked every boot by the **in-place numpy swap** (subprocess pip upgrades numpy after the kernel pre-loaded it → kernel-only `_slice` ImportError). **v20's heal fired on the in-kernel probe exactly as designed → `TASKS_HEALTHY=True`**, but the v20 run ERRORed at the music save step *before* the pub task smoke, so bg_remove/extract are **still unverified through the tunnel — expected to go green in the v21 run** (same heal) |
-| **Music generation** | `audio_minimax_music_3` Comfy template (MiniMax Music 3, **core** ComfyUI nodes), LTx community | 🟡 **v20 ran the FULL pipeline** (30-step AR sampling, tiled decode, lazy switch) but ERRORed at the save step: `SaveAudioAdvanced` missing `format` → **root-caused + proven locally** (DynamicCombo option-key must be a plain string in the API prompt) → **v21 fix PUSHED**, awaiting Kaggle verification |
+| **Image/audio use-case tasks** | bg remover, element extractor, upscaler, frame/GIF/audio tools | ✅ **bg_remove + extract PROVEN through the tunnel** (ver 24 task smoke: `200 POST task bg_remove` + `200 POST task extract` → `TASK SMOKE PASSED`); upscale + video_frames green since v18/v19. The v20 numpy-heal root-cause is closed (`TASKS_HEALTHY=True` in prod) |
+| **Music generation** | `audio_minimax_music_3` Comfy template (MiniMax Music 3, **core** ComfyUI nodes), LTx community | ✅ **PROVEN ON KAGGLE (ver 24)**: v21's `format` fix landed → `SMOKE PASSED` includes music, real **`h3_music_00001.flac`** saved (30-step AR, tiled decode, lazy switch) |
 | **Sound / soundtrack** | H3 native audio track (already joint audio+video), music models | ⬜ Phase C |
-| **Transcription (ASR)** | **faster-whisper (CTranslate2, CPU int8 — no torch, GPUs stay free for Comfy)**, Whisper weights, ~100 languages | 🟡 **implemented in v22** (`POST /h3api/task {"task":"transcribe"}`), deps proven locally on `av==18.1.0`; **not yet proven on Kaggle hardware** — the v22 run died at Comfy boot (av pin), v22.1 re-runs |
+| **Transcription (ASR)** | **faster-whisper (CTranslate2, CPU int8 — no torch, GPUs stay free for Comfy)**, Whisper weights, ~100 languages | 🟡 **implemented in v22 and listed in ver 24's `/h3api/tasks` registry**; deps proven locally on `av==18.1.0`; **on-hardware compute path proof = ver 25 STT self-test** (probe = whisper jfk.flac, `en@0.945` pre-validated) — next push |
 | **Text generation** | ❌ explicitly NOT needed | — |
 
 Requirements distilled from user messages:
@@ -514,6 +516,7 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 8 | **v22 run (ver 23) = ERROR but diagnosis gold**: **101 KB log** (cell-ID fix WORKS, cells ran through assets/convert) → died in the start cell: `ComfyUI did not listen in time` after a fully silent 363 s window. Root cause: `av==13.1.0` pin violated ComfyUI main's `av>=17.0.0` in the server's own site-packages; crash invisible (server stderr → `/tmp/comfy.log`). Local repro: Comfy boots on av 18.1.0 / 19.0.1. | ✅ root-caused; evidence `/tmp/opencode/v23out/` |
 | Oct 8 | **v22.1 built**: pin `av==18.1.0` (17..18 band, both consumers satisfied — local ftests: Comfy boots, JFK transcribes) + start-cell boot watchdog (heartbeat + comfy.log tail + exit code + one relaunch + extended budget) | ✅ 21/21 gate; pushed to Kaggle as **ver 24** — verify Comfy boots, smokes pass, transcribe proven on hardware, sync → dataset v4 + smoke_state |
 | Oct 8 | **pre-green residual prep (no notebook change)**: `local_check.py` hardened to 23/23 (commit `21373a9` — av-band + watchdog guards); STT self-test for v25 designed and **locally validated** against the real faster-whisper path (probe = OpenAI whisper `tests/jfk.flac`, 108 chars en@0.945; block draft `/tmp/opencode/stt_selftest_block.txt`); whisper seed = post-proof optimization only (faster-whisper `download_root` = HF cache_dir; a hand-seeded tree won't reliably skip all network without `.metadata` sidecars → rely on the self-test run's write-back to upload the `stt/*` tree instead) | ✅ commit `21373a9`; ver 24 still RUNNING (started 05:50 UTC, ETA ~06:50-07:20) |
+| Oct 8 | **v22.1 VERIFIED — FIRST COMPLETE GREEN RUN (ver 24, 92 min)**: all 13 cells ran (state.txt through `cell:sync:end`); watchdog heartbeat + **`ComfyUI local ready`** (no silent window → av 18.1.0 + watchdog fix CONFIRMED in prod); `TASKS_HEALTHY=True`; **`SMOKE PASSED: ['image','music','video']`** + real `h3_music_00001.flac`/PNG/MP4; **`DUAL-GPU CONFIRMED`** (2 ranks + 50 blocks + 28/28); tunnel `accurately-initial-grab-quantum.trycloudflare.com` verified; `/h3api/tasks` 200 + `TASK SMOKE PASSED` (bg_remove/extract 200); **sync `upload OK` (1150 s)** → dataset written back incl. `smoke_state.json` (v24 dropped the v22-tie to `main` = fast-forward `618d925..30bb605`); gate 23/23 | ✅ evidence `/tmp/opencode/v24out/`; main now at `30bb605` = v22.1 |
 
 ---
 

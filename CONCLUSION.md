@@ -310,7 +310,7 @@
   This run is the **baseline full-verify** (no stored state yet): all three smokes run and STAMP the
   state, so **v23+ skips proven lanes** automatically.
 
-### v22.1 — v22 run verdict + ComfyUI boot fix — PUSHED
+### v22.1 — v22 run verdict + ComfyUI boot fix — **VERIFIED (ver 24 = FIRST COMPLETE GREEN RUN)**
 - **v22 run (ver 23): cell-ID fix WORKED.** 101 KB kernel log (vs the 2-byte `[]` signature),
   `state.txt` milestones through `cell:start:start` — preflight/install/registry/settings/assets/
   convert all executed. The cell-ID root-cause chain is now fully closed.
@@ -327,6 +327,15 @@
   faster-whisper transcribes the JFK clip on 18.1.0. The start cell now runs a **boot watchdog**:
   30 s heartbeat printing the last comfy.log line, on failure prints the comfy.log tail + process
   exit code, ONE relaunch, and an extended budget — a Comfy boot failure is never silent again.
+- **Verdict (ver 24, 2026-10-08):** **COMPLETE at 92 min** (05:50→07:22 UTC), log 2.26 MB, all 13
+  cells executed through `cell:sync:end`. Watchdog heartbeats present; **`ComfyUI local ready`**;
+  `TASKS_HEALTHY=True` (t=179 s and task time); **`SMOKE PASSED: ['image','music','video']`** with
+  real `h3_music_00001.flac`; **`DUAL-GPU CONFIRMED`** (`active: 2 ranks cuda:0+cuda:1`, 50 blocks,
+  28/28 heads); tunnel `https://accurately-initial-grab-quantum.trycloudflare.com` verified public;
+  `/h3api/tasks` 200 + `TASK SMOKE PASSED` (bg_remove + extract 200); **sync `kagglehub upload OK`
+  (1150 s)** → cache dataset written back incl. `smoke_state.json` (v26 planning page exists for
+  STT self-test ver 25 + MOSS-VL `video_qa` lane). Video smoke took ~50 min (slower than v18's
+  ~15 min — budget note for future runs). Evidence: `/tmp/opencode/v24out/`.
 
 ## 2026-10-07 — retired lanes (kept for history)
 
@@ -374,4 +383,6 @@
    (716 s); v19 probed the populated dataset and idled on `cache dataset up to date (manifest
    match)`. (b) read half still OPEN: **CLOSED by v22** — `dataset_sources:
    [adityahalde8777/minimax-h3-model-cache]` is in the pushed kernel-metadata, so
-   `/kaggle/input/minimax-h3-model-cache` auto-attaches on boot (pending v22 run confirmation).
+   `/kaggle/input/minimax-h3-model-cache` auto-attaches on boot (**CONFIRMED ver 24:** cache
+   inventory 58 files / 73.8 GB, drift check 6 remote vs 9 local, `kagglehub upload OK` (1150 s)
+   → dataset written back incl. `smoke_state.json`).
