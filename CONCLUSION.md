@@ -277,7 +277,9 @@
   a hard error in future nbformat versions*" — that exact warning is visible in the **v20** boot
   log!) became a hard error on the Kaggle runner between v20 and v21. Fix: every cell gets a unique
   id (`h3c00…h3c13`); `nbformat.validate` is now a **zero-warning gate inside `local_check.py`**
-  (21/21) and the pushed notebook is re-pulled + re-validated before the run is trusted. The
+  (23/23 — since `21373a9` the gate also rejects a v22.1 regression: install-cell `av` literal
+  outside 17..18, or a start cell missing the boot-watchdog markers) and the pushed notebook is
+  re-pulled + re-validated before the run is trusted. The
   invisible-death signature (`RUNNING`→`ERROR`, empty log, no artifacts) is now a documented
   diagnostic: zero streams AND zero files — even one a cell writes in its first second — ⇒
   validation/boot death; line-buffering + `state.txt` markers (v21.1) only localize *in-cell* kills.
