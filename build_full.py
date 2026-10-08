@@ -91,8 +91,12 @@ r=subprocess.run([sys.executable,"-m","pip","install","rembg[cpu]==2.0.85"],
 print("rembg install rc=%d"%r.returncode)
 print(((r.stdout or "")+(r.stderr or ""))[-700:])   # always show tail (a numpy move shows here)
 # speech-to-text task (transcribe): faster-whisper on CTranslate2 (CPU int8, ~100 languages).
-# av MUST be pinned 13.x (fw 1.2.1 calls av.open(metadata_errors=...) which av>=19 removed).
-r=subprocess.run([sys.executable,"-m","pip","install","-q","faster-whisper==1.2.1","av==13.1.0"],
+# av MUST be 17..18, NOT 13 and NOT 19: fw 1.2.1 calls av.open(metadata_errors=...) which
+# av>=19 removed, while ComfyUI requirements.txt requires av>=17.0.0. v22 root-cause: the old
+# av==13.1.0 pin violated ComfyUI's requirement in the SAME site-packages the ComfyUI server
+# (separate process) boots from -> ComfyUI never listened; local repro: ComfyUI boots fine on
+# av 18.1.0 and faster-whisper 1.2.1 transcribes fine on av 18.1.0.
+r=subprocess.run([sys.executable,"-m","pip","install","-q","faster-whisper==1.2.1","av==18.1.0"],
                  capture_output=True,text=True)
 print("stt install rc=%d"%r.returncode)
 print(((r.stdout or "")+(r.stderr or ""))[-400:])
@@ -825,10 +829,42 @@ def _build_image(cfg):
 
 # ---------------- cell 8: start ----------------
 start = r'''
-import subprocess,sys,os,time,json
-c=subprocess.Popen([sys.executable,"/tmp/ComfyUI/main.py","--listen","127.0.0.1","--port","8188","--preview-method","latent2rgb"],
-                   cwd="/tmp/ComfyUI", stdout=open("/tmp/comfy.log","w"), stderr=subprocess.STDOUT)
-print("Comfy pid",c.pid)
+import subprocess,sys,os,time,json,urllib.request as _ur
+
+def _log_tail(n=80):
+    try:
+        lines=open("/tmp/comfy.log",errors="replace").read().splitlines()
+        return "\n".join(lines[-n:])
+    except Exception as e:
+        return "<comfy.log unreadable: %r>"%e
+
+def _last_ll():
+    try:
+        for l in reversed(open("/tmp/comfy.log",errors="replace").read().splitlines()):
+            if l.strip(): return l.strip()
+    except Exception: pass
+    return ""
+
+def _launch(tag):
+    p=subprocess.Popen([sys.executable,"/tmp/ComfyUI/main.py","--listen","127.0.0.1","--port","8188","--preview-method","latent2rgb"],
+                       cwd="/tmp/ComfyUI", stdout=open("/tmp/comfy.log","w"), stderr=subprocess.STDOUT)
+    print("[%s] Comfy pid %d"%(tag,p.pid))
+    return p
+
+def _wait(tag,p,budget):
+    t0=time.time(); hb=t0
+    while time.time()-t0<budget:
+        try:
+            _ur.urlopen("http://127.0.0.1:8188/history",timeout=3)
+            return True,None,""
+        except Exception: pass
+        if p.poll() is not None:
+            return False,"EXITED rc=%d after %.0fs"%(p.returncode,time.time()-t0),""
+        if time.time()-hb>=30:
+            hb=time.time()
+            print("[%s] boot t=%ds alive=yes last=<%s>"%(tag,int(time.time()-t0),_last_ll()[:150]))
+        time.sleep(5)
+    return False,"TIMEOUT after %.0fs"%(time.time()-t0),""
 # sample both GPUs every 10s -> /tmp/gpus.log (dual-GPU evidence for the smoke test)
 try:
     subprocess.Popen(["nvidia-smi","--query-gpu=index,utilization.gpu,utilization.memory,memory.used,power.draw",
@@ -836,15 +872,27 @@ try:
                      stdout=open("/tmp/gpus.log","w"), stderr=subprocess.STDOUT)
 except Exception as e:
     print("gpu monitor not started:",e)
-ready=False
-for i in range(72):
-    try:
-        import urllib.request as ur
-        ur.urlopen("http://127.0.0.1:8188/history", timeout=3)
-        ready=True; break
-    except Exception: time.sleep(5)
+
+c=_launch("try1")
+ready,why,_=_wait("try1",c,360)
 if not ready:
-    raise RuntimeError("ComfyUI did not listen in time")
+    print("first Comfy attempt failed:",why)
+    print("=== comfy.log tail (attempt 1) ===")
+    print(_log_tail(80))
+    if why.startswith("EXITED"):
+        # transient crash on cold first boot: one relaunch (diagnosis stays in the log above)
+        print("relaunching Comfy once ...")
+        c=_launch("try2")
+        ready,why,_=_wait("try2",c,420)
+    else:
+        # still alive but slow boot (heavier 0.39.x pack): extend the wait once
+        print("Comfy still booting: extending wait ...")
+        ready,why,_=_wait("try1",c,240)
+    if not ready:
+        print("final Comfy failure:",why)
+        print("=== comfy.log tail (final) ===")
+        print(_log_tail(120))
+        raise RuntimeError("ComfyUI did not listen in time ("+why+")")
 print("ComfyUI local ready")
 '''
 

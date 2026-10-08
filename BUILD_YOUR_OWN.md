@@ -159,8 +159,10 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       give ~100 languages on CPU int8 (small: load 3.5 s, 11 s clip → 6.5 s locally). Offer
       model tiers (`tiny/base/small/medium/large-v3`, default `small`), `language: auto|<code>`,
       `task: transcribe|translate`, `txt/srt/vtt` (word timestamps + VAD), and a data-URL / path
-      input like the rest of the task engine. Pin deps hard (`faster-whisper==1.2.1 av==13.1.0`
-      — fw 1.2.1 needs PyAV 13.x's `metadata_errors` kwarg, removed in av≥19) and keep whisper
+      input like the rest of the task engine. Pin deps hard (`faster-whisper==1.2.1 av==18.1.0`
+      — av must be **17..18**: ≥17 satisfies ComfyUI's own `av>=17.0.0` requirement (v22 died
+      because `av==13.1.0` violated it and ComfyUI never listened), <19 keeps fw 1.2.1's
+      `metadata_errors` kwarg) and keep whisper
       sizes in `models/stt/` so the cache dataset persists them.
 - [ ] **Put every runtime asset inside `models/` so the cache picks it up**: rembg weights via
       `REMBG_HOME=/tmp/ComfyUI/models/rembg`, upscaler `.pth` in `models/upscale_models/` —

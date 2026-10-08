@@ -45,8 +45,10 @@ smokes**; **`build_full.py` now lives in this repo** (survives host restarts)).
   (CTranslate2, CPU int8, no torch)** with the full **~100-language** Whisper set: `model`
   (tiny/base/small/medium/large-v3, default `small`), auto language detect or `language:<code>`,
   `task: transcribe|translate`, outputs `txt`/`srt`/`vtt` (word timestamps + VAD), data-URL
-  plumbing reuses the task engine; pinned `faster-whisper==1.2.1 av==13.1.0` (fw 1.2.1 needs
-  PyAV 13.x's `metadata_errors` kwarg, removed in av≥19)
+  plumbing reuses the task engine; pinned `faster-whisper==1.2.1 av==18.1.0` — av must be in the
+  **17..18 band** (≥17 because ComfyUI requirements.txt now declares `av>=17.0.0` — the v22
+  `av==13.1.0` pin violated it and the ComfyUI server never listened; <19 keeps fw 1.2.1's
+  `metadata_errors` kwarg, removed in av≥19)
 - **Use-case tasks (v17):** `POST /h3api/task` — background remover + element extractor (rembg u2net),
   4× upscaler (Real-ESRGAN through Comfy's GPU), video→frames/GIF, audio extract/trim, ffprobe,
   **speech-to-text (v22)**; 9 tasks, uniform `{ok, outputs, saved, view, meta}` envelope

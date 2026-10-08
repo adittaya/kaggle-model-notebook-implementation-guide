@@ -15,34 +15,28 @@ reconstruct the whole project after a context loss.
 **Date:** Oct 8 2026
 **Owner:** adityahalde8777
 **Kaggle kernel:** `adityahalde8777/minimax-h3-comfy-2xt4-generator` (the ONLY kernel; old lanes deleted)
-**Latest:** **v21 PUSHED — v20 run root-caused & fixed (music save-node DynamicCombo serialization).**
-v20 run result: the **numpy heal worked EXACTLY as designed** — install cell printed `task deps
-health: OK` (subprocess) yet `in-kernel task deps import FAIL: ImportError cannot import name
-'_slice' from 'numpy._core.umath'` → heal `pip force-reinstall --no-deps numpy==2.1.3`
-(kernel-loaded) → both probes re-verified `OK` → **`TASKS_HEALTHY = True`**. All three smokes
-validated (`node_errors: {}`); the **music pipeline executed for real** (AR sampling 57%
-72/126 @ 1.17 s/it, tiled decode ran, lazy `ComfySwitchNode` correctly skipped `VAEDecodeAudio`)
-— but the run ended **ERROR at the very last step**:
-`SaveAudioAdvanced.execute() missing 1 required positional argument: 'format'`.
-**Root cause (proven against a local CPU ComfyUI install, torch 2.7.1):**
-SaveAudioAdvanced.`format` is an **`IO.DynamicCombo`**, and the ComfyUI *API prompt* must carry
-the option **key as a plain string** (`"flac"`); the executor then matches that option, injects
-its sub-inputs (mp3/opus → `quality`), and **re-nests** the value into `{"format": ...}` at call
-time. v20 sent the dict `{"format":"flac"}` (the UI/widget form) → the option-key match fails
-**silently** → the input vanishes from the node's kwargs → `missing positional 'format'`. Proved
-locally: `io.get_finalized_class_inputs` + `io.build_nested_inputs` drop the dict form (repro of
-the exact v20 crash signature) and nest the string form into exactly what `execute()` reads;
-the fixed full music prompt submits to the local server with **no node_errors for node 35**.
-**v21 fix**: `_build_music` writes `format` as the plain option-key string (mp3/opus also set the
-dotted `format.quality` sub-input), and `_flatten` gained dotted-key support (emit dynamic
-sub-inputs when their parent input is present). Rebuilt (13 code cells `ast`-OK), committed,
-**PUSHED as kernel version 21** — verify: `TASKS_HEALTHY=True`, `SMOKE PASSED:
-['image','video','music']` with a real `h3_music_*.flac` in output, plus healthy
-bg_remove/extract through the tunnel.
-Prior verified baselines: **v18** (first green run) → **v19** (numpy root-cause proven) → v20
-(heal + music run to the last op).
-Prior verified baseline: **v18** (COMPLETED, first fully green run; task bug chain root-caused as
-self-inflicted pop+reimport → v19's non-destructive verify) → **v19** (above).
+**Latest:** **v22.1 PUSHED (ver 24) — v22 run verified: cell-ID fix WORKED, new failure = ComfyUI boot (av pin).**
+- **v22 run (ver 23):** **101 KB log** + `state.txt` milestones through `cell:start:start` — the
+  cell-ID fix (`h3c00…h3c13`, nbformat zero-warning gate) ended the 2-byte-log invisible death;
+  preflight/install/registry/settings/assets/convert all executed, numpy-heal path present,
+  cache attach active (CACHE hits symlinked from `/kaggle/input`).
+- **Died at the start cell:** `RuntimeError: ComfyUI did not listen in time` after a **fully
+  silent 363 s window** (`Comfy pid 252` at t=1099 → raise at t=1462, zero output). Root cause:
+  the install-cell pin **`av==13.1.0`** (for faster-whisper) **violated ComfyUI main's
+  `av>=17.0.0` requirement** in the same site-packages the server process boots from (pip had
+  installed av 19.0.1 first, our pin downgraded it). The crash was invisible: the server's
+  stderr went to `/tmp/comfy.log`, unreachable post-run.
+- **v22.1 fix:** pin **`av==18.1.0`** (band 17..18 — ComfyUI ≥17 + fw 1.2.1's `metadata_errors`
+  <19 both satisfied, verified locally: Comfy boots on 18.1.0, JFK transcribes on 18.1.0) +
+  start-cell **boot watchdog** (30 s heartbeat with last comfy.log line; on failure print
+  `/tmp/comfy.log` tail + exit code; ONE relaunch; extended budget). **Verify on ver 24:**
+  heartbeats in the log, `ComfyUI local ready`, `TASKS_HEALTHY=True`,
+  `SMOKE PASSED: ['image','video','music']` + real `h3_music_*.flac`, `DUAL-GPU CONFIRMED`,
+  tunnel `/tasks` green incl. transcribe, sync → dataset v4 with `smoke_state.json`.
+Prior verified baselines: **v18** (first green run) → **v19** (numpy root-cause) → **v20**
+(heal + music ran to the save step; DynamicCombo `format` root-caused) → **v21** (fix pushed;
+then two invisible-death runs root-caused to missing cell ids) → **v22** (cell-ID fix proved;
+new Comfy boot failure root-caused → this push).
 
 ---
 
@@ -57,7 +51,7 @@ The product is an **all-in-one generation hub** on one public Base URL, not just
 | **Image/audio use-case tasks** | bg remover, element extractor, upscaler, frame/GIF/audio tools | 🟡 upscale + video_frames green on Kaggle (v18/v19); bg_remove/extract blocked every boot by the **in-place numpy swap** (subprocess pip upgrades numpy after the kernel pre-loaded it → kernel-only `_slice` ImportError). **v20's heal fired on the in-kernel probe exactly as designed → `TASKS_HEALTHY=True`**, but the v20 run ERRORed at the music save step *before* the pub task smoke, so bg_remove/extract are **still unverified through the tunnel — expected to go green in the v21 run** (same heal) |
 | **Music generation** | `audio_minimax_music_3` Comfy template (MiniMax Music 3, **core** ComfyUI nodes), LTx community | 🟡 **v20 ran the FULL pipeline** (30-step AR sampling, tiled decode, lazy switch) but ERRORed at the save step: `SaveAudioAdvanced` missing `format` → **root-caused + proven locally** (DynamicCombo option-key must be a plain string in the API prompt) → **v21 fix PUSHED**, awaiting Kaggle verification |
 | **Sound / soundtrack** | H3 native audio track (already joint audio+video), music models | ⬜ Phase C |
-| **Transcription (ASR)** | to research (Whisper-class on Comfy / community) | ⬜ Phase C research (v21) |
+| **Transcription (ASR)** | **faster-whisper (CTranslate2, CPU int8 — no torch, GPUs stay free for Comfy)**, Whisper weights, ~100 languages | 🟡 **implemented in v22** (`POST /h3api/task {"task":"transcribe"}`), deps proven locally on `av==18.1.0`; **not yet proven on Kaggle hardware** — the v22 run died at Comfy boot (av pin), v22.1 re-runs |
 | **Text generation** | ❌ explicitly NOT needed | — |
 
 Requirements distilled from user messages:
@@ -448,6 +442,9 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 8 | **faster-whisper PROVEN locally (CPU int8, this host):** `faster-whisper==1.2.1` + `ctranslate2 4.8.2` + `onnxruntime 1.30` install clean, no torch; **must pin `av==13.1.0`** (fw 1.2.1 calls `av.open(metadata_errors=...)` which av≥19 removed); `small` load 3.5 s, 11 s clip → 6.5 s, JFK text exact, language auto-detect en@0.945, `model.supported_languages` = 100, word-timestamps + SRT/VTT paths fine | `WhisperModel(size, device="cpu", compute_type="int8", download_root=/tmp/hf)` + `model.transcribe(path, language=auto|code, word_timestamps=..., vad_filter=...)`; keep whisper sizes in `models/stt/whisper` for the cache dataset |
 | Oct 8 | **v21/v21b deaths were NOT a code bug — the notebook never started.** Both ERRORed with a 2-byte log (`[]`) and **zero artifacts, not even `state.txt` from cell 1** → worker died at **notebook validation**. Root cause: `build()` emitted cells with NO `id` field; nbformat's `MissingIDFieldWarning` ("will become a hard error in future nbformat versions" — visible in the **v20** boot log) became a hard error by v21. Fix: unique cell ids `h3c00…h3c13`, `nbformat.validate` clean (zero warnings), pushed notebook re-pulled + re-validated before trusting the run | an invisible death must leave a trail: cell-boundary `state.txt` markers + line-buffered stdout (v21.1) localize in-cell kills; *their absence* is the diagnostic for validation/boot deaths |
 | Oct 8 | **v22 conditional smokes (`H3_SMOKE_MODE=auto|all|none`):** a lane is re-proven only when its **runtime contract changed** — fingerprint = resolved config + required model files (names+sizes). State persists at `models/smoke_state.json`, rides the cache-dataset write-back (drift decision now includes it), and is read back from the attached dataset + workdir next boot. Matched+previously-proven → `SKIPPED`, reported with `SMOKE PASSED` (union) — so "don't re-test a lane that already ran". `H3_SMOKE_MODE=all` forces the full suite (e.g., after infra changes); `=none` fast-boots unproven; the settings-cell `H3_SMOKE="image,video"` remains the per-modality selector (no name collision). Shard-tested: match→skip, size change→reverify, mode-all→verify; sync-drift shard: legacy remote missing state→upload, matched→idle, drift→upload | fingerprint is config+files only; a GPU/infra swap with identical files skips unless `=all` — documented as intended trade-off |
+| Oct 8 | **v22 run (ver 23): cell-ID fix VERIFIED, new failure = ComfyUI boot.** 101 KB log + `state.txt` through `cell:start:start` ⇒ the notebook executes; died with `ComfyUI did not listen in time` after a **fully silent 363 s window** (`Comfy pid 252` → raise, zero output, server stderr lost in `/tmp/comfy.log`). Root cause: install-cell pin **`av==13.1.0`** downgraded the `av-19.0.1` that ComfyUI's reqs installed, **violating ComfyUI main's `av>=17.0.0`** in the same site-packages the server process boots from | an env that boots ComfyUI in one place must not touch shared deps afterward; the downgrade was invisible because the server logs to a file. Never pair a heavy subsystem (ComfyUI server) with a shared-package downgrade in the same install cell |
+| Oct 8 | **av pin → `av==18.1.0` (band 17..18), never 13/19.** ≥17 satisfies ComfyUI requirements.txt; <19 keeps fw 1.2.1's `metadata_errors` kwarg. Verified locally on THIS Comfy commit: boots on 18.1.0 and 19.0.1; fw transcribes JFK on 18.1.0 (108 chars, en@0.945) | the single `metadata_errors`-needs-13 lesson was incomplete: it ignored ComfyUI's own av requirement → server-wide crash. A shared dependency must satisfy the UNION of its consumers' pins |
+| Oct 8 | **start cell = boot watchdog (v22.1):** 30 s heartbeat printing the last comfy.log line; on failure print `/tmp/comfy.log` tail + process exit code; ONE relaunch for transient cold-boot crashes; extended wait for slow boots | a silent poll loop burned the whole 363 s budget with the crash hidden in a file. The kernel log must show WHY Comfy isn't up within one run |
 
 ---
 
@@ -510,6 +507,10 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 8 | **v20 run root-caused**: `SaveAudioAdvanced.execute() missing 1 required positional argument: 'format'`. Install: `task deps health: OK` (subprocess) / in-kernel FAIL `_slice` → heal `numpy==2.1.3` → **`TASKS_HEALTHY=True`**; image+video smokes ran; **music smoke executed** (`AR sampling: 57% 72/126 [1.17s/it]`, tiled decode node 1008 skipped by lazy switch, 1010 ran) but ERROR at node 35 = SaveAudioAdvanced — `format` field not delivered. **Proven locally** (CPU ComfyUI): `format` is `IO.DynamicCombo`; API prompt needs option-key STRING `"flac"`, v20 sent dict → dropped → missing positional | ❌ run ERROR (but: heal + full music generation verified in production!) |
 | Oct 8 | **v21 built+verified**: `_build_music` writes `format` as plain option-key string (+ dotted `format.quality` for mp3/opus); `_flatten` emits dotted dynamic sub-inputs; local CPU ComfyUI: flattened prompt has `format:"flac"`, full prompt validates on the real server with **zero node_errors on SaveAudioAdvanced**, `build_nested_inputs` nests to `{"format":"flac"}` (mp3 → `{"format":"mp3","quality":"V0"}`), v20 dict form reproduces the exact drop | ✅ FIX PROVEN, 13 cells ast-OK (commit `c66cf1f`) |
 | Oct 8 | **v21 pushed** (kernel version 21) — music save-node DynamicCombo serialization fix | RUNNING — verify: `TASKS_HEALTHY=True`, `SMOKE PASSED: ['image','video','music']`, real `h3_music_*.flac`, bg_remove/extract green (heal now proven in prod) |
+| Oct 8 | **v21/v21b runs (vers 21/22) both died invisible** (2-byte `[]` log, zero artifacts) → root-caused to missing cell ids | notebook rejected at validation (nbformat `MissingIDFieldWarning` → hard error); fix = unique cell ids `h3c00…h3c13`, nbformat zero-warning gate in `local_check.py` (21/21) |
+| Oct 8 | **v22 built**: cell ids + transcription lane (faster-whisper task) + conditional smokes (smoke_state.json) + `dataset_sources` attach; committed on `v22-transcribe` (row above + `e317ef4` smoke-skip, `7d4fa45` transcribe, `95a7a79` cell-id) | ✅ 21/21 gate; pushed to Kaggle as **ver 23** (04:36 UTC) |
+| Oct 8 | **v22 run (ver 23) = ERROR but diagnosis gold**: **101 KB log** (cell-ID fix WORKS, cells ran through assets/convert) → died in the start cell: `ComfyUI did not listen in time` after a fully silent 363 s window. Root cause: `av==13.1.0` pin violated ComfyUI main's `av>=17.0.0` in the server's own site-packages; crash invisible (server stderr → `/tmp/comfy.log`). Local repro: Comfy boots on av 18.1.0 / 19.0.1. | ✅ root-caused; evidence `/tmp/opencode/v23out/` |
+| Oct 8 | **v22.1 built**: pin `av==18.1.0` (17..18 band, both consumers satisfied — local ftests: Comfy boots, JFK transcribes) + start-cell boot watchdog (heartbeat + comfy.log tail + exit code + one relaunch + extended budget) | ✅ 21/21 gate; pushed to Kaggle as **ver 24** — verify Comfy boots, smokes pass, transcribe proven on hardware, sync → dataset v4 + smoke_state |
 
 ---
 

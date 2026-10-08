@@ -288,9 +288,11 @@
   free for Comfy)** with the full ~100-language Whisper model set (`tiny/base/small/medium/large-v3`,
   default `small`, cached per-run at `models/stt/whisper`). `language: auto|<code>`,
   `task: transcribe|translate`, `format: txt|srt|vtt` (word timestamps + `vad_filter`), data-URL
-  plumbing reuses the task engine. Pins `faster-whisper==1.2.1 av==13.1.0` (fw 1.2.1 requires PyAV
-  13.x's `metadata_errors` kwarg, removed in av≥19). Locally proven: `small` load 3.5 s, 11 s clip
-  → 6.5 s, JFK text exact, auto-detect en@0.945, `model.supported_languages` = 100.
+  plumbing reuses the task engine. Pins `faster-whisper==1.2.1 av==18.1.0` — av must be **17..18**:
+  ≥17 satisfies ComfyUI requirements.txt's `av>=17.0.0` (see v22.1), <19 keeps fw 1.2.1's
+  `metadata_errors` kwarg. Locally proven: `small` load 3.5 s, 11 s clip
+  → 6.5 s, JFK text exact, auto-detect en@0.945, full ~100-language Whisper set; **re-validated
+  on av 18.1.0 after the v22 run died at Comfy boot** (JFK flac → 108 chars, en@0.945) — see v22.1.
 - **Conditional smokes** ("don't re-test a lane that already ran", user request):
   `H3_SMOKE_MODE=auto|all|none`. Each lane is fingerprinted by its **runtime contract** (resolved
   config + required model files + sizes); a lane whose contract matches the last-passed state is
@@ -305,6 +307,24 @@
   dataset auto-attaches under `/kaggle/input/minimax-h3-model-cache` on boot (closes 7(b) below).
   This run is the **baseline full-verify** (no stored state yet): all three smokes run and STAMP the
   state, so **v23+ skips proven lanes** automatically.
+
+### v22.1 — v22 run verdict + ComfyUI boot fix — PUSHED
+- **v22 run (ver 23): cell-ID fix WORKED.** 101 KB kernel log (vs the 2-byte `[]` signature),
+  `state.txt` milestones through `cell:start:start` — preflight/install/registry/settings/assets/
+  convert all executed. The cell-ID root-cause chain is now fully closed.
+- **New failure at the start cell:** `RuntimeError: ComfyUI did not listen in time` after a
+  **fully silent 363 s window**. Two compounding causes:
+  1. Our v22 install cell pinned `av==13.1.0` for faster-whisper, but the ComfyUI main cloned at
+     run time declares **`av>=17.0.0`** in its requirements and imports `av` in 6 `comfy_extras`
+     modules during boot. pip installed `av-19.0.1` first (ComfyUI reqs), then our pin downgraded
+     it in the **same site-packages the ComfyUI server process boots from** → never listened.
+  2. The server's stderr went to `/tmp/comfy.log` (a file, lost at kernel end) while the poll loop
+     stayed silent → the crash was invisible from the kernel stream.
+- **Fix (v22.1):** pin **`av==18.1.0`** — the 17..18 band satisfies both consumers (ComfyUI ≥17,
+  fw 1.2.1 <19). Verified locally: this Comfy commit boots on 18.1.0 (and on 19.0.1), and
+  faster-whisper transcribes the JFK clip on 18.1.0. The start cell now runs a **boot watchdog**:
+  30 s heartbeat printing the last comfy.log line, on failure prints the comfy.log tail + process
+  exit code, ONE relaunch, and an extended budget — a Comfy boot failure is never silent again.
 
 ## 2026-10-07 — retired lanes (kept for history)
 
