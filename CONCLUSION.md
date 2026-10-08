@@ -270,6 +270,41 @@
   `build_nested_inputs` nests to exactly `{"format":"flac"}` (mp3 → `{"format":"mp3","quality":"V0"}`),
   and the v20 dict form reproduces the exact drop. Expected: `TASKS_HEALTHY=True`, `SMOKE PASSED:
   ['image','video','music']` with a real `h3_music_*.flac`, bg_remove/extract green.
+- **v21 + v21b both died INVISIBLY** (2-byte log `[]`, zero artifacts — not even `state.txt` from
+  cell 1): the notebook **never started executing** — the worker died at notebook
+  **validation/boot**, not in user code. Root cause (in the builder, not the runtime):
+  `build()` emitted cells with **no `id` field**; nbformat's `MissingIDFieldWarning` ("*will become
+  a hard error in future nbformat versions*" — that exact warning is visible in the **v20** boot
+  log!) became a hard error on the Kaggle runner between v20 and v21. Fix: every cell gets a unique
+  id (`h3c00…h3c13`); `nbformat.validate` is now a **zero-warning gate inside `local_check.py`**
+  (21/21) and the pushed notebook is re-pulled + re-validated before the run is trusted. The
+  invisible-death signature (`RUNNING`→`ERROR`, empty log, no artifacts) is now a documented
+  diagnostic: zero streams AND zero files — even one a cell writes in its first second — ⇒
+  validation/boot death; line-buffering + `state.txt` markers (v21.1) only localize *in-cell* kills.
+
+### v22 — cell-ID fix + transcription task + conditional smokes — PUSHED (results below)
+- **Transcription task** (user: "most of the language support"): `POST /h3api/task`
+  `{"task":"transcribe"}` via **faster-whisper (CTranslate2, CPU int8, no torch — the GPUs stay
+  free for Comfy)** with the full ~100-language Whisper model set (`tiny/base/small/medium/large-v3`,
+  default `small`, cached per-run at `models/stt/whisper`). `language: auto|<code>`,
+  `task: transcribe|translate`, `format: txt|srt|vtt` (word timestamps + `vad_filter`), data-URL
+  plumbing reuses the task engine. Pins `faster-whisper==1.2.1 av==13.1.0` (fw 1.2.1 requires PyAV
+  13.x's `metadata_errors` kwarg, removed in av≥19). Locally proven: `small` load 3.5 s, 11 s clip
+  → 6.5 s, JFK text exact, auto-detect en@0.945, `model.supported_languages` = 100.
+- **Conditional smokes** ("don't re-test a lane that already ran", user request):
+  `H3_SMOKE_MODE=auto|all|none`. Each lane is fingerprinted by its **runtime contract** (resolved
+  config + required model files + sizes); a lane whose contract matches the last-passed state is
+  **SKIPPED** (`SMOKE SKIPPED (previously proven)`) while still counted in `SMOKE PASSED`. State
+  persists at `models/smoke_state.json` and rides the cache-dataset write-back (the sync drift
+  decision now includes it) and is read back from the attached dataset + workdir each boot.
+  `=all` forces the full suite (use after infra changes), `=none` fast-boots unproven; the
+  settings-cell `H3_SMOKE="image,video"` stays the per-modality selector. Shard-tested:
+  match→skip, file-size-change→re-verify, mode-all→verify; sync-drift shard: legacy remote
+  (no state)→upload, matched→idle, drift→upload.
+- **v22 run carries `dataset_sources: [adityahalde8777/minimax-h3-model-cache]`** — the cache
+  dataset auto-attaches under `/kaggle/input/minimax-h3-model-cache` on boot (closes 7(b) below).
+  This run is the **baseline full-verify** (no stored state yet): all three smokes run and STAMP the
+  state, so **v23+ skips proven lanes** automatically.
 
 ## 2026-10-07 — retired lanes (kept for history)
 
@@ -315,6 +350,6 @@
    (owner via `kagglehub.whoami`, v15's `SKIP upload` gone). **(a) manifest drift is now
    authoritative: CLOSED — v18 uploaded version 2 on a real `5 remote vs 6 local` drift
    (716 s); v19 probed the populated dataset and idled on `cache dataset up to date (manifest
-   match)`. (b) read half still OPEN: attach the dataset to the kernel once via **Add Data**
-   so `/kaggle/input` populates and later boots symlink models instead of downloading from HF
-   (v19 still showed `0 candidate files` under `/kaggle/input`).
+   match)`. (b) read half still OPEN: **CLOSED by v22** — `dataset_sources:
+   [adityahalde8777/minimax-h3-model-cache]` is in the pushed kernel-metadata, so
+   `/kaggle/input/minimax-h3-model-cache` auto-attaches on boot (pending v22 run confirmation).

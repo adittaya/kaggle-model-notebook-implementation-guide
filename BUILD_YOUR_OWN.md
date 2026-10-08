@@ -109,6 +109,13 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       `nodes_minimax_music.py`) — no custom pack, no MultiStream; its template stores inner node
       widgets **positionally**, so promote them to `widgets_values_named` via a **schema-verified
       table** (skip frontend-only slots like `control_after_generate`).
+- [ ] **Don't re-run a lane that already passed** (v22, user rule): fingerprint each lane's
+      **runtime contract** (resolved config + required model files + sizes) and persist the last-passed
+      state at `models/smoke_state.json`; read it back from the cache dataset / workdir next boot and
+      **SKIP** lanes whose contract is unchanged (`SMOKE SKIPPED (previously proven)`, still counted in
+      `SMOKE PASSED`). Keep escape hatches: `H3_SMOKE_MODE=all` (force full suite after infra changes)
+      and `=none` (fast boot, no proof). The fingerprint covers config + files ONLY — a GPU swap with
+      identical files skips unless `=all`; that is an accepted, documented trade-off.
 - [ ] **`IO.DynamicCombo` inputs in the API prompt are option-key strings** (v21, hard-won): a
       smoke save-node like `SaveAudioAdvanced.format` takes `"flac"` (a plain string), NOT the
       widget dict `{"format":"flac"}` — the executor matches the string against the option list to
@@ -124,6 +131,11 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       ComfyUI running — POSTs each prompt to `/prompt` and asserts the ONLY errors are
       loader-name `value_not_in_list` (empty local model dir). A value-shape bug like v20's `format`
       dict was *invisible to every checklist*; only executing the real executor path catches it.
+      **Also gate the notebook FILE itself** (v21/v21b died invisibly — the runner promoted
+      nbformat's `MissingIDFieldWarning` to a hard error on cells with NO `id` fields, so the
+      notebook never started and produced a 2-byte log + zero artifacts): every generated cell must
+      carry a unique `id`, and `nbformat.validate` must pass with **zero warnings** (that check is
+      built into the gate).
 - [ ] **Separate builder per workflow shape**: a flat template (flux) does not belong inside a
       subgraph flattener — branch `build_prompt(cfg)` on `cfg["modality"]` (video / image / music,
       v20) and keep the verified path untouched; share `load_info()` schema filtering,
@@ -141,6 +153,15 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       directory** (400 on escape); 503 with an availability hint when a dep is missing instead
       of a stack trace. Pin the heavy dep (`rembg[cpu]==2.0.85`) and pick a **small default
       model** (u2net 176 MB, not a 1 GB commercial one that can SIGKILL an 8 GB dev box).
+- [ ] **Speech-to-text beside generation** (v22, "most of the language support"): use
+      **faster-whisper (CTranslate2, CPU int8, no torch)** — not a ComfyUI STT node — so the
+      transcription runs on the free CPU and the GPUs stay with Comfy. The SAME Whisper weights
+      give ~100 languages on CPU int8 (small: load 3.5 s, 11 s clip → 6.5 s locally). Offer
+      model tiers (`tiny/base/small/medium/large-v3`, default `small`), `language: auto|<code>`,
+      `task: transcribe|translate`, `txt/srt/vtt` (word timestamps + VAD), and a data-URL / path
+      input like the rest of the task engine. Pin deps hard (`faster-whisper==1.2.1 av==13.1.0`
+      — fw 1.2.1 needs PyAV 13.x's `metadata_errors` kwarg, removed in av≥19) and keep whisper
+      sizes in `models/stt/` so the cache dataset persists them.
 - [ ] **Put every runtime asset inside `models/` so the cache picks it up**: rembg weights via
       `REMBG_HOME=/tmp/ComfyUI/models/rembg`, upscaler `.pth` in `models/upscale_models/` —
       anything outside the inventory tree will silently re-download every boot.
