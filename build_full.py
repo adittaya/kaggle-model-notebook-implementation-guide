@@ -912,7 +912,7 @@ print("ComfyUI local ready")
 # ---------------- cell 9: api ----------------
 api = r'''
 # ============ HUB API + PUBLIC PROXY: /h3api/* served here, everything else piped to ComfyUI ============
-import json, os, socket, threading, time, urllib.request, urllib.error, http.server, subprocess, shutil
+import json, os, socket, threading, time, urllib.request, urllib.error, http.server, subprocess, shutil, sys, queue
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, quote
 
@@ -1575,6 +1575,246 @@ def T_transcribe(b):
                 "duration":getattr(info,"duration",None),"segments":len(segs),
                 "text":text[:900],"elapsed":round(time.time()-t0,1)}})
 
+# ---- MOSS-VL video-understanding lane (v26): lazy venv subprocess worker ----
+# torch 2.8 / transformers 5.5 / torchcodec live ONLY in a venv subprocess so the verified
+# generation env never sees them. Weights ride the cache dataset under models/moss; the pip
+# wheelhouse under models/_pip. Nothing runs at boot: first video_qa/video_summarize call
+# (or the wait-cell proof) bootstraps once per run.
+_MOSS_ENABLED=os.environ.get("H3_MOSS","1")!="0"
+_MOSS_STATE="idle"; _MOSS_ERR=""
+_MOSS_LOCK=threading.RLock()
+_MOSS_ROOT=Path("/tmp/ComfyUI/models/moss")
+_MOSS_WHEELS=Path("/tmp/ComfyUI/models/_pip")
+_MOSS_VENV=Path("/tmp/ComfyUI/venv_moss")
+_MOSS_WORKER=Path("/tmp/ComfyUI/moss_worker.py")
+_MOSS_CKPT=_MOSS_ROOT/"MOSS-VL-Instruct-0408"
+_MOSS_STAMP=MODELS/"moss_state.json"
+_MOSS_PYVER="cp%d%d"%(sys.version_info.major,sys.version_info.minor)
+_MOSS_INDEX="--extra-index-url","https://download.pytorch.org/whl/cu128"
+_MOSS_REQ=" ".join([
+  "torch==2.8.0+cu128","torchvision==0.23.0+cu128","transformers==5.5.4",
+  "accelerate==1.12.0","torchcodec==0.7.0","numpy==2.4.3","pillow==12.1.1",
+  "joblib==1.5.2","einops==0.8.2","nvidia-npp-cu12==12.4.1.87"])
+_WORKER_SRC="\n".join([
+"import json,sys,torch,os",
+"from transformers import AutoModelForCausalLM, AutoProcessor",
+"_MODEL=None; _PROC=None",
+"def _load(ckpt):",
+"    global _MODEL,_PROC",
+"    if _MODEL is not None: return",
+"    _PROC=AutoProcessor.from_pretrained(ckpt,trust_remote_code=True,frame_extract_num_threads=1)",
+"    _MODEL=AutoModelForCausalLM.from_pretrained(ckpt,trust_remote_code=True,",
+"        device_map='auto' if torch.cuda.is_available() else 'cpu',",
+"        torch_dtype=torch.bfloat16,attn_implementation='sdpa',low_cpu_mem_usage=True)",
+"def _handle(job):",
+"    _load(job['checkpoint'])",
+"    prompt=str(job.get('question') or job.get('prompt') or 'Describe this video.')",
+"    txt=_MODEL.offline_video_generate(_PROC,prompt=prompt,video=job['video'],",
+"        max_frames=int(job.get('max_frames') or 256),video_fps=float(job.get('video_fps') or 1.0),",
+"        video_max_pixels=int(job.get('video_max_pixels') or 41943040),",
+"        max_new_tokens=int(job.get('max_new_tokens') or 512),",
+"        do_sample=bool(job.get('do_sample',False)),",
+"        temperature=float(job.get('temperature') or 0.7),vision_chunked_length=64)",
+"    return {'ok':True,'answer':txt,'model':'MOSS-VL-Instruct-0408:bf16:2xt4'}",
+"for _line in sys.stdin:",
+"    if not _line.strip(): continue",
+"    try: _job=json.loads(_line)",
+"    except Exception as _e:",
+"        print(json.dumps({'ok':False,'error':'bad job: %s'%_e}),flush=True); continue",
+"    try:",
+"        print(json.dumps(_handle(_job)),flush=True)",
+"    except Exception as _e:",
+"        import traceback; traceback.print_exc()",
+"        print(json.dumps({'ok':False,'error':'%s: %s'%(type(_e).__name__,str(_e)[:600])}),flush=True)",
+])
+def _write_worker():
+    _MOSS_WORKER.write_text(_WORKER_SRC)
+def _moss_pip(args,offline=False):
+    cmd=[str(_MOSS_VENV/"bin"/"python"),"-m","pip","install","--disable-pip-version-check",
+         "--no-input"]
+    if offline: cmd+=["--no-index","--find-links",str(_MOSS_WHEELS)]
+    else: cmd+=list(_MOSS_INDEX)
+    cmd+=args
+    r=subprocess.run(cmd,capture_output=True,text=True,timeout=2400)
+    if r.returncode!=0:
+        raise RuntimeError("moss pip rc=%d: %s"%(r.returncode,
+            ((r.stderr or "")+(r.stdout or ""))[-600:]))
+    return r
+def _moss_pip_download():
+    _MOSS_WHEELS.mkdir(parents=True,exist_ok=True)
+    cmd=[str(_MOSS_VENV/"bin"/"python"),"-m","pip","download","--disable-pip-version-check",
+         "--no-input","-d",str(_MOSS_WHEELS)]+list(_MOSS_INDEX)+_MOSS_REQ.split()
+    r=subprocess.run(cmd,capture_output=True,text=True,timeout=2400)
+    if r.returncode!=0:
+        raise RuntimeError("moss pip download rc=%d: %s"%(r.returncode,
+            ((r.stderr or "")+(r.stdout or ""))[-600:]))
+def _moss_bootstrap():
+    """weights (HF snapshot into models/moss) + venv + wheelhouse + NPP preload + worker."""
+    if not (_MOSS_CKPT/"config.json").exists():
+        import huggingface_hub as _hh
+        _old=os.environ.get("HF_HUB_DISABLE_XET"); os.environ["HF_HUB_DISABLE_XET"]="1"
+        try:
+            _hh.snapshot_download("OpenMOSS-Team/MOSS-VL-Instruct-0408",local_dir=str(_MOSS_CKPT))
+        finally:
+            if _old is None: os.environ.pop("HF_HUB_DISABLE_XET",None)
+            else: os.environ["HF_HUB_DISABLE_XET"]=_old
+    if not (_MOSS_VENV/"bin"/"python").exists():
+        r=subprocess.run([sys.executable,"-m","venv",str(_MOSS_VENV)],
+            capture_output=True,text=True,timeout=300)
+        if r.returncode!=0:
+            raise RuntimeError("moss venv rc=%d: %s"%(r.returncode,(r.stderr or "")[-400:]))
+    marker=_MOSS_WHEELS/(".complete-"+_MOSS_PYVER)
+    if not marker.exists():
+        _moss_pip_download()
+        marker.write_text(time.strftime("%Y-%m-%d %H:%M:%S"))
+    try:
+        _moss_pip(_MOSS_REQ.split(),offline=True)
+    except Exception:
+        _moss_pip(_MOSS_REQ.split(),offline=False)      # wheelhouse gap -> online + refresh
+        _moss_pip_download()
+        marker.write_text(time.strftime("%Y-%m-%d %H:%M:%S"))
+    _moss_npp_preload()
+def _moss_npp_preload():
+    """torchcodec 0.7.0+cu128 links NVIDIA NPP but declares no runtime dep -> preload .pth."""
+    sitepk=next((_MOSS_VENV/"lib").rglob("site-packages"),None)
+    if sitepk is None: return
+    mod=sitepk/"moss_npp_preload.py"
+    if not mod.exists():
+        mod.write_text(
+"import ctypes,glob,os\n"
+"def _pl():\n"
+"    base=os.path.join(os.path.dirname(os.path.abspath(__file__)),'nvidia','npp','lib')\n"
+"    for so in sorted(glob.glob(os.path.join(base,'libnpp*.so.12'))):\n"
+"        try: ctypes.CDLL(so, mode=ctypes.RTLD_GLOBAL)\n"
+"        except Exception: pass\n"
+"_pl()\n")
+    pth=sitepk/"moss_npp_preload.pth"
+    if not pth.exists(): pth.write_text("import moss_npp_preload\n")
+def _moss_run(job,timeout=1800):
+    """one job per venv-worker process (JSON-lines); returns (obj, stderr_tail) or raises."""
+    _write_worker()
+    p=subprocess.Popen([str(_MOSS_VENV/"bin"/"python"),str(_MOSS_WORKER)],
+        stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,bufsize=1)
+    stderr=[]
+    def _drain():
+        try:
+            for line in p.stderr: stderr.append(line)
+        except Exception: pass
+    threading.Thread(target=_drain,daemon=True).start()
+    q=queue.Queue()
+    def _rd():
+        try:
+            for line in p.stdout: q.put(line); break
+        except Exception: pass
+    threading.Thread(target=_rd,daemon=True).start()
+    job.setdefault("checkpoint",str(_MOSS_CKPT))
+    try:
+        p.stdin.write(json.dumps(job)+"\n"); p.stdin.flush()
+        line=q.get(timeout=timeout)
+    except queue.Empty:
+        try: p.kill()
+        except Exception: pass
+        raise RuntimeError("moss worker timed out after %ss"%(timeout,))
+    finally:
+        try: p.stdin.close()
+        except Exception: pass
+    try: p.wait(timeout=30)
+    except Exception:
+        try: p.kill()
+        except Exception: pass
+    tail="".join(stderr)[-800:]
+    try: obj=json.loads(line)
+    except Exception as e:
+        raise RuntimeError("moss worker bad JSON (%s): %s"%(e,line[:200]))
+    return obj,tail
+def _moss_subject():
+    vd=Path("/tmp/ComfyUI/output/video")
+    for f in sorted(vd.glob("*.mp4")):
+        if f.stat().st_size>10000: return str(f)
+    p=Path("/tmp/ComfyUI/input/moss_probe.mp4")
+    if not p.exists():
+        if not FFMPEG: raise RuntimeError("ffmpeg missing for moss probe")
+        _run([FFMPEG,"-y","-f","lavfi","-i","testsrc2=size=640x360:rate=25","-f","lavfi","-i",
+              "sine=frequency=440:duration=10","-t","10","-c:v","libx264","-pix_fmt","yuv420p",
+              "-c:a","aac",str(p)],timeout=240)
+    return str(p)
+def _moss_proof():
+    """wait-cell hook: first run only (models/moss_state.json gate). Nonfatal failures."""
+    if not _MOSS_ENABLED: print("MOSS lane disabled (H3_MOSS=0)"); return
+    if _MOSS_STAMP.exists(): print("MOSS proof previously proven (skipped)"); return
+    subj=_moss_subject(); t0=time.time()
+    with _MOSS_LOCK:
+        _MOSS_STATE="busy"
+        try:
+            _moss_bootstrap()
+        except Exception as e:
+            _MOSS_STATE="idle"; _MOSS_ERR=str(e)
+            print("MOSS proof BOOTSTRAP FAIL (nonfatal): %s"%e); return
+        try:
+            out,tail=_moss_run({"video":subj,"mode":"summarize",
+                "question":"Describe what happens in this video, with timestamps and key events."},
+                timeout=2400)
+        except Exception as e:
+            _MOSS_STATE="idle"; _MOSS_ERR=str(e)
+            print("MOSS proof ANALYSIS FAIL (nonfatal): %s"%e); return
+        _MOSS_STATE="idle"
+    if not (out.get("ok") and (out.get("answer") or "").strip()):
+        print("MOSS proof FAIL: %r"%(out,)); return
+    ans=(out.get("answer") or "").strip()
+    print("MOSS LANE OK: model=%s elapsed=%.1fs answer(%d chars): %s"%(
+        out.get("model"),time.time()-t0,len(ans),ans[:220]))
+    _MOSS_STAMP.write_text(json.dumps({
+        "proven":True,"when":time.strftime("%Y-%m-%d %H:%M:%S"),
+        "checkpoint":"OpenMOSS-Team/MOSS-VL-Instruct-0408","pyver":_MOSS_PYVER}))
+def _moss_question(b,required):
+    q=str(b.get("question") or "").strip()
+    if required and not q: return None,_j(400,{"ok":False,"error":"pass 'question'"})
+    if not q:
+        q=("Give a structured summary of this video: its main events with their timestamps, "
+           "then a one-paragraph overview.")
+    return q,None
+def _moss_handle(b,required):
+    if not _MOSS_ENABLED:
+        return _j(503,{"ok":False,"error":"video understanding disabled (set H3_MOSS=1)"})
+    src,err=_src(b,("video","media"))
+    if err: return err
+    q,err=_moss_question(b,required)
+    if err: return err
+    t0=time.time()
+    with _MOSS_LOCK:
+        if _MOSS_STATE=="busy":
+            return _j(429,{"ok":False,"error":"another video-understanding job is running"})
+        _MOSS_STATE="busy"; _MOSS_ERR=""
+        try:
+            try: _moss_bootstrap()
+            except Exception as e:
+                _MOSS_ERR=str(e); return _j(503,{"ok":False,
+                    "error":"moss bootstrap failed (first call downloads ~25 GB): %s"%e})
+            try:
+                out,tail=_moss_run({"video":str(src),"question":q,"mode":"qa",
+                    "max_frames":int(b.get("max_frames") or 256),
+                    "max_new_tokens":int(b.get("max_new_tokens") or 512),
+                    "video_max_pixels":int(b.get("video_max_pixels") or 41943040),
+                    "do_sample":bool(b.get("do_sample",False))},
+                    timeout=int(b.get("timeout") or 1800))
+            except Exception as e:
+                _MOSS_ERR=str(e); return _j(500,{"ok":False,"error":"moss inference failed: %s"%e})
+        finally:
+            _MOSS_STATE="idle"
+    if not out.get("ok"):
+        return _j(500,{"ok":False,"error":"moss worker: %s"%(out.get("error") or "?")})
+    ans=str(out.get("answer") or "").strip()
+    raw=ans.encode("utf-8"); d=Path("/tmp/ComfyUI/output/tasks"); d.mkdir(parents=True,exist_ok=True)
+    name="moss_%d.txt"%(int(time.time())); p=d/name; p.write_bytes(raw)
+    return _j(200,{"ok":True,"task":"video_qa","answer":ans,
+        "outputs":[_durl(raw,"text/plain")],"saved":[name],"view":[_view(p)],
+        "meta":{"model":out.get("model"),"question":q,
+                "elapsed":round(time.time()-t0,1),"gpu":"2xT4-bf16-sharded"}})
+def T_video_qa(b):
+    return _moss_handle(b,True)
+def T_video_summarize(b):
+    return _moss_handle(b,False)
+
 TASK_INFO={
  "bg_remove":{"kind":"image","desc":"background remover: cut out the subject, transparent PNG",
    "input":"image (data URL)","opts":"model (u2net|u2netp|isnet-general-use|u2net_human_seg|birefnet-general), alpha_matting"},
@@ -1595,11 +1835,17 @@ TASK_INFO={
  "transcribe":{"kind":"audio","desc":"speech-to-text (faster-whisper, ~100 languages) with auto language detect",
    "input":"media (data URL) or video_path/audio_path",
    "opts":"model (tiny/base/small/medium/large-v3, default small), language (auto or code like 'hi'), task (transcribe|translate), format (txt|srt|vtt, default txt), word_timestamps, vad_filter"},
+ "video_qa":{"kind":"video","desc":"answer a question about a video with timestamped evidence (MOSS-VL 11B, loads lazily on both T4s)",
+   "input":"video (data URL) or video_path",
+   "opts":"question (required), max_frames (default 256), max_new_tokens (default 512), do_sample, video_max_pixels (default 41943040), timeout (s)"},
+ "video_summarize":{"kind":"video","desc":"structured summary + event timeline of a video (MOSS-VL 11B, loads lazily)",
+   "input":"video (data URL) or video_path",
+   "opts":"question (optional custom focus), max_frames, max_new_tokens, do_sample, video_max_pixels, timeout (s)"},
 }
 TASKS={"bg_remove":T_bg_remove,"extract":T_extract,"upscale":T_upscale,
        "video_frames":T_video_frames,"video_gif":T_video_gif,
        "audio_extract":T_audio_extract,"audio_trim":T_audio_trim,"probe":T_probe,
-       "transcribe":T_transcribe}
+       "transcribe":T_transcribe,"video_qa":T_video_qa,"video_summarize":T_video_summarize}
 
 def H_tasks(o):
     avail={"bg_remove":_REMBG is not None,"extract":_REMBG is not None,
@@ -1607,13 +1853,16 @@ def H_tasks(o):
            "video_frames":bool(FFMPEG),"video_gif":bool(FFMPEG),
            "audio_extract":bool(FFMPEG),"audio_trim":bool(FFMPEG),
            "probe":bool(FFPROBE),
-           "transcribe":bool(_stt_init())}
+           "transcribe":bool(_stt_init()),
+           "video_qa":_MOSS_ENABLED,"video_summarize":_MOSS_ENABLED}
     tasks={k:dict(v,available=bool(avail.get(k))) for k,v in TASK_INFO.items()}
     return _j(200,{"ok":True,"tasks":tasks,
         "runtime":{"rembg":_REMBG is not None,"rembg_error":_RembgErr,
                    "healthy":bool(globals().get("TASKS_HEALTHY",True)),
                    "ffmpeg":FFMPEG,"ffprobe":FFPROBE,
-                   "upscale_model":"RealESRGAN_x4plus.pth"}})
+                   "upscale_model":"RealESRGAN_x4plus.pth",
+                   "moss":{"enabled":_MOSS_ENABLED,"state":_MOSS_STATE,
+                           "error":_MOSS_ERR,"checkpoint":"OpenMOSS-Team/MOSS-VL-Instruct-0408"}}})
 
 def H_task(o):
     b=o["body"] or {}
@@ -2076,6 +2325,15 @@ if _stt_init() and os.path.exists(_stt_probe):
         raise RuntimeError("STT SELFTEST FAIL: 0 segments on a real speech probe")
 else:
     print("STT self-test skipped (deps or probe unavailable)")
+# --- MOSS-VL lane proof (v26): first run only (models/moss_state.json gate). Runs through the
+# venv subprocess worker, so torch 2.8 / transformers 5 never enter the kernel env. Subject =
+# the fresh video-smoke MP4 when present, else a 10 s ffmpeg synth probe. Nonfatal by design:
+# failures print a loud marker and leave the lane available via /h3api/task.
+try:
+    _moss_proof()
+except Exception as _e:
+    import traceback; traceback.print_exc()
+    print("MOSS PROOF CRASH (nonfatal): %s"%_e)
 '''
 
 # ---------------- cell 12: pub ----------------
