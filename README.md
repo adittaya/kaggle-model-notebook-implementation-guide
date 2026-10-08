@@ -49,6 +49,13 @@ smokes**; **`build_full.py` now lives in this repo** (survives host restarts)).
   **17..18 band** (≥17 because ComfyUI requirements.txt now declares `av>=17.0.0` — the v22
   `av==13.1.0` pin violated it and the ComfyUI server never listened; <19 keeps fw 1.2.1's
   `metadata_errors` kwarg, removed in av≥19)
+- **STT self-test (v25):** transcribe is a task, so a green run never calls it — the only
+  hardware proof is in-run. The wait cell runs an **in-process `T_transcribe` probe** against a
+  pinned **speech clip** (OpenAI whisper `tests/jfk.flac` → `models/stt/probe.flac`, downloaded
+  by the assets cell with curl, rides the cache write-back) and asserts `segments>=1`
+  (`STT SELFTEST OK: lang=en prob=.945 …`). NOT the music smoke FLAC: instrumental output → VAD
+  → 0 segments → false failure. The probe's download also pulls whisper-small into `models/stt/`
+  so later boots attach it from the cache.
 - **Use-case tasks (v17):** `POST /h3api/task` — background remover + element extractor (rembg u2net),
   4× upscaler (Real-ESRGAN through Comfy's GPU), video→frames/GIF, audio extract/trim, ffprobe,
   **speech-to-text (v22)**; 9 tasks, uniform `{ok, outputs, saved, view, meta}` envelope

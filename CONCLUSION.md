@@ -333,9 +333,30 @@
   real `h3_music_00001.flac`; **`DUAL-GPU CONFIRMED`** (`active: 2 ranks cuda:0+cuda:1`, 50 blocks,
   28/28 heads); tunnel `https://accurately-initial-grab-quantum.trycloudflare.com` verified public;
   `/h3api/tasks` 200 + `TASK SMOKE PASSED` (bg_remove + extract 200); **sync `kagglehub upload OK`
-  (1150 s)** → cache dataset written back incl. `smoke_state.json` (v26 planning page exists for
-  STT self-test ver 25 + MOSS-VL `video_qa` lane). Video smoke took ~50 min (slower than v18's
+  (1150 s)** → cache dataset written back incl. `smoke_state.json` (ver 25 STT self-test + v26
+  MOSS-VL `video_qa` lane are the next bullets). Video smoke took ~50 min (slower than v18's
   ~15 min — budget note for future runs). Evidence: `/tmp/opencode/v24out/`.
+
+### v25 — STT (transcription) self-test — PUSHED (ver 25, RUNNING)
+- **Why a self-test:** transcribe is a task, not a smoke lane — nothing calls it on a green run, so
+  the only hardware proof is an explicit in-run probe. The music smoke FLAC can't serve: its output
+  may be instrumental → VAD → 0 segments → false failure; and after `smoke_state.json` marks music
+  proven, no fresh FLAC exists. So the probe is a **pinned speech clip** — OpenAI whisper's
+  `tests/jfk.flac` (stable GitHub raw, 1,152,693 B, transcribes 108 chars `en@0.945`, verified
+  locally on `av==18.1.0` + faster-whisper 1.2.1).
+- **Two notebook blocks only:** (1) assets cell `h3c06` downloads the probe to
+  `models/stt/probe.flac` with curl (`-sSLf`, 180 s max, **never-fails**) so the file rides the
+  cache-dataset write-back; (2) wait cell `h3c11`, right after the smoke lanes, runs an
+  **in-process self-test**: `_stt_init()` then `T_transcribe({"audio_path": probe, "model":"small",
+  "format":"txt"})`. Two honed details: the input key is `audio_path` (a path string base64-decodes
+  to garbage under `_media_in`), and `T_transcribe` returns the HTTP envelope tuple → the block
+  unwraps `_code,_hdrs,_body` + `json.loads`. Asserts `200` + `ok` + `segments>=1`, prints
+  `STT SELFTEST OK: lang=… prob=… segments=… elapsed=…` + first 160 chars.
+- **Failures are local:** a self-test raise kills only the lane, never the generation flows; the
+  whole block is skipped if deps or the probe are unavailable (printed as `STT self-test skipped`).
+- **Expected on ver 25:** smokes `SKIPPED` (prior proof from ver 24's write-back), `STT SELFTEST OK`,
+  sync drift → uploads `models/stt/*` (whisper-small download + probe) into the cache dataset, so
+  later boots attach instead of re-downloading.
 
 ## 2026-10-07 — retired lanes (kept for history)
 

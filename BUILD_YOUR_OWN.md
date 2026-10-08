@@ -163,7 +163,13 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       — av must be **17..18**: ≥17 satisfies ComfyUI's own `av>=17.0.0` requirement (v22 died
       because `av==13.1.0` violated it and ComfyUI never listened), <19 keeps fw 1.2.1's
       `metadata_errors` kwarg) and keep whisper
-      sizes in `models/stt/` so the cache dataset persists them.
+      sizes in `models/stt/` so the cache dataset persists them. **Transcribe is a task whose lane
+      is never exercised by generation smokes → give it an explicit in-run proof**: a pinned
+      SPEECH probe (OpenAI whisper `tests/jfk.flac`) downloaded to `models/stt/probe.flac` in the
+      assets cell, then an in-process self-test in the wait cell (`T_transcribe` with `audio_path`,
+      unwrap the HTTP tuple, assert `segments>=1`). Decouple from the music smoke — its output can
+      be instrumental (VAD → 0 segments). Keep the probe's failure nonfatal to the run; the raise
+      kills only the lane.
 - [ ] **Put every runtime asset inside `models/` so the cache picks it up**: rembg weights via
       `REMBG_HOME=/tmp/ComfyUI/models/rembg`, upscaler `.pth` in `models/upscale_models/` —
       anything outside the inventory tree will silently re-download every boot.

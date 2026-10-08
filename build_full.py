@@ -475,6 +475,19 @@ try:
 except BaseException as e:
     print("rembg warm-up failed (bg_remove/extract tasks disabled):",type(e).__name__,e)
 
+# --- STT speech probe (v25): pinned whisper test clip for the in-run transcribe proof.
+# Cached under models/stt so it rides the cache dataset. Never fails (self-test skips).
+_stt_probe=MODELS/"stt"/"probe.flac"
+if not (_stt_probe.exists() and _stt_probe.stat().st_size>0):
+    try:
+        _stt_probe.parent.mkdir(parents=True,exist_ok=True)
+        _rc=subprocess.run(["curl","-sSLf","--max-time","180","-o",str(_stt_probe),
+            "https://raw.githubusercontent.com/openai/whisper/main/tests/jfk.flac"])
+        print("STT probe download rc=%d size=%d"%(_rc.returncode,
+            _stt_probe.stat().st_size if _stt_probe.exists() else 0))
+    except BaseException as e:
+        print("STT probe download failed (self-test will skip):",type(e).__name__,e)
+
 # --- ffmpeg availability (video/audio tasks) ---
 import shutil as _sh
 _ff=_sh.which("ffmpeg") or ("/tmp/bin/ffmpeg" if os.path.exists("/tmp/bin/ffmpeg") else None)
@@ -2036,6 +2049,33 @@ if "video" in SKIPPED:
     print("video lane previously proven (skipped this run)")
 print("SMOKE PASSED:",sorted(set(results)|set(SKIPPED)))
 if SKIPPED: print("SMOKE SKIPPED (previously proven):",sorted(SKIPPED))
+# --- STT self-test (v25): prove transcription on hardware, in-process. Uses a real speech
+# probe (OpenAI whisper tests asset) decoupled from the music smoke whose output can be
+# instrumental (VAD -> 0 segments -> false failure). Probe landing is handled by the assets cell.
+_stt_probe=os.path.join("/tmp/ComfyUI","models","stt","probe.flac")
+if _stt_init() and os.path.exists(_stt_probe):
+    _r=T_transcribe({"audio_path":_stt_probe,"model":"small","format":"txt"})
+    if isinstance(_r,tuple) and len(_r)==3:
+        _code,_hdrs,_body=_r
+    else:
+        _code,_hdrs,_body=500,{},b"{}"
+    try:
+        _obj=json.loads(_body)
+    except Exception:
+        _obj={}
+    if _code!=200 or not _obj.get("ok"):
+        raise RuntimeError("STT SELFTEST FAIL: HTTP %d %r"%(_code,_obj))
+    _m=_obj.get("meta",{})
+    _n=int(_m.get("segments") or 0)
+    print("STT SELFTEST OK: lang=%s prob=%.3f segments=%d elapsed=%.1fs"%(
+        _m.get("language"),float(_m.get("language_probability") or 0),_n,
+        float(_m.get("elapsed") or 0)))
+    _t=(_m.get("text") or "").strip()
+    print("STT SELFTEST text (%d chars): %s"%((len(_t),_t[:160])))
+    if _n<1:
+        raise RuntimeError("STT SELFTEST FAIL: 0 segments on a real speech probe")
+else:
+    print("STT self-test skipped (deps or probe unavailable)")
 '''
 
 # ---------------- cell 12: pub ----------------
