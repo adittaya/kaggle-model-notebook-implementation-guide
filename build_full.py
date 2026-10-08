@@ -22,8 +22,20 @@ the native `/prompt` API **and** the `/h3api/*` management hub (docs at `/h3api/
 
 # ---------------- cell 1: secrets ----------------
 secrets = r'''
-import os
+import os,sys
 from pathlib import Path
+# line-buffer stdout so a hard kill never loses the log (v21 died with a 2-byte log)
+try: sys.stdout.reconfigure(line_buffering=True)
+except Exception: pass
+# milestone file written to /kaggle/working -> packaged as a kernel output artifact even on
+# a silent SIGKILL; pinpoints exactly which cell was running last.
+_markf=Path("/kaggle/working/state.txt")
+def mark(msg):
+    try:
+        _markf.parent.mkdir(parents=True,exist_ok=True)
+        with _markf.open("a") as _f: _f.write(msg+"\n")
+    except Exception: pass
+mark("secrets:start")
 os.environ.setdefault("HF_HUB_DISABLE_XET","1")
 os.environ.setdefault("HF_HUB_DISABLE_HF_TRANSFER","1")
 os.environ.setdefault("HF_HOME","/tmp/hf")
@@ -42,6 +54,7 @@ except Exception:
     _p=["hf_","DhBUHeo","GyodIyQu","DLhyFYzg","roBKRLKQ","OaW"]   # assembled, never raw in git
     os.environ.setdefault("HF_TOKEN","".join(_p))
     print("HF_TOKEN fallback active (rate-limit-free downloads)")
+mark("secrets:end")
 '''
 
 # ---------------- cell 2: preflight ----------------
@@ -1748,6 +1761,7 @@ for mod in SMOKE:                       # one low-quality smoke per modality (se
         raise
     pid=json.loads(resp).get("prompt_id")
     if not pid: raise RuntimeError("%s smoke: no prompt_id in response"%mod)
+    mark("smoke:%s submitted %s"%(mod,pid))
     SMOKE_JOBS.append((mod,pid))
 print("smoke jobs queued:",json.dumps(SMOKE_JOBS))
 if not SMOKE_JOBS: raise RuntimeError("empty smoke schedule")
@@ -1771,6 +1785,7 @@ for mod,pid in SMOKE_JOBS:
                 got=h.get(pid); break
         except Exception: pass
         if i%12==0:
+            mark("wait:%s %ds"%(mod,i*10))
             try:
                 lines=[l for l in open("/tmp/comfy.log",errors="ignore").read().splitlines() if l.strip()]
                 print("[%s %ds]"%(mod,i*10), lines[-1][:200] if lines else "(no log yet)")
@@ -1859,6 +1874,7 @@ for i in range(90):
         except Exception: pass
     time.sleep(2)
 if not url: raise RuntimeError("cloudflare tunnel not healthy")
+mark("pub:tunnel-ok %s"%url.split("//")[1].split(".")[0])
 print("Verified public endpoint:",url)
 print("\n================ MINIMAX H3 — GENERATION READY ================")
 print("Base URL:"); print("  "+url)
@@ -2149,6 +2165,9 @@ def build(out_path):
     cells = [c0]
     for i, kind, name in CELLS[1:]:
         src = globals()[name]
+        if kind == 'code' and name != 'secrets':
+            # milestone markers: yet another trace that survives a silent SIGKILL
+            src = 'mark("cell:%s:start")\n%s\nmark("cell:%s:end")' % (name, src, name)
         cells.append({'cell_type': 'code', 'execution_count': None, 'metadata': {},
                       'outputs': [], 'source': [src]})
     nb = {'nbformat': 4, 'nbformat_minor': 5, 'metadata': NB_META, 'cells': cells}
