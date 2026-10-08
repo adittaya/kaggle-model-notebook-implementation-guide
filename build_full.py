@@ -2321,7 +2321,8 @@ NB_META_JSON = '{"kernelspec": {"display_name": "Python 3", "language": "python"
 NB_META = json.loads(NB_META_JSON)
 
 def build(out_path):
-    c0 = {'cell_type': 'markdown', 'metadata': {}, 'source': [title_md]}
+    c0 = {'cell_type': 'markdown', 'metadata': {}, 'id': 'h3c00',
+          'source': [title_md]}
     cells = [c0]
     for i, kind, name in CELLS[1:]:
         src = globals()[name]
@@ -2329,7 +2330,7 @@ def build(out_path):
             # milestone markers: yet another trace that survives a silent SIGKILL
             src = 'mark("cell:%s:start")\n%s\nmark("cell:%s:end")' % (name, src, name)
         cells.append({'cell_type': 'code', 'execution_count': None, 'metadata': {},
-                      'outputs': [], 'source': [src]})
+                      'id': 'h3c%02d' % i, 'outputs': [], 'source': [src]})
     nb = {'nbformat': 4, 'nbformat_minor': 5, 'metadata': NB_META, 'cells': cells}
     with open(out_path, 'w') as f:
         json.dump(nb, f, indent=1, ensure_ascii=False)
