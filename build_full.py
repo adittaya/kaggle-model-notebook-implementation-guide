@@ -1843,31 +1843,72 @@ else:
 # ---------------- cell 10: smoke ----------------
 smoke = r'''
 import json,time,urllib.request,urllib.error,os
-SMOKE_JOBS=[]
-for mod in SMOKE:                       # one low-quality smoke per modality (settings cell)
-    cfg=dict(PRESETS[SMOKE_PRESET[mod]])
-    prompt, meta = build_prompt(cfg)    # shared builder (convert cell; modality-aware)
-    print("[%s smoke] build meta:"%mod, json.dumps(meta))
-    body={"prompt":prompt,"extra_data":{"preview_method":"latent2rgb"}}
-    try:
-        r=urllib.request.Request(BASE+"/prompt",data=json.dumps(body).encode(),
-                                 headers={"Content-Type":"application/json"})
-        resp=urllib.request.urlopen(r,timeout=60).read().decode()
-        print("[%s smoke] submitted:"%mod,resp)
-    except urllib.error.HTTPError as ee:
-        print("[%s smoke] prompt failed"%mod,ee,"body:",ee.read().decode()[:6000])
-        raise
-    pid=json.loads(resp).get("prompt_id")
-    if not pid: raise RuntimeError("%s smoke: no prompt_id in response"%mod)
-    mark("smoke:%s submitted %s"%(mod,pid))
-    SMOKE_JOBS.append((mod,pid))
-print("smoke jobs queued:",json.dumps(SMOKE_JOBS))
-if not SMOKE_JOBS: raise RuntimeError("empty smoke schedule")
+from pathlib import Path
+
+# ---- conditional smokes: re-prove a lane ONLY when its runtime contract changed ----
+# A lane's contract = resolved config + its required model files (name+size). If the
+# contract matches the last-passed state (smoke_state.json, persisted through the cache
+# dataset), the lane is SKIPPED as previously proven. H3_SMOKE_MODE=all forces the full
+# suite; H3_SMOKE_MODE=none fast-boots with no proof. (Modality selection itself is the
+# settings-cell H3_SMOKE="image,video,..." env var -- don't collide with it.)
+def lane_fp(mod,cfg):
+    fs={}
+    for rel in required_files(cfg):
+        p=MODELS.joinpath(*rel)
+        try: fs["/".join(rel)]=p.stat().st_size
+        except OSError: fs["/".join(rel)]=0
+    return {"mod":mod,"cfg":cfg,"files":fs}
+prev_state={}
+for _c in (Path("/kaggle/input/minimax-h3-model-cache/smoke_state.json"),
+           Path("/tmp/ComfyUI/models/smoke_state.json"),
+           Path("/kaggle/working/smoke_state.json")):
+    if _c.exists():
+        try:
+            prev_state=json.loads(_c.read_text()) or {}
+            print("[smoke] baseline state found:",_c)
+            break
+        except Exception:
+            prev_state={}
+H3_SMOKE_MODE=os.environ.get("H3_SMOKE_MODE","auto").strip().lower()
+if H3_SMOKE_MODE=="none":
+    SKIPPED=set(SMOKE)
+    print("[smoke] H3_SMOKE_MODE=none -> all lanes skipped (no proof this run)")
+    SMOKE_JOBS=[]
+else:
+    LANE_FP={}; SKIPPED=set()
+    for mod in SMOKE:                       # one low-quality smoke per modality (settings cell)
+        cfg=dict(PRESETS[SMOKE_PRESET[mod]])
+        LANE_FP[mod]=json.dumps(lane_fp(mod,cfg),sort_keys=True)
+        if H3_SMOKE_MODE!="all" and prev_state.get(mod)==LANE_FP[mod]:
+            SKIPPED.add(mod)
+            print("[smoke] %s SKIPPED (unchanged contract, previously proven)"%mod)
+    SMOKE_JOBS=[]
+    for mod in SMOKE:
+        if mod in SKIPPED: continue
+        cfg=dict(PRESETS[SMOKE_PRESET[mod]])
+        prompt, meta = build_prompt(cfg)    # shared builder (convert cell; modality-aware)
+        print("[%s smoke] build meta:"%mod, json.dumps(meta))
+        body={"prompt":prompt,"extra_data":{"preview_method":"latent2rgb"}}
+        try:
+            r=urllib.request.Request(BASE+"/prompt",data=json.dumps(body).encode(),
+                                     headers={"Content-Type":"application/json"})
+            resp=urllib.request.urlopen(r,timeout=60).read().decode()
+            print("[%s smoke] submitted:"%mod,resp)
+        except urllib.error.HTTPError as ee:
+            print("[%s smoke] prompt failed"%mod,ee,"body:",ee.read().decode()[:6000])
+            raise
+        pid=json.loads(resp).get("prompt_id")
+        if not pid: raise RuntimeError("%s smoke: no prompt_id in response"%mod)
+        mark("smoke:%s submitted %s"%(mod,pid))
+        SMOKE_JOBS.append((mod,pid))
+print("smoke schedule: queued %s skipped %s"%(json.dumps([m for m in SMOKE if m not in SKIPPED]),sorted(SKIPPED)))
+if not SMOKE_JOBS and not SKIPPED: raise RuntimeError("empty smoke schedule")
 '''
 
 # ---------------- cell 11: wait ----------------
 wait = r'''
 import json,time,urllib.request,os
+from pathlib import Path
 KEY=("[GPUs]","[MultiStream]","[VAE split]","[Cache]","UNSPLIT","unsplit on 1 GPU")
 BUDGET={"image":1800,"video":10800,"music":3600}   # image: flux 4 steps; video: 3 h; music: 30-stp mini
 results={}
@@ -1906,6 +1947,15 @@ for mod,pid in SMOKE_JOBS:
     if st.get("status_str")=="error":
         raise RuntimeError("%s smoke run had execution errors: "%mod+json.dumps(st)[:2000])
     results[mod]=got
+    try:   # persist the passed lane contract -> rides models/ into the cache dataset
+        sf=Path("/tmp/ComfyUI/models/smoke_state.json")
+        st={}
+        if sf.exists(): st=json.loads(sf.read_text())
+        st[mod]=LANE_FP[mod]
+        sf.write_text(json.dumps(st,sort_keys=True))
+        print("[smoke] state stored for %s"%mod)
+    except Exception as e:
+        print("state store skipped:",e)
 
 # ---- modality-aware verification ----
 cl=open("/tmp/comfy.log",errors="ignore").read()
@@ -1934,7 +1984,10 @@ if "image" in results and not pngs:
     raise RuntimeError("image smoke finished but produced no PNG output")
 if "music" in results and not auds:
     raise RuntimeError("music smoke finished but produced no audio output")
-print("SMOKE PASSED:",sorted(results))
+if "video" in SKIPPED:
+    print("video lane previously proven (skipped this run)")
+print("SMOKE PASSED:",sorted(set(results)|set(SKIPPED)))
+if SKIPPED: print("SMOKE SKIPPED (previously proven):",sorted(SKIPPED))
 '''
 
 # ---------------- cell 12: pub ----------------
@@ -2082,7 +2135,7 @@ sync = r'''
 # H3_CACHE_UPLOAD=auto (default: create once, refresh only on manifest drift)
 #                |always|dry|never
 # Uploads via kagglehub (native in-notebook token auth); classic kaggle CLI as fallback.
-import json, os, subprocess, shutil, time
+import json, os, subprocess, shutil, time, hashlib
 from pathlib import Path
 POLICY=os.environ.get("H3_CACHE_UPLOAD","auto").lower()
 CAP=200*10**9
@@ -2174,6 +2227,12 @@ try:
             # 3) remote MANIFEST probe -> drift decision
             remote,probe=_remote_manifest(ref)
             print("cache dataset: %s | probe: %s"%(ref,probe))
+            # smoke-state rides the manifest so it propagates through the dataset too
+            _sp=MODELS/"smoke_state.json"
+            local_state=None
+            if _sp.exists():
+                _raw=_sp.read_bytes()
+                local_state={"size":len(_raw),"sha256":hashlib.sha256(_raw).hexdigest()}
             need=False
             if POLICY=="always":
                 need=True; print("policy=always -> refresh dataset version")
@@ -2181,11 +2240,13 @@ try:
                 need=True; print("remote MANIFEST unavailable -> upload (first run or probe failed)")
             else:
                 local={rel:{"size":sizes[rel]} for rel in sorted(sizes) if rel.endswith(".safetensors")}
-                rsize={k:{"size":(v or {}).get("size")} for k,v in sorted(remote.items())}
-                if rsize!=local:
-                    need=True; print("manifest drift: %d remote vs %d local files -> upload"%(len(rsize),len(local)))
+                rsize={k:{"size":(v or {}).get("size")} for k,v in sorted(remote.items()) if k.endswith(".safetensors")}
+                remote_state=remote.get("smoke_state.json")
+                if rsize!=local or remote_state!=local_state:
+                    need=True; print("manifest drift: %d remote vs %d local files, state %s -> upload"%(
+                        len(rsize),len(local),"match" if remote_state==local_state else "drift"))
                 else:
-                    print("cache dataset up to date (manifest match)")
+                    print("cache dataset up to date (manifest + smoke-state match)")
             # 4) stage (hardlinks where possible - near-zero disk) then upload
             if need:
                 if STAGE.exists(): shutil.rmtree(STAGE,ignore_errors=True)
@@ -2202,6 +2263,7 @@ try:
                             try: os.symlink(str(p.resolve()),dst)
                             except Exception: shutil.copy2(p,dst)
                 stage_man={rel:{"size":sizes[rel]} for rel in sorted(sizes) if rel.endswith(".safetensors")}
+                if local_state is not None: stage_man["smoke_state.json"]=local_state
                 if (STAGE/"MANIFEST.json").exists(): (STAGE/"MANIFEST.json").unlink()
                 json.dump(stage_man,open(str(STAGE/"MANIFEST.json"),"w"),indent=1)
                 json.dump({"title":TITLE,"id":ref,"licenses":[{"name":"other"}]},
