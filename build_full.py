@@ -550,6 +550,12 @@ def _flatten(wf, info):
             for nm in valid:
                 if nm in inputs or nm in linked: continue
                 if nm in named: inputs[nm]=named[nm]
+            # dynamic-combo sub-inputs (e.g. "format.quality") are not listed in
+            # object_info; emit them as dotted keys when their parent is present.
+            for nm in named:
+                head=nm.split(".",1)[0]
+                if "." in nm and head in inputs and nm not in inputs:
+                    inputs[nm]=named[nm]
             prompt[idmap[str(n["id"])]]={"class_type":n["type"],"inputs":inputs}
         return out_value
 
@@ -578,6 +584,10 @@ def _flatten(wf, info):
         for nm in valid:
             if nm in inputs or nm in linked: continue
             if nm in named: inputs[nm]=named[nm]
+        for nm in named:
+            head=nm.split(".",1)[0]
+            if "." in nm and head in inputs and nm not in inputs:
+                inputs[nm]=named[nm]
         prompt[str(n["id"])]={"class_type":t,"inputs":inputs}
 
     print("flattened prompt nodes:",len(prompt))
@@ -626,14 +636,23 @@ def _build_music(cfg):
         if out: n["widgets_values_named"]=out
     for n in wf["nodes"]:
         if n["type"]=="SaveAudioAdvanced":
-            n.setdefault("widgets_values_named",{}).update({
-                "filename_prefix":cfg.get("output_prefix","h3_music"),
-                "format":{"format":cfg.get("format","flac")}})
+            # IO.DynamicCombo: the API prompt carries the option KEY as a plain
+            # string ("flac"); the ComfyUI executor selects the matched option and
+            # re-nests the value into {"format": ...} (plus per-option keys such as
+            # "quality") at call time. A dict here makes the option-key match fail,
+            # silently dropping the input -> "execute() missing 'format'".
+            fmt=str(cfg.get("format","flac")).lower()
+            wnn={"filename_prefix":cfg.get("output_prefix","h3_music"),"format":fmt}
+            if fmt in ("mp3","opus"):
+                wnn["format.quality"]=str(cfg.get("quality",
+                    "V0" if fmt=="mp3" else "128k"))
+            n.setdefault("widgets_values_named",{}).update(wnn)
     info=load_info()
     prompt=_flatten(wf, info)
     meta={"nodes":len(prompt),"modality":"music",
           "max_duration":float(cfg.get("max_duration",60)),
           "steps":30,"format":cfg.get("format","flac"),
+          "quality":cfg.get("quality",""),
           "tiled_decode":bool(cfg.get("tiled_decode",True)),
           "unet":cfg["unet"],"clip":cfg["clip"],"vae":cfg["vae"]}
     return prompt, meta
