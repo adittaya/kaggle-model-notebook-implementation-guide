@@ -334,10 +334,10 @@
   28/28 heads); tunnel `https://accurately-initial-grab-quantum.trycloudflare.com` verified public;
   `/h3api/tasks` 200 + `TASK SMOKE PASSED` (bg_remove + extract 200); **sync `kagglehub upload OK`
   (1150 s)** → cache dataset written back incl. `smoke_state.json` (ver 25 STT self-test + v26
-  MOSS-VL `video_qa` lane are the next bullets). Video smoke took ~50 min (slower than v18's
+  MOSS-VL `video_qa` lane landed as the bullets below). Video smoke took ~50 min (slower than v18's
   ~15 min — budget note for future runs). Evidence: `/tmp/opencode/v24out/`.
 
-### v25 — STT (transcription) self-test — PUSHED (ver 25, RUNNING)
+### v25 — STT (transcription) self-test — VERIFIED (ver 25, GREEN)
 - **Why a self-test:** transcribe is a task, not a smoke lane — nothing calls it on a green run, so
   the only hardware proof is an explicit in-run probe. The music smoke FLAC can't serve: its output
   may be instrumental → VAD → 0 segments → false failure; and after `smoke_state.json` marks music
@@ -354,9 +354,49 @@
   `STT SELFTEST OK: lang=… prob=… segments=… elapsed=…` + first 160 chars.
 - **Failures are local:** a self-test raise kills only the lane, never the generation flows; the
   whole block is skipped if deps or the probe are unavailable (printed as `STT self-test skipped`).
-- **Expected on ver 25:** smokes `SKIPPED` (prior proof from ver 24's write-back), `STT SELFTEST OK`,
-  sync drift → uploads `models/stt/*` (whisper-small download + probe) into the cache dataset, so
-  later boots attach instead of re-downloading.
+- **Verdict (ver 25, 2026-10-08): GREEN.** Probe `rc=0 size=1152693`; **`STT SELFTEST OK: lang=en
+  prob=0.944 segments=1 elapsed=15.9s`** + the 107-char JFK quote (whisper-small, in-process);
+  smokes `SKIPPED (previously proven)`; tunnel `regional-reconstruction-inch-receivers.trycloudflare.com`
+  verified (`/h3api/tasks` `200`); sync **`kagglehub upload OK` (1250 s)** — archive.zip 74.8 G,
+  inventory 64 files / 74.8 GB (`models/stt/*` now dataset-cached). **Transcription hardware proof
+  is CLOSED.** Evidence: `/tmp/opencode/v25out/`.
+
+### v26 — MOSS-VL video-understanding lane — PUSHED (ver 26, RUNNING)
+- **The lane:** `POST /h3api/task` `{"task":"video_qa"}` (question + timestamped evidence) and
+  `{"task":"video_summarize"}` (structured summary) powered by **`OpenMOSS-Team/MOSS-VL-Instruct-0408`**
+  (11B, Apache-2.0, Qwen3-8B decoder + gated cross-attention, 256 K context). Both tasks share one
+  handler → `_moss_handle(b, required)`.
+- **Isolation is the core design decision:** the generation env was verified once and must not be
+  disturbed (av 17..18, numpy-heal, fw 1.2.1). MOSS needs torch 2.8 / transformers 5.5 /
+  torchcodec — a **completely different stack**. So the lane runs in an **isolated venv**
+  (`/tmp/ComfyUI/venv_moss`, outside `models/` so it never gets synced) spawned as a subprocess; the
+  kernel env **never imports** the new stack. Communication is one JSON-line in, one JSON-line out.
+- **Lazy, zero boot cost:** nothing happens at boot. `_moss_bootstrap()` (idempotent per run) does,
+  on first need: (1) `huggingface_hub.snapshot_download` → `models/moss/MOSS-VL-Instruct-0408`
+  (~22 GB, rides the cache write-back); (2) `python -m venv` + pip wheelhouse snapshot at
+  `models/_pip/` (per-`pyver` marker; later boots install `--no-index --find-links` in ~1-2 min);
+  (3) **NVIDIA NPP-preload `.pth`** — torchcodec `0.7.0+cu128` links `libnppicc.so.12` with zero
+  declared deps; a site-packages module + `.pth` `import moss_npp_preload` loads `libnpp*.so.12`
+  RTLD_GLOBAL at interpreter start (system `sitecustomize.py` would be shadowed). A local
+  path-math bug (double `dirname`) was caught in review and fixed to single `dirname` — validated
+  with a real torchcodec decode (75 frames).
+- **Inference:** `AutoModelForCausalLM.from_pretrained(ckpt, trust_remote_code=True,
+  device_map="auto", torch_dtype=torch.bfloat16, attn_implementation="sdpa")` — the model routes
+  flash→sdpa internally (`ALL_ATTENTION_FUNCTIONS["sdpa"]` confirmed under transformers 5.5.4), so
+  no flash-attn wheel (impossible on sm75) is needed. `device_map="auto"` spreads ~11 GB/GPU across
+  both T4s. Generation via `model.offline_video_generate(processor, prompt=…, video=…,
+  max_frames=…, video_max_pixels=…, max_new_tokens=…)` — the `<|video|>` placeholder is handled
+  internally by the model code.
+- **Proof (first run only):** wait cell calls `_moss_proof()` after the STT self-test. Subject = the
+  fresh video-smoke MP4 if present, else a 10 s `testsrc2+sine` ffmpeg probe. Runs through the SAME
+  worker subprocess, prints `MOSS LANE OK: model=… elapsed=…s answer(…)`, writes
+  `models/moss_state.json` (gate; later boots skip). Failures are **nonfatal by design**: bootstrap
+  and analysis errors print `MOSS proof … FAIL (nonfatal)` markers — a 22 GB download hiccup must
+  not nuke an otherwise-green run — and the tasks stay available for manual verification.
+- **Expected on ver 26:** smokes SKIPPED, `STT SELFTEST OK` re-proven (deps now cached), `MOSS LANE
+  OK` (first run: ~22 GB download + ~4 GB wheels + load ≈ 25-35 min added), sync re-uploads the tree
+  (~26 GB larger → dataset ≈ 100 GB — quota is the known open risk; sync failures are graceful).
+  Verify checklist in RUNS.md row 26.
 
 ## 2026-10-07 — retired lanes (kept for history)
 

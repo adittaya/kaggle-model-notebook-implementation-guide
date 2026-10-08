@@ -170,6 +170,21 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       unwrap the HTTP tuple, assert `segments>=1`). Decouple from the music smoke — its output can
       be instrumental (VAD → 0 segments). Keep the probe's failure nonfatal to the run; the raise
       kills only the lane.
+- [ ] **New runtime stacks must never touch the verified env** (v26): a second, much newer ML
+      stack (torch 2.8 / transformers 5.5 / torchcodec) cannot live in the same site-packages as a
+      boot-verified ComfyUI/generation env — install it in an **isolated venv and call it as a
+      subprocess worker** (one JSON-line job in, one JSON-line result out, process-per-job until a
+      keep-alive worker is worth the complexity). Keep the venv OUTSIDE `models/` (binaries
+      re-create each boot from a **wheelhouse** put INSIDE `models/_pip/` so the cache dataset
+      persists packages; a marker keyed on the Python `cpXX` tag gates it, later boots install
+      `--no-index --find-links` offline, gaps fall back to online install + wheelhouse refresh).
+      Weights go to `models/` as usual (the ~22 GB MOSS-VL tree rides the write-back). Libraries
+      with hidden transitive deps (torchcodec `0.7.0+cu128` links NVIDIA NPP with zero declared
+      deps) need a `.pth` preload in the venv — `import <mod>` at site init loads `libnpp*.so.12`
+      RTLD_GLOBAL; derive the lib dir with **ONE `dirname(__file__)`** (a double lands a level too
+      high and silently loads nothing). Lazy-load the whole lane: zero boot cost, first call (or a
+      first-run-only proof that stamps `moss_state.json`) bootstraps; keep every failure nonfatal
+      to the generation flows.
 - [ ] **Put every runtime asset inside `models/` so the cache picks it up**: rembg weights via
       `REMBG_HOME=/tmp/ComfyUI/models/rembg`, upscaler `.pth` in `models/upscale_models/` —
       anything outside the inventory tree will silently re-download every boot.

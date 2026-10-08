@@ -55,10 +55,25 @@ smokes**; **`build_full.py` now lives in this repo** (survives host restarts)).
   by the assets cell with curl, rides the cache write-back) and asserts `segments>=1`
   (`STT SELFTEST OK: lang=en prob=.945 …`). NOT the music smoke FLAC: instrumental output → VAD
   → 0 segments → false failure. The probe's download also pulls whisper-small into `models/stt/`
-  so later boots attach it from the cache.
-- **Use-case tasks (v17):** `POST /h3api/task` — background remover + element extractor (rembg u2net),
+  so later boots attach it from the cache. **(ver 25 verdict: `STT SELFTEST OK: lang=en
+  prob=0.944 segments=1 elapsed=15.9s` on the wire + sync uploaded `models/stt/*` — transcription
+  proof CLOSED.)**
+- **Video understanding lane (v26):** `POST /h3api/task` `{"task":"video_qa"|"video_summarize"}` —
+  **MOSS-VL-Instruct-0408** (11B, Apache-2.0, Qwen3-8B decoder + gated cross-attention over
+  video). Fully **lazy + isolated**: nothing loads at boot; the first call (or the first-run
+  wait-cell proof) downloads weights to `models/moss/` and wheels to `models/_pip/`, builds an
+  **isolated venv** at `/tmp/ComfyUI/venv_moss`, and hands the job to a **subprocess worker**
+  (JSON-lines) — torch 2.8 / transformers 5.5 / torchcodec **never enter the verified generation
+  env**. The model loads BF16 with `device_map="auto"` spread across **both T4s**
+  (`attn_implementation="sdpa"`; flash-attn is unpinnable on sm75). Input `video` (data URL) or
+  `video_path`; opts `question`, `max_frames` (256), `max_new_tokens`, `do_sample`, `timeout`;
+  returns answer text + saved `.txt` + data-URL. Co-exists with Comfy via a hub-side lane lock
+  (`moss.state` in `/h3api/tasks`). First run proves the lane (`MOSS LANE OK` + writes
+  `models/moss_state.json`; later boots skip).
+- **Use-case tasks (v17/v22/v26):** `POST /h3api/task` — background remover + element extractor (rembg u2net),
   4× upscaler (Real-ESRGAN through Comfy's GPU), video→frames/GIF, audio extract/trim, ffprobe,
-  **speech-to-text (v22)**; 9 tasks, uniform `{ok, outputs, saved, view, meta}` envelope
+  **speech-to-text (v22)**, **video_qa + video_summarize (v26)**; 11 tasks, uniform
+  `{ok, outputs, saved, view, meta}` envelope
 - **Smoke schedule (v17/v20/v22):** `H3_SMOKE` env (default `image,video,music`) — one low-quality
   smoke per modality, image first (PNG proves the lane), then video (dual-GPU assertion + MP4),
   then music (audio `.flac` assertion); per-modality wait budgets (image 1800 s / video 10800 s /
