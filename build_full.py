@@ -77,10 +77,12 @@ r=subprocess.run([sys.executable,"-m","pip","install","rembg[cpu]==2.0.85"],
                  capture_output=True,text=True)
 print("rembg install rc=%d"%r.returncode)
 print(((r.stdout or "")+(r.stderr or ""))[-700:])   # always show tail (a numpy move shows here)
-# numpy/rembg health + heal: a MIXED numpy dir (old umath.py + newer strings.py) kills scipy
-# and rembg with `cannot import name '_slice' from 'numpy._core.umath'` while plain
-# `import numpy` still works - so probe the exact imports the tasks need, resync the wheel,
-# and verify both in a subprocess (files on disk) and in this kernel (in-memory modules).
+# numpy/rembg health + heal: a MIXED numpy (disk files upgraded in place by a subprocess
+# `pip install` while THIS kernel pre-loaded numpy) breaks scipy and rembg with
+# `cannot import name '_slice' from 'numpy._core.umath'` — the disk may stay self-consistent
+# (fresh subprocess import passes) while in-kernel submodule imports fail. So probe the exact
+# imports the tasks need BOTH ways (subprocess files + in-kernel modules), and if either is
+# broken, resync the wheel to the version THIS kernel loaded, then re-verify both.
 _PROBE="from numpy._core.strings import *; from scipy import ndimage; import rembg"
 def _task_probe():
     p=subprocess.run([sys.executable,"-c",_PROBE],capture_output=True,text=True)
@@ -115,10 +117,19 @@ def _kernel_verify():
         return False
 ok,err=_task_probe()
 print("task deps health:","OK" if ok else "FAIL -> "+err)
-if not ok:
+k_ok=_kernel_verify()
+print("in-kernel task deps import:","OK" if k_ok else "FAIL")
+# v19 lesson: the subprocess probe can pass on the freshly-upgraded (consistent) disk numpy
+# while this kernel's pre-loaded numpy modules are stale -> in-kernel imports break. Heal
+# whenever EITHER probe fails, force-reinstalling numpy to the version THIS kernel loaded.
+if not ok or not k_ok:
     _numpy_diag()
-    ver=subprocess.run([sys.executable,"-c","import numpy;print(numpy.__version__)"],
-                       capture_output=True,text=True).stdout.strip() or "2.1.3"
+    try:
+        import numpy as _np
+        ver=_np.__version__      # version actually loaded in THIS process (what we must match)
+    except BaseException:
+        ver=subprocess.run([sys.executable,"-c","import numpy;print(numpy.__version__)"],
+                           capture_output=True,text=True).stdout.strip() or "2.1.3"
     print("heal: pip force-reinstall --no-deps numpy==%s"%ver)
     h=subprocess.run([sys.executable,"-m","pip","install","-q","--force-reinstall",
                       "--no-deps","numpy==%s"%ver],capture_output=True,text=True)
@@ -126,8 +137,9 @@ if not ok:
     ok,err=_task_probe()
     print("task deps health after heal:","OK" if ok else "FAIL -> "+err)
     if not ok: _numpy_diag()
-k_ok=_kernel_verify()
-print("in-kernel task deps import:","OK" if k_ok else "FAIL")
+    k_ok=_kernel_verify()
+    print("in-kernel task deps import after heal:","OK" if k_ok else "FAIL")
+    if not k_ok: _numpy_diag()
 TASKS_HEALTHY=bool(ok and k_ok)
 print("TASKS_HEALTHY =",TASKS_HEALTHY)
 print("ComfyUI at",CTE)
@@ -167,6 +179,16 @@ except Exception as e:
     print("image tree query FAILED:",e); IMG=[]
 print("image catalog: %d files in %s" % (len(IMG),IMG_REPO))
 
+# 1b2) music generation catalog: LIVE MiniMax-Music-3 tree (diffusion_models/text_encoders/vae)
+MUSIC_REPO="Comfy-Org/MiniMax-Music-3"
+try:
+    mtree=hf_get(f"https://huggingface.co/api/models/{MUSIC_REPO}/tree/main?recursive=true")
+    MUSIC=[{"path":f["path"],"size":int(f.get("size") or 0)} for f in mtree
+           if f.get("type")=="file" and f["path"].endswith(".safetensors")]
+except Exception as e:
+    print("music tree query FAILED:",e); MUSIC=[]
+print("music catalog: %d files in %s" % (len(MUSIC),MUSIC_REPO))
+
 # 1c) local task assets (upscale + segmentation models)
 EXTRAS=[
     {"path":"upscale_models/RealESRGAN_x4plus.pth","size":67040989,
@@ -191,7 +213,7 @@ def status_of(rel):
 
 # 3) grouped catalog table (size, availability)
 groups={}
-for f in CORE+IMG:
+for f in CORE+IMG+MUSIC:
     groups.setdefault(f["path"].split("/")[0] if "/" in f["path"] else "(root)",[]).append(f)
 for g in sorted(groups):
     rows=sorted(groups[g], key=lambda x:-x["size"])
@@ -223,8 +245,8 @@ print("\n== community FLUX repos (%d total; top 15 by downloads) ==" % len(COMM2
 for m in sorted(COMM2,key=lambda x:-x["downloads"])[:15]:
     print("  %9s  %s" % (format(m["downloads"],","), m["id"]))
 
-REG={"core":CORE,"image":IMG,"extras":EXTRAS,"community":COMM,"image_community":COMM2,
-     "cache":CACHE,"repo":CORE_REPO,"image_repo":IMG_REPO}
+REG={"core":CORE,"image":IMG,"music":MUSIC,"extras":EXTRAS,"community":COMM,"image_community":COMM2,
+     "cache":CACHE,"repo":CORE_REPO,"image_repo":IMG_REPO,"music_repo":MUSIC_REPO}
 json.dump(REG,open("/tmp/h3_registry.json","w"))
 print("\nregistry written to /tmp/h3_registry.json")
 '''
@@ -238,12 +260,23 @@ SMOKE_PROMPT=("A calm ocean wave rolling onto a quiet beach at golden hour, "
               "slow cinematic pan, soft warm sunlight, gentle foam detail.")
 IMAGE_SMOKE_PROMPT=("A weathered fisherman's cottage on a rocky cliff at sunrise, "
                     "warm golden light, cinematic detail, photorealistic, sharp focus.")
+MUSIC_SMOKE_PROMPT=("Lo-fi chillhop, 78 BPM, D flat major, warm Rhodes chords, "
+                    "dusty boom-bap drums, soft vinyl crackle, cozy late-night mood.")
+MUSIC_SMOKE_LYRICS=("[Intro]\nMmm...\n\n[Verse]\nGolden hour on a rainy street,\n"
+                    "headphones on, the city sleeps,\nRhodes and drums in slow retreat,\n"
+                    "a little warmth the night can keep.\n")
 COMMON=dict(
     modality="video",
     unet="minimax_h3_fl2va_pruned_int8_convrot.safetensors",
     clip="qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
     vae="minimax_h3_video_vae_int8_convrot.safetensors",
     audio_vae="minimax_h3_audio_vae_fp32.safetensors",
+)
+MUSIC_COMMON=dict(
+    modality="music",
+    unet="minimax_music3_dit_fp16.safetensors",
+    clip="minimax_music3_text_encoder_pruned_int8_convrot.safetensors",
+    vae="minimax_music3_dav.safetensors",
 )
 PRESETS={
   # fast verified smoke: 4-step turbo LoRA @ 480p (864x480)
@@ -259,20 +292,27 @@ PRESETS={
                       checkpoint="flux1-schnell-fp8.safetensors",
                       width=1024, height=1024, steps=4, cfg=1.0,
                       sampler="euler", scheduler="simple", seed=12345),
+  # music generation: MiniMax Music 3 (core ComfyUI nodes, single T4, 30 steps)
+  "music_smoke": dict(MUSIC_COMMON, prompt=MUSIC_SMOKE_PROMPT, lyrics=MUSIC_SMOKE_LYRICS,
+                      max_duration=5, seed=4242, tiled_decode=True, format="flac"),
 }
 ACTIVE_PRESET="fast_smoke"
 ACTIVE=dict(PRESETS[ACTIVE_PRESET])
 
 # boot smoke schedule: one low-quality smoke per modality; image first (fast, and its
-# PNG feeds the task self-test), then video (dual-GPU proof). Override: H3_SMOKE="video"
-SMOKE=[m for m in os.environ.get("H3_SMOKE","image,video").split(",") if m in ("image","video")]
-if not SMOKE: SMOKE=["image","video"]
+# PNG feeds the task self-test), then video (dual-GPU proof), then music.
+# Override: H3_SMOKE="image,video" (or "video" only)
+SMOKE=[m for m in os.environ.get("H3_SMOKE","image,video,music").split(",") if m in ("image","video","music")]
+if not SMOKE: SMOKE=["image","video","music"]
 SMOKE_PRESET={"image":"image_smoke",
-              "video":(ACTIVE_PRESET if ACTIVE.get("modality")=="video" else "fast_smoke")}
+              "video":(ACTIVE_PRESET if ACTIVE.get("modality")=="video" else "fast_smoke"),
+              "music":"music_smoke"}
 
 def required_files(a):
     if a.get("modality")=="image":
         return [("checkpoints",a["checkpoint"])]
+    if a.get("modality")=="music":
+        return [("diffusion_models",a["unet"]),("text_encoders",a["clip"]),("vae",a["vae"])]
     f=[("diffusion_models",a["unet"]),("text_encoders",a["clip"]),
        ("vae",a["vae"]),("vae",a["audio_vae"])]
     if a.get("turbo") and a.get("lora"):
@@ -285,6 +325,10 @@ if ACTIVE.get("modality")=="image":
         ACTIVE["width"],ACTIVE["height"],ACTIVE["steps"],ACTIVE["cfg"],
         ACTIVE["sampler"],ACTIVE["scheduler"]))
     print("  checkpoint:",ACTIVE["checkpoint"],"| seed:",ACTIVE["seed"])
+elif ACTIVE.get("modality")=="music":
+    print("  music: max_duration",ACTIVE["max_duration"],"s | seed:",ACTIVE["seed"],
+          "| tiled_decode:",ACTIVE["tiled_decode"],"| format:",ACTIVE["format"])
+    print("  unet:",ACTIVE["unet"],"| clip:",ACTIVE["clip"],"| vae:",ACTIVE["vae"])
 else:
     RES_16X9={0.2:(608,352),0.3:(736,416),0.4:(864,480),0.5:(960,544),0.6:(1056,608),
               0.7:(1152,640),0.8:(1216,672),0.9:(1280,736),0.98:(1344,768)}
@@ -344,9 +388,13 @@ for rel in EXPECT:
     miss.append(rel)
 
 IMG_FILES={"checkpoints/flux1-schnell-fp8.safetensors","checkpoints/flux1-schnell.safetensors"}
+MUSIC_FILES={"diffusion_models/minimax_music3_dit_fp16.safetensors",
+             "text_encoders/minimax_music3_text_encoder_pruned_int8_convrot.safetensors",
+             "vae/minimax_music3_dav.safetensors"}
 if miss:
-    core=[r for r in miss if r not in IMG_FILES]
+    core=[r for r in miss if r not in IMG_FILES and r not in MUSIC_FILES]
     imgf=[r for r in miss if r in IMG_FILES]
+    musicf=[r for r in miss if r in MUSIC_FILES]
     if core:
         print("downloading",len(core),"files from Comfy-Org/MiniMax-H3 (HF token active)")
         from huggingface_hub import snapshot_download
@@ -357,6 +405,11 @@ if miss:
         snapshot_download(repo_id="Comfy-Org/flux1-schnell",
                           allow_patterns=[r.split("/",1)[-1] for r in imgf],
                           local_dir=str(MODELS/"checkpoints"))
+    if musicf:
+        print("downloading",len(musicf),"music files from Comfy-Org/MiniMax-Music-3")
+        from huggingface_hub import snapshot_download
+        snapshot_download(repo_id="Comfy-Org/MiniMax-Music-3",allow_patterns=musicf,
+                          local_dir=str(MODELS))
 
 # --- verify every file + write MANIFEST (source of truth for this session) ---
 MANIFEST={}; bad=[]
@@ -399,7 +452,8 @@ print("ffmpeg:",_ff or "NOT FOUND (video/audio tasks disabled)")
 
 subprocess.run(["curl","-L","-sSf","-o","/tmp/h3_t2v.json","https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_t2v.json"],check=True)
 subprocess.run(["curl","-L","-sSf","-o","/tmp/flux_schnell.json","https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/flux_schnell.json"],check=True)
-print("assets staged in /tmp/ComfyUI/models, workflows at /tmp/h3_t2v.json + /tmp/flux_schnell.json")
+subprocess.run(["curl","-L","-sSf","-o","/tmp/audio_minimax_music_3.json","https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/audio_minimax_music_3.json"],check=True)
+print("assets staged in /tmp/ComfyUI/models, workflows at /tmp/h3_t2v.json + /tmp/flux_schnell.json + /tmp/audio_minimax_music_3.json")
 '''
 
 # ---------------- cell 7: convert ----------------
@@ -425,47 +479,9 @@ def _save_frame(durl, slot):
     (d/name).write_bytes(raw)
     return name
 
-def build_prompt(cfg):
-    """cfg (a PRESETS-style dict) -> (prompt, meta). Flattens the official subgraph,
-    applies settings, wires optional first/last frame, inserts H3MultiStream."""
-    if cfg.get("modality")=="image":
-        return _build_image(cfg)
-    wf=json.load(open("/tmp/h3_t2v.json"))
-    SUBID=(wf.get("definitions") or {}).get("subgraphs")[0]["id"]
-    inst=[n for n in wf["nodes"] if n["type"]==SUBID][0]
-    iw=inst.setdefault("widgets_values_named",{})
-    iw.update({
-        "prompt":cfg["prompt"], "value_1":float(cfg["duration"]),
-        "noise_seed":int(cfg["seed"]),
-        "unet_name":cfg["unet"], "clip_name":cfg["clip"],
-        "vae_name":cfg["vae"], "vae_name_1":cfg["audio_vae"],
-        "value":bool(cfg["turbo"]), "lora_name":cfg["lora"],
-        "strength_model_1":float(cfg["turbo_strength"]),
-        "value_2":int(cfg["turbo_steps"]),
-    })
-    for n in wf["nodes"]:
-        if n["type"]=="ResolutionSelector":
-            rw=n.setdefault("widgets_values_named",{})
-            rw["aspect_ratio"]=cfg["aspect"]; rw["megapixels"]=cfg["megapixels"]
-
-    # optional first/last-frame conditioning: LoadImage -> subgraph input (link ids free-form)
-    frames=[]
-    for slot,key in ((0,"first_frame"),(1,"last_frame")):
-        durl=cfg.get(key+"_b64")
-        if not durl: continue
-        name=_save_frame(durl,key)
-        nid=9001+slot; lid=7777+slot
-        wf["nodes"].append({"id":nid,"type":"LoadImage","pos":[0,0],"size":[140,100],"flags":{},
-            "order":99,"mode":0,"inputs":[],
-            "outputs":[{"name":"IMAGE","type":"IMAGE","links":[lid],"slot_index":0}],
-            "properties":{},"widgets_values":[name],"widgets_values_named":{"image":name}})
-        for ii in inst.get("inputs") or []:
-            if ii.get("name")==key: ii["link"]=lid
-        wf["links"].append([lid,nid,0,inst["id"],slot,"IMAGE"])
-        frames.append(name)
-    if frames: print("frame conditioning:",frames)
-
-    info=load_info()
+def _flatten(wf, info):
+    """Generic subgraph -> API prompt (shared by video + music lanes).
+    pass 1: expand every subgraph instance; pass 2: regular UI-graph nodes."""
     def schema(ct):
         if ct not in info:
             raise RuntimeError("node type not registered: "+ct)
@@ -565,6 +581,112 @@ def build_prompt(cfg):
         prompt[str(n["id"])]={"class_type":t,"inputs":inputs}
 
     print("flattened prompt nodes:",len(prompt))
+    return prompt
+
+# MiniMax Music 3 template: inner nodes store positional widgets only (older graph
+# format). Schema-verified order for promoting them to widgets_values_named; "" skips
+# the frontend-only control_after_generate slot. Linked inputs override these anyway.
+MUSIC_WIDGETS={
+    "UNETLoader":["unet_name","weight_dtype"],
+    "MiniMaxMusic3TextEncode":["caption","lyrics","seed","","max_duration","cfg_scale","top_k"],
+    "CLIPLoader":["clip_name","type","device"],
+    "VAELoader":["vae_name"],
+    "EmptyMiniMaxMusic3LatentAudio":["seconds","batch_size"],
+    "KSampler":["seed","","steps","cfg","sampler_name","scheduler","denoise"],
+    "VAEDecodeAudioTiled":["tile_size","overlap"],
+    "SeedNode":["seed"],
+    "ComfySwitchNode":["switch"],
+}
+
+def _build_music(cfg):
+    """MiniMax Music 3 (audio_minimax_music_3.json) -> API prompt.
+    Core ComfyUI nodes (comfy_extras/nodes_minimax_music.py): no custom pack, no
+    MultiStream, single T4, no frame conditioning."""
+    wf=json.load(open("/tmp/audio_minimax_music_3.json"))
+    subs=(wf.get("definitions") or {}).get("subgraphs") or []
+    if not subs: raise RuntimeError("music template: no subgraph")
+    inst=[n for n in wf["nodes"] if n["type"]==subs[0]["id"]]
+    if not inst: raise RuntimeError("music template: subgraph instance missing")
+    # instance widget settings (caption lyrics max_duration seed unet clip vae switch)
+    iw=inst[0].setdefault("widgets_values_named",{})
+    iw.update({
+        "caption":cfg["prompt"], "lyrics":cfg.get("lyrics",""),
+        "max_duration":float(cfg.get("max_duration",60)),
+        "seed":int(cfg["seed"]),
+        "unet_name":cfg["unet"], "clip_name":cfg["clip"], "vae_name":cfg["vae"],
+        "switch":bool(cfg.get("tiled_decode",True)),
+    })
+    for n in subs[0]["nodes"]:
+        names=MUSIC_WIDGETS.get(n["type"])
+        wv=n.get("widgets_values") or []
+        if not names or not wv: continue
+        out={}
+        for i,val in enumerate(wv):
+            if i<len(names) and names[i]: out[names[i]]=val
+        if out: n["widgets_values_named"]=out
+    for n in wf["nodes"]:
+        if n["type"]=="SaveAudioAdvanced":
+            n.setdefault("widgets_values_named",{}).update({
+                "filename_prefix":cfg.get("output_prefix","h3_music"),
+                "format":{"format":cfg.get("format","flac")}})
+    info=load_info()
+    prompt=_flatten(wf, info)
+    meta={"nodes":len(prompt),"modality":"music",
+          "max_duration":float(cfg.get("max_duration",60)),
+          "steps":30,"format":cfg.get("format","flac"),
+          "tiled_decode":bool(cfg.get("tiled_decode",True)),
+          "unet":cfg["unet"],"clip":cfg["clip"],"vae":cfg["vae"]}
+    return prompt, meta
+
+def build_prompt(cfg):
+    """cfg (a PRESETS-style dict) -> (prompt, meta). Flattens the official subgraph,
+    applies settings, wires optional first/last frame, inserts H3MultiStream."""
+    if cfg.get("modality")=="image":
+        return _build_image(cfg)
+    if cfg.get("modality")=="music":
+        return _build_music(cfg)
+    wf=json.load(open("/tmp/h3_t2v.json"))
+    SUBID=(wf.get("definitions") or {}).get("subgraphs")[0]["id"]
+    inst=[n for n in wf["nodes"] if n["type"]==SUBID][0]
+    iw=inst.setdefault("widgets_values_named",{})
+    iw.update({
+        "prompt":cfg["prompt"], "value_1":float(cfg["duration"]),
+        "noise_seed":int(cfg["seed"]),
+        "unet_name":cfg["unet"], "clip_name":cfg["clip"],
+        "vae_name":cfg["vae"], "vae_name_1":cfg["audio_vae"],
+        "value":bool(cfg["turbo"]), "lora_name":cfg["lora"],
+        "strength_model_1":float(cfg["turbo_strength"]),
+        "value_2":int(cfg["turbo_steps"]),
+    })
+    for n in wf["nodes"]:
+        if n["type"]=="ResolutionSelector":
+            rw=n.setdefault("widgets_values_named",{})
+            rw["aspect_ratio"]=cfg["aspect"]; rw["megapixels"]=cfg["megapixels"]
+
+    # optional first/last-frame conditioning: LoadImage -> subgraph input (link ids free-form)
+    frames=[]
+    for slot,key in ((0,"first_frame"),(1,"last_frame")):
+        durl=cfg.get(key+"_b64")
+        if not durl: continue
+        name=_save_frame(durl,key)
+        nid=9001+slot; lid=7777+slot
+        wf["nodes"].append({"id":nid,"type":"LoadImage","pos":[0,0],"size":[140,100],"flags":{},
+            "order":99,"mode":0,"inputs":[],
+            "outputs":[{"name":"IMAGE","type":"IMAGE","links":[lid],"slot_index":0}],
+            "properties":{},"widgets_values":[name],"widgets_values_named":{"image":name}})
+        for ii in inst.get("inputs") or []:
+            if ii.get("name")==key: ii["link"]=lid
+        wf["links"].append([lid,nid,0,inst["id"],slot,"IMAGE"])
+        frames.append(name)
+    if frames: print("frame conditioning:",frames)
+
+    info=load_info()
+    prompt=_flatten(wf, info)
+    def schema(ct):
+        if ct not in info:
+            raise RuntimeError("node type not registered: "+ct)
+        s=info[ct]["input"]
+        return set(s.get("required",{}))|set(s.get("optional",{}))
 
     # turbo sanity: one boolean must drive both switches (LoRA branch + step count)
     if cfg["turbo"]:
@@ -746,19 +868,23 @@ def H_catalog(o):
                   "size":int(f.get("size") or 0)} for f in
                  hf_get("https://huggingface.co/api/models/%s/tree/main?recursive=true"%reg0.get("image_repo","Comfy-Org/flux1-schnell"))
                  if f.get("type")=="file" and f["path"].endswith(".safetensors")]
-            reg0["core"]=CORE; reg0["community"]=COMM; reg0["image"]=IMG
+            MUSIC=[{"path":f["path"],"size":int(f.get("size") or 0)} for f in
+                   hf_get("https://huggingface.co/api/models/%s/tree/main?recursive=true"%reg0.get("music_repo","Comfy-Org/MiniMax-Music-3"))
+                   if f.get("type")=="file" and f["path"].endswith(".safetensors")]
+            reg0["core"]=CORE; reg0["community"]=COMM; reg0["image"]=IMG; reg0["music"]=MUSIC
             json.dump(reg0,open("/tmp/h3_registry.json","w"))
         except Exception as e:
             return _j(502,{"ok":False,"error":"live refresh failed: %s"%e})
     try: reg=json.load(open("/tmp/h3_registry.json"))
     except Exception as e: return _j(503,{"ok":False,"error":"registry not built yet: %s"%e})
     cache=reg.get("cache",{})
-    for key in ("core","image","extras"):
+    for key in ("core","image","music","extras"):
         for f in reg.get(key,[]):
             p=MODELS/f["path"]
             f["status"]="local" if (p.exists() and p.stat().st_size>0) else                 ("cached" if f["path"].rsplit("/",1)[-1] in cache else "remote")
     return _j(200,{"ok":True,"repo":reg.get("repo"),"files":reg.get("core",[]),
         "image":reg.get("image",[]),"image_repo":reg.get("image_repo"),
+        "music":reg.get("music",[]),"music_repo":reg.get("music_repo"),
         "extras":reg.get("extras",[]),
         "community":reg.get("community",[]),"image_community":reg.get("image_community",[]),
         "cache_files":len(cache)})
@@ -1335,7 +1461,7 @@ and this management hub under <code>/h3api/*</code>. All hub responses are JSON:
 <tr><td><code>GET /h3api/</code></td><td>Endpoint index</td></tr>
 <tr><td><code>GET /h3api/docs</code></td><td>This page</td></tr>
 <tr><td><code>GET /h3api/health</code></td><td>API + Comfy liveness, uptime, active preset</td></tr>
-<tr><td><code>GET /h3api/catalog</code></td><td>Live HF model catalog (39 core files + community repos)
+<tr><td><code>GET /h3api/catalog</code></td><td>Live HF model catalog (H3 core + Flux image + Music-3 files + community repos)
  with <code>local/cached/remote</code> status. <code>?refresh=1</code> re-queries Hugging Face now</td></tr>
 <tr><td><code>GET /h3api/models</code></td><td>On-disk models, sizes, sources, MANIFEST, required set</td></tr>
 <tr><td><code>GET /h3api/settings</code></td><td>Presets + active generation settings</td></tr>
@@ -1365,13 +1491,17 @@ and this management hub under <code>/h3api/*</code>. All hub responses are JSON:
   "set": {"megapixels": 0.4, "duration": 5}
 }'</pre>
 <p>Returns <code>{"ok":true,"prompt_id":"...","meta":{...}}</code>. Optional keys:
-<code>preset</code> ("fast_smoke" | "quality" | "image_smoke"), <code>set</code> (any settings keys),
+<code>preset</code> ("fast_smoke" | "quality" | "image_smoke" | "music_smoke"), <code>set</code> (any settings keys),
 <code>first_frame</code> / <code>last_frame</code> as <code>data:image/png;base64,...</code>
 URLs (image-to-video / last-frame conditioning), <code>seed</code>.
 Poll <code>GET /h3api/jobs</code> until the job status is <code>success</code>.
 Preset <code>image_smoke</code> switches modality to Flux-schnell image generation
 (<code>set</code>: <code>width</code>, <code>height</code>, <code>steps</code>, <code>cfg</code>,
-<code>sampler</code>, <code>scheduler</code>, <code>checkpoint</code>).</p>
+<code>sampler</code>, <code>scheduler</code>, <code>checkpoint</code>).
+Preset <code>music_smoke</code> switches modality to MiniMax Music 3 generation
+(<code>set</code>: <code>lyrics</code>, <code>max_duration</code> in seconds,
+<code>tiled_decode</code> true/false, <code>format</code> flac|mp3|opus,
+<code>prompt</code> = the style caption). Saved as <code>output/h3_music_*.flac</code>.</p>
 
 <h2>Tasks (use-cases)</h2>
 <table><tr><th>Task</th><th>What it does</th><th>Input</th><th>Options</th></tr>
@@ -1410,6 +1540,7 @@ Preset <code>image_smoke</code> switches modality to Flux-schnell image generati
 (select via <code>/h3api/select</code>; switching downloads the new set and deletes the previous one)</td></tr>
 <tr><td><code>first_frame_b64</code>, <code>last_frame_b64</code></td><td>Frame conditioning (data URLs)</td></tr>
 <tr><td><code>width</code>, <code>height</code>, <code>cfg</code>, <code>sampler</code>, <code>scheduler</code>, <code>checkpoint</code></td><td>Image generation keys (Flux preset <code>image_smoke</code>)</td></tr>
+<tr><td><code>lyrics</code>, <code>max_duration</code>, <code>tiled_decode</code>, <code>format</code>, <code>output_prefix</code></td><td>Music generation keys (MiniMax Music 3 preset <code>music_smoke</code>; <code>prompt</code> = style caption)</td></tr>
 </table>
 
 <h2>Model lifecycle</h2>
@@ -1607,7 +1738,7 @@ if not SMOKE_JOBS: raise RuntimeError("empty smoke schedule")
 wait = r'''
 import json,time,urllib.request,os
 KEY=("[GPUs]","[MultiStream]","[VAE split]","[Cache]","UNSPLIT","unsplit on 1 GPU")
-BUDGET={"image":1800,"video":10800}       # image: flux 4 steps; video: 3 h (4-step turbo @0.4MP)
+BUDGET={"image":1800,"video":10800,"music":3600}   # image: flux 4 steps; video: 3 h; music: 30-stp mini
 results={}
 seen=set()
 for mod,pid in SMOKE_JOBS:
@@ -1658,16 +1789,19 @@ if "video" in results:                   # dual-GPU proof applies to the H3 vide
         lastg=[l for l in open("/tmp/gpus.log",errors="ignore").read().splitlines() if l.strip()][-1:]
         print("last gpu sample:", lastg[0][:160] if lastg else "(none)")
     except Exception: pass
-pngs=[]
+pngs=[]; auds=[]
 print("smoke outputs:")
 for root,_,files in os.walk("/tmp/ComfyUI/output"):
     for f in files:
         p=os.path.join(root,f)
         if f.lower().endswith(".png"): pngs.append(p)
-        if f.lower().endswith((".mp4",".webm",".mov",".webp",".gif",".png")):
+        if f.lower().endswith((".flac",".mp3",".wav",".ogg",".opus")): auds.append(p)
+        if f.lower().endswith((".mp4",".webm",".mov",".webp",".gif",".png",".flac",".mp3",".wav",".ogg",".opus")):
             print("found:",p)
 if "image" in results and not pngs:
     raise RuntimeError("image smoke finished but produced no PNG output")
+if "music" in results and not auds:
+    raise RuntimeError("music smoke finished but produced no audio output")
 print("SMOKE PASSED:",sorted(results))
 '''
 

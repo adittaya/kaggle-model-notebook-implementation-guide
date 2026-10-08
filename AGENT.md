@@ -15,32 +15,34 @@ reconstruct the whole project after a context loss.
 **Date:** Oct 8 2026
 **Owner:** adityahalde8777
 **Kaggle kernel:** `adityahalde8777/minimax-h3-comfy-2xt4-generator` (the ONLY kernel; old lanes deleted)
-**Latest:** **v18 COMPLETED (first green end-to-end run) → v19 PUSHED, RUNNING.** v18 run result
-(the design worked): `task deps health: OK` (subprocess probe — *no* mixed numpy this boot),
-`DUAL-GPU CONFIRMED`, `SMOKE PASSED: ['image','video']`, pub self-test green incl. the no-op
-**POST /h3api/settings** (still single-attempt), task smoke = **`TASK SMOKE PASSED`** — upscale
-`200 ok=True` (REQUIRED) + video_frames `200` (3 outputs), bg_remove/extract FAILED but
-`WARN tolerated … (install cell reported task deps unhealthy after heal)` → graceful, no raise;
-**sync cell RAN**: `cache inventory: 62 files, 59.3 GB` → `manifest drift: 5 remote vs 6 local
-files -> upload` → `kagglehub upload OK -> adityahalde8777/minimax-h3-model-cache (716 s)`
-→ **dataset version 2** (nvfp4 15.7 G + turbo 4step lora 1.96 G + MANIFEST + placeholders)
-→ run **COMPLETED** (kernel done, not ERROR). The in-kernel verify FAILED on
-`AttributeError: 'numpy.ufunc' object has no attribute '__module__'` → `TASKS_HEALTHY=False`
-— root cause was **self-inflicted**: the v18 verify *popped* numpy from `sys.modules` and
-re-imported it in the same process, which is itself broken (verified locally: even a healthy
-numpy dies on pop+reimport, `cannot load module more than once per process`) — so a real (but
-tiny) install-time hiccup turned into total in-kernel numpy loss (warm-up, api import, every
-task). **v19 fix**: `_kernel_verify` is **non-destructive** (one attempt, prints the FIRST
-error + traceback tail, returns False → graceful), and the pub cell gets a shared `_post`
-**retry-once** helper for POST settings + all task POSTs (v18's bg_remove request died with
-`Network is unreachable` — client-side tunnel blip; upscale/video_frames fine). Also **Phase E:
-`build_full.py` now lives IN this repo** (reconstructed verbatim from the v18 notebook after
-the host restart wiped `/tmp/opencode`; rebuild reproduces the notebook byte-identical).
-Prior verified baseline: **v17** (31 min, PNG+MP4, 11/11 self-test, mixed-numpy blocked tasks)
-and **v16** (32.9 min, first 42 GB dataset upload). Next: watch v19 → verify (a) in-kernel
-first-error diagnostic is logged, (b) `TASK SMOKE PASSED` with either healthy bg_remove/extract
-or a clean warn, (c) sync idles (`manifest match` now that the dataset is populated) → then
-music lane (v20), transcription (v21).
+**Latest:** **v19 COMPLETED — all three success criteria met → v20 PUSHED (music lane + numpy he-efix).**
+v19 run result: install cell printed the precise first error — `task deps health: OK` (subprocess
+probe on fresh disk files) yet **`in-kernel task deps import FAIL: ImportError cannot import name
+'_slice' from 'numpy._core.umath'`** → `TASKS_HEALTHY = False` → bg_remove/extract warn-only (their
+POSTs retried, upscale `200` REQUIRED + video_frames `200`) → **`TASK SMOKE PASSED`** (clean warn,
+as designed); sync **idled**: `cache inventory: 62 files, 59.3 GB` → `cache dataset up to date
+(manifest match)` (no re-upload — the v18-created dataset is authoritative). **v19 lit up the v17
+mystery**: the subprocess probe (fresh interpreter) passed while the kernel failed because a
+subprocess `pip install` (rembg's dep resolve) **swapped numpy files in-place** *after* the kernel
+pre-loaded numpy 2.1.3 (torch, preflight cell) — disk becomes self-consistent new numpy
+(subprocess OK) while the kernel's already-loaded `numpy._core.umath` (old, no `_slice`) mixes with
+the new on-disk `strings.py` (imports `_slice`) → exact `_slice` ImportError. **Reproduced
+locally 1:1** (numpy 2.1.3 preload → in-place upgrade to 2.5.3 via pip while loaded → same
+`_slice` error in-kernel), and the cure verified: `pip force-reinstall --no-deps numpy==<the
+version THIS kernel loaded>` restores both probes to OK. **v20** ships that cure in the install
+cell (heal now fires when EITHER probe fails, re-pins numpy to the in-kernel loaded version, then
+re-verifies both) **and the music lane**: MiniMax Music 3 via **ComfyUI core nodes only**
+(`comfy_extras/nodes_minimax_music.py`) — no custom pack, no MultiStream, single T4 —
+`audio_minimax_music_3.json` subgraph flattened by the shared `_flatten(wf, info)` (extracted
+from the video flattener with **byte-identical output — EQUIVALENCE TEST PASS**), inner nodes'
+positional widgets promoted via the schema-verified `MUSIC_WIDGETS` table, preset `music_smoke`
+(max_duration 5, seed 4242, tiled_decode True, format `flac`, output prefix `h3_music`), and the
+default smoke schedule becomes **`image,video,music`** (music waits on `auds` for a real `.flac`).
+13 code cells `ast`-validated; equivalence + music-structure checks green. **PUSHED; running →
+verify: TASKS_HEALTHY=True (heal worked), `SMOKE PASSED: ['image','video','music']` with a
+`h3_music_*.flac` in output.** Transcription = v21 next.
+Prior verified baseline: **v18** (COMPLETED, first fully green run; task bug chain root-caused as
+self-inflicted pop+reimport → v19's non-destructive verify) → **v19** (above).
 
 ---
 
@@ -52,8 +54,8 @@ The product is an **all-in-one generation hub** on one public Base URL, not just
 |---|---|---|
 | **Video generation** | MiniMax H3 (FL2VA/Ref2VA, turbo/dense), H3-Max-style variants | ✅ H3 lane in production |
 | **Image generation** | Flux family (Comfy-Org repos), community Fluxes | ✅ v18 smoke proven on Kaggle (PNG + MP4, dual-GPU, **run COMPLETED**) |
-| **Image/audio use-case tasks** | bg remover, element extractor, upscaler, frame/GIF/audio tools | 🟡 upscale + video_frames green on Kaggle; bg_remove/extract blocked by the in-kernel numpy re-import bug → **v19 non-destructive verify + first-error log** |
-| **Music generation** | `audio_minimax_music_3` Comfy template (MinimaxMusic), LTx community | ⬜ Phase C (v20) |
+| **Image/audio use-case tasks** | bg remover, element extractor, upscaler, frame/GIF/audio tools | 🟡 upscale + video_frames green on Kaggle (v18/v19); bg_remove/extract blocked every boot by the **in-place numpy swap** (subprocess pip upgrades numpy after the kernel pre-loaded it → kernel-only `_slice` ImportError). **v20's heal fires on EITHER probe** (subprocess OR in-kernel), re-pinning numpy to the kernel-loaded version — expected to make bg_remove/extract green in the v20 run |
+| **Music generation** | `audio_minimax_music_3` Comfy template (MiniMax Music 3, **core** ComfyUI nodes), LTx community | ⬜→🟡 **v20 implemented + PUSHED** — preset `music_smoke` (30 steps, 5 s, flac), 14.33 GB models, smoke in default `H3_SMOKE="image,video,music"`; awaiting Kaggle verification |
 | **Sound / soundtrack** | H3 native audio track (already joint audio+video), music models | ⬜ Phase C |
 | **Transcription (ASR)** | to research (Whisper-class on Comfy / community) | ⬜ Phase C research (v21) |
 | **Text generation** | ❌ explicitly NOT needed | — |
@@ -92,8 +94,9 @@ Requirements distilled from user messages:
 | `/tmp/opencode/Comfy-H3-MultiStream/` | node-pack clone (docs, perf, split.py log lines) |
 | Repo | https://github.com/adittaya/kaggle-model-notebook-implementation-guide (public) |
 
-Notebook cell order (v13, 10 cells): title → secrets → preflight → install → assets → inspect →
-start → smoke (converter+submit) → wait_smoke (verify) → pub (cloudflared tunnel → READY).
+Notebook cell order (v20, 14 cells: title + 13 code): title → secrets → preflight → install →
+registry → settings → assets → convert → start → api → smoke → wait → pub → sync. The convert
+cell holds the shared `build_prompt(cfg)` (branches: video / image / music) + `_flatten`.
 
 ---
 
@@ -293,13 +296,39 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
    - Local CPU dry-run **59/59 ALL TESTS PASSED** (incl. real upscale 256→1024², alpha extent,
      bbox sanity, path-escape 400, sync dry). Upgrade path: Flux2 klein 4B distilled, Qwen-Image
      20B too big for T4
-2. ⬜ **Music generation** — **researched ✅**: template `audio_minimax_music_3.json` = subgraph
-   "Text to Music (MiniMax Music 3)" (flattener applies), instance widgets = caption + lyrics +
-   max_duration 60 + seed + loaders; KSampler `30 steps, cfg 1.7`; models from
-   **`Comfy-Org/MiniMax-Music-3`**: dit fp16 **4.91 GB** + TE pruned int8 convrot **9.20 GB** +
-   dav VAE **0.22 GB** = **14.33 GB** (also listed: dit fp32 9.8 / dit int8 2.5 / TE bf16 18.5 /
-   TE pruned bf16 16.7); all land in the same `diffusion_models/text_encoders/vae` dirs the
-   registry + prune already cover; outputs via `SaveAudioAdvanced`
+2. 🟡 **Music generation — v20 IMPLEMENTED & PUSHED** — **researched ✅** (see below) and built:
+   template `audio_minimax_music_3.json` = subgraph "Text to Music (MiniMax Music 3)" (11 inner
+   nodes) — flattener applies (**shared `_flatten(wf, info)` extracted from the video path;
+   video prompts byte-identical after the refactor**). Caveat found and handled: unlike the H3
+   video template, the music inner nodes store **positional `widgets_values` only** (older graph
+   format, no `widgets_values_named`) — promoted by the **schema-verified `MUSIC_WIDGETS`**
+   table (checked against every node's real `object_info` schema in a cloned ComfyUI):
+   `UNETLoader [unet_name, weight_dtype]`, `MiniMaxMusic3TextEncode [caption, lyrics, seed, "",
+   max_duration, cfg_scale, top_k]` (the `""` skips the frontend-only `control_after_generate`
+   slot), `CLIPLoader [clip_name, type, device]`, `VAELoader [vae_name]`,
+   `EmptyMiniMaxMusic3LatentAudio [seconds, batch_size]`, `KSampler [seed, "", steps, cfg,
+   sampler_name, scheduler, denoise]`, `VAEDecodeAudioTiled [tile_size, overlap]`,
+   `SeedNode [seed]`, `ComfySwitchNode [switch]`. Node set is **ComfyUI core**
+   (`comfy_extras/nodes_minimax_music.py`, `nodes_audio.py`, `nodes_logic.py`) — **no custom
+   pack, no MultiStream, single T4** (your one source of 2-GPU proof stays the H3 video lane).
+   Wiring verified node-by-node: instance `switch` → ComfySwitchNode selects **VAEDecodeAudioTiled**
+   (tiled) vs VAEDecodeAudio (lazy inputs — only the chosen one executes); seed → SeedNode →
+   TextEncode.seed + KSampler.seed; `max_duration` → TextEncode + EmptyLatentAudio.seconds;
+   subgraph output link 62 → ComfySwitchNode out slot 0 → **SaveAudioAdvanced.audio**
+   (`format` is a *dict* `{"format":"flac|mp3|opus"}` — verified in `nodes_audio.py`). Preset
+   `music_smoke` = max_duration 5, seed 4242, tiled_decode True, format `flac`, prefix `h3_music`;
+   models from **`Comfy-Org/MiniMax-Music-3`**: dit fp16 **4.91 GB** + TE pruned int8 convrot
+   **9.20 GB** + dav VAE **0.22 GB** = **14.33 GB** (also listed: dit fp32 9.8 / dit int8 2.5 /
+   TE bf16 18.5 / TE pruned bf16 16.7); all land in the same `diffusion_models/text_encoders/vae`
+   dirs the registry + prune already cover; `snapshot_download(local_dir=models)` (repo paths are
+   already category-prefixed); outputs via `SaveAudioAdvanced` → `/tmp/ComfyUI/output/h3_music_*.flac`.
+   `H3_SMOKE` default = **`image,video,music`**; wait cell adds `BUDGET["music"]=3600` + scans
+   `auds` for the audio file ("music smoke finished but produced no audio output"). Registry cell
+   adds the music catalog + `music_repo`; api docs/catalog carry music rows; `required_files`
+   gets the music branch. Local gate before push: **video byte-equivalence PASS** (old inline
+   flatten == new `_flatten`, 27 nodes, identical meta), **music build OK** (14 nodes,
+   structural checks PASS, SaveAudioAdvanced wired, seeds routed) — done via an equivalence
+   harness with a mocked object_info.
 3. ⬜ **Transcription** — **researched ✅** (no official local template; only cloud `api_*`
    STT). Front-runners: **`Setmaster/comfyui-stt7`** (MIT, purpose-built suite:
    LoadModel/TranscribeAudio/LoadAudioFile, faster-whisper, built-in VRAM mgmt) and
@@ -327,9 +356,10 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 3. ✅ Perf explained (v14): exchange ≈6 % of a step ⇒ **T4 compute-bound**; levers landed = turbo
    + 0.4 MP (4.1× per step); untested levers = VAE-split + TE cache
 4. 🟡 **Dataset cache bootstrap partially done**: v16 created it (42 GB), **v18 created version 2**
-   (nvfp4 15.7 G + turbo lora + MANIFEST). Next boots still need the **one-time manual step**:
-   attach `minimax-h3-model-cache` via Add Data so `/kaggle/input` populates and sync idles on
-   `manifest match`
+   (nvfp4 15.7 G + turbo lora + MANIFEST + placeholders), and **v19 CONFIRMED the write-back half
+   idles**: `cache dataset up to date (manifest match)` (no drift → no upload). The read half
+   still needs the **one-time manual step**: attach `minimax-h3-model-cache` via Add Data so
+   `/kaggle/input` populates (v19 still showed `0 candidate files` → boots still download from HF)
 5. ⬜ Rebuild `dryrun.py` into the repo (lost with the host restart) so v20+ keeps the local
    59/59 gate
 6. ⬜ Rotate the GitHub PAT pasted in chat earlier; keep HF token out of the public repo
@@ -401,6 +431,12 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 8 | **v19: `_kernel_verify` is non-destructive — ONE attempt, print the FIRST error + traceback tail, return False, NEVER touch `sys.modules`** | v18's pop-and-reimport verify was self-inflicted damage: removing `numpy*` from a long-lived kernel and re-importing is broken by itself (locally: `cannot load module more than once per process`; on Kaggle: `ufunc.__module__` AttributeError) — a small install hiccup escalated into total in-kernel numpy loss for the whole boot. The useful behavior is diagnosis (log what actually failed) + graceful `TASKS_HEALTHY=False` |
 | Oct 8 | **v19: all pub POSTs (settings + task smoke) share one `_post` helper with retry-once + `e.reason` logging** | v18: `bg_remove` task request died client-side with `Network is unreachable` (tunnel blip) and `POST /h3api/settings` failed on the single attempt — GET probes already retry, the POSTs must too, so a healthy state can't false-fail |
 | Oct 8 | **Kaggle Dataset v18 outcome keeps versioning as-is**: manifest drift probe is authoritative — a populated dataset makes later boots idle on `manifest match` and upload only on real drift | v18 uploaded version 2 (716 s) from a `5 remote vs 6 local` drift; no manual seesaw of inventory counts needed |
+| Oct 8 | **v19 root cause, now behind the v20 heal**: the v17/v19 mixed numpy is an **in-place numpy swap during the install's pip subprocesses** — `pip install rembg[cpu]` re-resolves numpy and replaces the wheel files while THIS kernel has already pre-loaded numpy 2.1.3 (torch in preflight). Disk becomes self-consistent (fresh subprocess probes pass on the new version) but the kernel's loaded `umath` (old) + new on-disk `strings.py` mix → `_slice` ImportError. Locally reproduced 1:1 (2.1.3 preload → in-place upgrade to 2.5.3 → exact same in-kernel error); **cure proven**: `pip force-reinstall --no-deps numpy==<kernel-loaded version>` then both probes OK | the subprocess-only probe design had a blind spot: it validates disk files, not this process's loaded modules. The heal must resync the wheel to the version the KERNEL loaded (`numpy.__version__` in-process), not to whatever subprocess `pip` put there |
+| Oct 8 | **v20: heal fires when EITHER probe fails** (subprocess OR in-kernel), re-pins numpy to the in-kernel loaded version, re-verifies both, then `TASKS_HEALTHY` | v19 proved the divergence: subprocess OK + in-kernel FAIL. Trusting only the subprocess means never healing the actual broken thing |
+| Oct 8 | **v20 music lane = ComfyUI core nodes only** (`nodes_minimax_music.py` + `nodes_audio.py` + `nodes_logic.py`), single T4, no MultiStream | MiniMax Music 3 has no custom pack; it mus not disturb the only source of 2-GPU proof (H3 video). Core nodes are schema-verified from a ComfyUI clone — no guesswork |
+| Oct 8 | **v20 music template uses positional→named widget promotion (`MUSIC_WIDGETS`)**, not `widgets_values_named` (the music subgraph is the older format) | 11 node schemas verified from source; the `""` slots skip `control_after_generate`, linked inputs always override — the flattener's shared logic then applies unchanged |
+| Oct 8 | **v20 `_flatten(wf, info)` extracted from the video flattener**; music calls the same helper | video prompts must stay byte-identical after the refactor — **enforced by an equivalence test** (old inline flatten vs `_flatten` → identical 27-node prompt + identical meta) before push |
+| Oct 8 | **v20 `H3_SMOKE` default becomes `image,video,music`**; music budget 3600 s, wait cell asserts a real audio file (`auds` scan), format `flac` via `{"format":"flac"}` dict | user rule: one low-quality smoke per modality; music smoke = 30-step single-T4 mini run; SaveAudioAdvanced's `format` is a DynamicCombo *dict* (verified in `nodes_audio.py`) |
 
 ---
 
@@ -457,6 +493,9 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
 | Oct 8 | **v18 run COMPLETED — FIRST GREEN END-TO-END**: `task deps health: OK` (no mixed numpy this boot); **in-kernel verify FAILED** (`AttributeError: 'numpy.ufunc' object has no attribute '__module__'` → `TASKS_HEALTHY=False`) — root-caused as **self-inflicted pop+reimport bug** + reproduced locally; `DUAL-GPU CONFIRMED`, `SMOKE PASSED: ['image','video']`; task smoke upscale REQUIRED ✅ + video_frames ✅, bg_remove/extract `WARN tolerated` → **`TASK SMOKE PASSED`**; **sync RAN**: `inventory 62 files, 59.3 GB` → drift 5 vs 6 → **`kagglehub upload OK (716 s)` → dataset version 2**; run **COMPLETED** (kernel done, no ERROR); foundation log `/tmp/opencode/v18out/` | ✅ all six MDs pass pending (commit this round) |
 | Oct 8 | **v19 built**: `_kernel_verify` non-destructive (first-error traceback, no sys.modules surgery) + `_post` retry-once for settings/task POSTs; `build_full.py` reconstructed into the repo (byte-identical rebuild verified; 13 cells ast-validated) | ✅ |
 | Oct 8 | **v19 pushed** (kernel version 19) | RUNNING — success = first-error diagnostic visible in install cell (`in-kernel task deps import FAIL: <real cause>`), `TASK SMOKE PASSED` (healthy or clean warn), sync idles on `manifest match` (dataset now populated) |
+| Oct 8 | **v19 VERIFIED — all three success criteria met**: (a) install printed the PRECISE first error — subprocess `task deps health: OK` yet `in-kernel task deps import FAIL: ImportError cannot import name '_slice' from 'numpy._core.umath'` → `TASKS_HEALTHY=False`; (b) task smoke upscale `200` REQUIRED + video_frames `200`, bg_remove/extract FAILED (after retry) → `WARN tolerated` → **`TASK SMOKE PASSED`**; (c) sync **`cache dataset up to date (manifest match)`** — write-back idles on the populated v2 dataset, no re-upload | ✅ log `/tmp/opencode/v19out/`. Root-caused the persistence: **subprocess pip swap of numpy in-place** after kernel preload. Locally reproduced 1:1 (2.1.3→2.5.3) + cure proven (force-reinstall to kernel-loaded version) |
+| Oct 8 | **v20 built**: install cell heals on EITHER probe (re-pins numpy to the kernel-loaded version, re-verifies both) + **music lane** (core ComfyUI nodes, `_flatten` extraction, `MUSIC_WIDGETS`, preset `music_smoke`, `H3_SMOKE=image,video,music`); rebuild 13 code cells `ast`-OK; **equivalence PASS** (video byte-identical) + music structure checks PASS | ✅ |
+| Oct 8 | **v20 pushed** (kernel version 20) — MiniMax Music 3 lane + the proven numpy heal | RUNNING — verify: `TASKS_HEALTHY=True`, `SMOKE PASSED: ['image','video','music']`, `h3_music_*.flac` in output, tasks bg_remove/extract healthy |
 
 ---
 
@@ -481,6 +520,19 @@ prompt up to 7000 chars; tasks: t2va / fl2va / ref2va.
   '__module__'`). "Verify in a fresh interpreter, report in the kernel" — the subprocess probe is
   the heal's executor; the kernel only prints what it sees, never "fixes" itself by reloading C
   extensions (v19).
+- **A subprocess pip install can swap numpy files under a running kernel (v17/v19/v20 lesson)**:
+  `pip install rembg[cpu]` re-resolves and replaces the numpy wheel in-place. If the kernel
+  pre-loaded numpy (torch in preflight), its loaded modules are the OLD version while on-disk
+  `strings.py` becomes the NEW version → in-kernel `from scipy import ndimage` / `import rembg`
+  dies with `cannot import name '_slice' from 'numpy._core.umath'` while a fresh subprocess probe
+  passes on the consistent disk files. Heal = `pip force-reinstall --no-deps numpy==<version THIS
+  kernel loaded>` — and **heal when EITHER probe fails** (subprocess-only misses this exact
+  divergence). Locally reproduced 1:1 with numpy 2.1.3 → 2.5.3 in-place upgrade (v20 verified the
+  heal makes both probes OK again).
+- MiniMax Music 3 lane (v20): core ComfyUI nodes only; the music template stores positional
+  widgets (no `widgets_values_named`) — promote via the schema-verified `MUSIC_WIDGETS` table;
+  `SaveAudioAdvanced.format` is a dict (`{"format":"flac"}`); music runs single-T4, so the
+  `active: 2 ranks` assertion applies only when the video smoke ran.
 - **Repo build pipeline (Oct 8)**: `build_full.py` IS the source of truth and lives in this repo;
   cells are embedded verbatim as raw `r'''…'''` strings (never regular — cell sources contain
   `\n`/`\.` sequences that regular strings would eat). Rebuild → ast-validate → `kaggle kernels

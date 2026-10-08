@@ -25,17 +25,17 @@
 |---|---|---|
 | 1 | secrets | `/tmp` cache dirs, `HF_HUB_DISABLE_XET=1`, load `HF_TOKEN` (secret, else assembled fallback), `REMBG_HOME=/tmp/ComfyUI/models/rembg` (rembg weights get dataset-cached) |
 | 2 | preflight | 2×T4 probe: VRAM free, RAM, `nvidia-smi topo -m` (expect `PHB`, RAM ≈ 31.3 GB) |
-| 3 | install | clone ComfyUI + `ComfyUI-H3-MultiStream`, pip install requirements, `pip install rembg[cpu]==2.0.85` (always prints the pip tail), then **numpy/rembg health probe** (v18): a subprocess runs the exact imports the tasks need (`from numpy._core.strings import *; from scipy import ndimage; import rembg`) — on failure print numpy diagnostics (`__path__`, dist-info, `_slice` markers) and **auto-heal** with `pip force-reinstall --no-deps numpy==<ver>`, probe again, then a **non-destructive in-kernel verify** (v19: ONE attempt, prints the FIRST error + traceback tail, never touches `sys.modules` — pop-and-reimport of numpy in the same process is itself broken) → sets `TASKS_HEALTHY` |
-| 4 | **registry** | **live HF catalog**: full `Comfy-Org/MiniMax-H3` tree (39 files: 12 DiT / 3 TE / 3 VAE / 3 LoRA / 4 ControlNet / 10 embeddings) + **flux image tree → `checkpoints/` entries** + **task assets (RealESRGAN + u2net status)** + 100 community repos (and a flux community search), each file status `local`/`cached`/`remote`; scans `/kaggle/input` cache; writes `/tmp/h3_registry.json` — new upstream files/repos auto-list every boot |
-| 5 | **settings** | `PRESETS` + `ACTIVE`: `fast_smoke` = turbo ON, **4-step LoRA, 0.4 MP → 864×480**; `quality` = dense 20 steps, 0.98 MP → 1344×768; **`image_smoke`** = Flux 1024², 4 steps, cfg 1, euler/simple; **`H3_SMOKE` schedule** (default `image,video` → one smoke per modality, image first; `H3_SMOKE=video` skips flux); prints the required files per active modality + boot union |
-| 6 | assets | **preset/schedule-selective**: mirror `/kaggle/input` hits via symlink (instant), HF `snapshot_download` only the missing files — **video set from `Comfy-Org/MiniMax-H3`, flux into `models/checkpoints/`** — plus task assets (RealESRGAN `.pth` from GitHub releases, rembg `u2net` warm-up), static ffmpeg/ffprobe discovery (`PATH` + `/tmp/bin`), flux template → `/tmp/flux_schnell.json`; **print `OK <bytes>` per file and raise if any is missing**, write `MANIFEST.json` |
-| 7 | **convert** | shared prompt builder `build_prompt(cfg)` — **branches on `modality`**: video = settings (instance widgets + ResolutionSelector), optional **first/last-frame conditioning** (data-URL → `LoadImage` nodes 9001/9002 → subgraph inputs), flatten subgraph, arm-check turbo, insert `H3MultiStream`; image = `_build_image` flat converter (CheckpointLoaderSimple / CLIPTextEncode / EmptySD3LatentImage / KSampler / SaveImage, widgets from `widgets_values_named`); used by both the smoke cell and the hub API |
+| 3 | install | clone ComfyUI + `ComfyUI-H3-MultiStream`, pip install requirements, `pip install rembg[cpu]==2.0.85` (always prints the pip tail), then **numpy/rembg health probe** (v18): a subprocess runs the exact imports the tasks need (`from numpy._core.strings import *; from scipy import ndimage; import rembg`) **AND the kernel verifies the same imports in-process** (v19: ONE attempt, prints the FIRST error + traceback tail, never touches `sys.modules`) — **v20: heal fires when EITHER probe fails**, force-reinstalling numpy to the version THIS kernel loaded (`pip force-reinstall --no-deps numpy==<in-kernel numpy.__version__>`), then re-verifies both → sets `TASKS_HEALTHY`. This cures the root cause lit up by v19: a subprocess pip install swaps numpy files in-place **after** the kernel pre-loaded numpy, so the disk is consistent (subprocess OK) while in-kernel imports break (`cannot import name '_slice' from 'numpy._core.umath'`) |
+| 4 | **registry** | **live HF catalog**: full `Comfy-Org/MiniMax-H3` tree (39 files: 12 DiT / 3 TE / 3 VAE / 3 LoRA / 4 ControlNet / 10 embeddings) + **flux image tree → `checkpoints/` entries** + **music tree (`Comfy-Org/MiniMax-Music-3`, diffusion_models/text_encoders/vae)** + **task assets (RealESRGAN + u2net status)** + 100 community repos (and a flux community search), each file status `local`/`cached`/`remote`; scans `/kaggle/input` cache; writes `/tmp/h3_registry.json` — new upstream files/repos auto-list every boot |
+| 5 | **settings** | `PRESETS` + `ACTIVE`: `fast_smoke` = turbo ON, **4-step LoRA, 0.4 MP → 864×480**; `quality` = dense 20 steps, 0.98 MP → 1344×768; **`image_smoke`** = Flux 1024², 4 steps, cfg 1, euler/simple; **`music_smoke`** = MiniMax Music 3, 30 steps cfg 1.7, max_duration 5, seed 4242, tiled decode, `flac`; **`H3_SMOKE` schedule** (default `image,video,music` → one smoke per modality, image first; `H3_SMOKE=video` skips flux+music); prints the required files per active modality + boot union |
+| 6 | assets | **preset/schedule-selective**: mirror `/kaggle/input` hits via symlink (instant), HF `snapshot_download` only the missing files — **video set from `Comfy-Org/MiniMax-H3`, flux into `models/checkpoints/`, music set from `Comfy-Org/MiniMax-Music-3` (category-prefixed repo paths → `local_dir=models`)** — plus task assets (RealESRGAN `.pth` from GitHub releases, rembg `u2net` warm-up), static ffmpeg/ffprobe discovery (`PATH` + `/tmp/bin`), flux + H3 + music templates fetched to `/tmp`; **print `OK <bytes>` per file and raise if any is missing**, write `MANIFEST.json` |
+| 7 | **convert** | shared prompt builder `build_prompt(cfg)` — **branches on `modality`**: video = settings (instance widgets + ResolutionSelector), optional **first/last-frame conditioning** (data-URL → `LoadImage` nodes 9001/9002 → subgraph inputs), flatten subgraph (**shared `_flatten(wf,info)`, extracted byte-identically from the video path**), arm-check turbo, insert `H3MultiStream`; image = `_build_image` flat converter (CheckpointLoaderSimple / CLIPTextEncode / EmptySD3LatentImage / KSampler / SaveImage, widgets from `widgets_values_named`); music = `_build_music` (**core ComfyUI nodes only** — 11 inner nodes, positional widgets promoted via the schema-verified `MUSIC_WIDGETS` table, ComfySwitchNode lazy-switches tiled decoder, SaveAudioAdvanced `format` dict, shared `_flatten`); used by both the smoke cell and the hub API |
 | 8 | start | launch ComfyUI `--preview-method latent2rgb`, wait for `:8188`; start a background `nvidia-smi -l 10` monitor → `/tmp/gpus.log` |
 | 9 | **api** | **hub API + reverse proxy on `:8190`** (stdlib `ThreadingHTTPServer`): `/h3api/*` JSON endpoints (incl. **`/tasks` + `/task`** — bg_remove, extract, upscale, video_frames, video_gif, audio_extract, audio_trim, probe) + everything else piped to ComfyUI — HTTP **and** WebSocket (raw bidirectional pipe), chunked bodies, CORS; `H3_API=0` disables (pub then tunnels `:8188` directly) |
-| 10 | smoke | loops the **`SMOKE` schedule**: `build_prompt(preset)` → `POST /prompt` with `preview_method: latent2rgb` (prints build meta incl. modality/turbo/node counts) and collects `SMOKE_JOBS=[(modality, prompt_id)]` |
-| 11 | wait | polls **every smoke job** (per-modality budget: image 1800 s, video 10800 s), every 120 s print comfy.log tail (tqdm ETA) + new **`[h3ms]` diagnostics** (`[GPUs]` plan, `active: 2 ranks`, per-step times) + **`[gpu]` nvidia-smi util lines**; **early raise on `UNSPLIT`**; fail on execution errors; final assertions are **modality-aware** — video smoke ran ⇒ assert dual-GPU (`active: 2 ranks`), image smoke ran ⇒ assert a PNG output exists; prints `SMOKE PASSED` |
+| 10 | smoke | loops the **`SMOKE` schedule** (default `image,video,music`): `build_prompt(preset)` → `POST /prompt` with `preview_method: latent2rgb` (prints build meta incl. modality/turbo/node counts) and collects `SMOKE_JOBS=[(modality, prompt_id)]` |
+| 11 | wait | polls **every smoke job** (per-modality budget: image 1800 s, video 10800 s, **music 3600 s**), every 120 s print comfy.log tail (tqdm ETA) + new **`[h3ms]` diagnostics** (`[GPUs]` plan, `active: 2 ranks`, per-step times) + **`[gpu]` nvidia-smi util lines**; **early raise on `UNSPLIT`**; fail on execution errors; final assertions are **modality-aware** — video smoke ran ⇒ assert dual-GPU (`active: 2 ranks`), image smoke ran ⇒ assert a PNG output exists, **music smoke ran ⇒ assert an audio file exists (`auds` scan: flac/mp3/wav/ogg/opus)**; prints `SMOKE PASSED` |
 | 12 | pub | cloudflared quick tunnel → `:8190` (the hub), verify **both** `/history` and `/h3api/health` return 200, print READY block (Base URL + hub docs/generate/settings/tasks URLs), then run a **live endpoint self-test through the tunnel** (health/catalog/settings/jobs/outputs/gpus/docs/tasks, proxied `/object_info`, 404 envelope, POST settings) — **retry-once + 30 s timeout + `e.reason` printed** (v16 blind `URLError` fixed; v19 gives the POSTs the same retry-once via one shared `_post` helper) **followed by a task smoke through the tunnel**: bg_remove + extract + upscale on the newest PNG (**required when `TASKS_HEALTHY`; bg_remove/extract warn-only if the install cell reported the env unhealthy — upscale always required**), video_frames on the smoke MP4 (warn-only); prints `TASK SMOKE PASSED`; falls back to direct `:8188` if the hub failed to start |
-| 13 | **sync** | **Kaggle Dataset write-back** (`H3_CACHE_UPLOAD=auto\|always\|dry\|never`): inventory local models → **200 GB cap auto-skip** + disk guard → owner via **`kagglehub.whoami`** (native in-notebook token auth) with env/kaggle.json/embedded-owner fallbacks + auth diagnostics → remote `MANIFEST.json` probe → manifest-drift check → hardlink-stage (≈0 disk) → **`kagglehub.dataset_upload`** (creates or versions), classic `kaggle` CLI as fallback; **whole cell try/except — a failure never fails the run**. **Verified twice**: v16 upload `(530 s)` created the 42 GB dataset; **v18 `manifest drift: 5 remote vs 6 local -> upload` → `kagglehub upload OK (716 s)` → dataset version 2** (nvfp4 15.7 G + turbo 4-step lora 1.96 G + MANIFEST + placeholders); populated dataset ⇒ later boots should probe `manifest match` and skip |
+| 13 | **sync** | **Kaggle Dataset write-back** (`H3_CACHE_UPLOAD=auto\|always\|dry\|never`): inventory local models → **200 GB cap auto-skip** + disk guard → owner via **`kagglehub.whoami`** (native in-notebook token auth) with env/kaggle.json/embedded-owner fallbacks + auth diagnostics → remote `MANIFEST.json` probe → manifest-drift check → hardlink-stage (≈0 disk) → **`kagglehub.dataset_upload`** (creates or versions), classic `kaggle` CLI as fallback; **whole cell try/except — a failure never fails the run**. **Verified three times**: v16 upload `(530 s)` created the 42 GB dataset; **v18 `manifest drift: 5 remote vs 6 local -> upload` → `kagglehub upload OK (716 s)` → dataset version 2** (nvfp4 15.7 G + turbo 4-step lora 1.96 G + MANIFEST + placeholders); **populated dataset verified in v19 ⇒ `cache dataset up to date (manifest match)` — writes idle, no re-upload**; attach via Add Data to also mirror `/kaggle/input` and skip HF downloads |
 
 ### Model files staged (schedule-selective)
 
@@ -54,6 +54,16 @@ loras/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors   ← turbo
 ```
 checkpoints/flux1-schnell-fp8.safetensors             ← 17.24 GB, Comfy-Org/flux1-schnell (repo ROOT file → relocated into checkpoints/)
 ```
+
+`music_smoke` adds (v20, only when the schedule includes `music`):
+
+```
+diffusion_models/minimax_music3_dit_fp16.safetensors                          ← 4.91 GB
+text_encoders/minimax_music3_text_encoder_pruned_int8_convrot.safetensors      ← 9.20 GB
+vae/minimax_music3_dav.safetensors                                             ← 0.22 GB
+```
+(= 14.33 GB from `Comfy-Org/MiniMax-Music-3`; the repo paths are already category-prefixed, so
+the download uses `local_dir=models` directly.)
 
 Task assets (always, small): `upscale_models/RealESRGAN_x4plus.pth` (67 MB), rembg `u2net`
 (176 MB → `models/rembg/`), static ffmpeg/ffprobe if present.
@@ -79,12 +89,12 @@ at `GET /h3api/docs`.
 | Endpoint | Purpose |
 |---|---|
 | `GET /h3api/health` | API + Comfy liveness, uptime, active preset |
-| `GET /h3api/catalog[?refresh=1]` | HF catalog (core + **image** + **extras** + community) with `local/cached/remote`; `refresh` re-queries HF live |
+| `GET /h3api/catalog[?refresh=1]` | HF catalog (core + **image** + **music** + **extras** + community) with `local/cached/remote`; `refresh` re-queries HF live |
 | `GET /h3api/models` | on-disk files + sizes + sources + MANIFEST |
-| `GET`/`POST /h3api/settings` | presets (`fast_smoke`, `quality`, **`image_smoke`**) + active settings; POST `{"preset":...}` / `{"set":{...}}` |
+| `GET`/`POST /h3api/settings` | presets (`fast_smoke`, `quality`, **`image_smoke`**, **`music_smoke`**) + active settings; POST `{"preset":...}` / `{"set":{...}}` |
 | `POST /h3api/select` | switch model: downloads the new set async, **prunes superseded files** (`"prune":false` keeps them) |
 | `POST`/`GET /h3api/download` | fetch files now / download status |
-| `POST /h3api/generate` | `{prompt, preset?, set?, seed?, first_frame?, last_frame?}` → `202` + `prompt_id`; `preset:"image_smoke"` generates an image (`meta.modality == "image"`) |
+| `POST /h3api/generate` | `{prompt, preset?, set?, seed?, first_frame?, last_frame?}` → `202` + `prompt_id`; `preset:"image_smoke"` generates an image (`meta.modality == "image"`); `preset:"music_smoke"` generates music (`meta.modality == "music"`, keys `lyrics`/`max_duration`/`tiled_decode`/`format`, `prompt` = style caption) |
 | `GET /h3api/jobs` | queue + last 25 history jobs |
 | `GET /h3api/outputs` | generated files + `/view` URLs |
 | `POST /h3api/free` | unload models from GPU |
@@ -135,9 +145,17 @@ Native Comfy (`POST /prompt`, `GET /history`, `GET /ws`, `/view`, the web UI) is
 - **bg_remove/extract failing while `import numpy` works** → read the exact line after
   `in-kernel task deps import FAIL:` in the install cell (v19 prints the first error + traceback
   tail — in v18 it was the self-inflicted pop-and-reimport `'numpy.ufunc' object has no attribute
-  '__module__'`; in v17 it was the mixed-numpy `_slice ImportError`). A healthy state shows
-  `task deps health: OK` from the subprocess probe AND no `in-kernel` FAIL line; the api cell
-  reports the state via `/h3api/tasks` → `runtime.healthy`/`runtime.rembg_error`.
+  '__module__'`; in v17 AND v19 it was the mixed-numpy `_slice ImportError`: **a subprocess pip
+  install swaps numpy files in place after the kernel pre-loaded numpy** — v20 heals with a
+  `force-reinstall` of the kernel-loaded version whenever EITHER probe fails). A healthy state
+  shows `task deps health: OK` from the subprocess probe AND no `in-kernel` FAIL line; the api
+  cell reports the state via `/h3api/tasks` → `runtime.healthy`/`runtime.rembg_error`.
+- **Music smoke produced nothing** → the wait cell raises unless `auds` found a real
+  `h3_music_*.flac` in `/tmp/ComfyUI/output`; diagnose from the build meta line
+  (`modality: music … format flac`) and comfy.log — the music graph uses **core ComfyUI nodes**
+  only, so a missing audio file means the MiniMax-Music-3 assets never landed
+  (`value_not_in_list` on `unet_name`/`clip_name`/`vae_name`) or the sampling exceeded the
+  3600 s budget.
 
 ## Remaining MD set
 

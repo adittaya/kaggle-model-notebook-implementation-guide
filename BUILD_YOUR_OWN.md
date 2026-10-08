@@ -6,15 +6,17 @@ features as this repo.
 ## The stack (current — Comfy lane)
 
 ```
-Comfy-Org/MiniMax-H3 on HF          Comfy-Org/flux1-schnell (image)
-        │                                    │
-        ▼                                    ▼
+Comfy-Org/MiniMax-H3 on HF          Comfy-Org/flux1-schnell (image)   Comfy-Org/MiniMax-Music-3 (music)
+        │                                    │                                    │
+        ▼                                    ▼                                    ▼
 Kaggle kernel (T4×2, internet on, 31.3 GB RAM)
         │
         ├─ ComfyUI (cloned @ main) + pinned requirements
         ├─ ComfyUI-H3-MultiStream custom node  ← the 2-GPU split (video only)
         ├─ official workflow template (subgraph!) → converted to API prompt
         ├─ flat flux template → image API prompt (modality branch in build_prompt)
+        ├─ audio_minimax_music_3 template → music API prompt (CORE ComfyUI nodes only:
+        │     nodes_minimax_music.py — no custom pack, no MultiStream, single T4)
         ├─ use-case tasks: rembg (bg_remove/extract) + scipy + ffmpeg (video/audio)
         │                  + Real-ESRGAN upscale through Comfy's GPU
         ├─ Comfy /prompt HTTP API on 127.0.0.1:8188
@@ -97,16 +99,24 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       each check once with a generous timeout and print the exception's `reason`** (v16: a
       transient tunnel stall on two endpoints was indistinguishable from a slow handler because
       the bare `URLError` was all that got printed)
-- [ ] **One low-quality smoke per modality, schedule-driven** (v17): an env var (`H3_SMOKE`,
-      default `image,video`) defines the smoke order; the smoke cell loops it collecting
+- [ ] **One low-quality smoke per modality, schedule-driven** (v17/v20): an env var (`H3_SMOKE`,
+      default `image,video,music`) defines the smoke order; the smoke cell loops it collecting
       `SMOKE_JOBS=[(modality, prompt_id)]`, the wait cell gives each job its **own budget**
-      (fast modality 1800 s, slow 10800 s) and applies **modality-aware assertions** —
-      dual-GPU proof only when the multi-GPU modality ran, "output file exists" for the fast one.
-      Don't let a single-T4 image lane trip a video-mode `active: 2 ranks` assertion.
+      (image 1800 s, video 10800 s, music 3600 s) and applies **modality-aware assertions** —
+      dual-GPU proof only when the multi-GPU (video) modality ran, "output file exists" for the
+      fast ones (PNG / FLAC). Don't let a single-T4 image or music lane trip a video-mode
+      `active: 2 ranks` assertion. **A music lane sits on CORE ComfyUI nodes** (v20:
+      `nodes_minimax_music.py`) — no custom pack, no MultiStream; its template stores inner node
+      widgets **positionally**, so promote them to `widgets_values_named` via a **schema-verified
+      table** (skip frontend-only slots like `control_after_generate`), and remember
+      `SaveAudioAdvanced.format` is a **dict** (`{"format":"flac"}`).
 - [ ] **Separate builder per workflow shape**: a flat template (flux) does not belong inside a
-      subgraph flattener — branch `build_prompt(cfg)` on `cfg["modality"]` and keep the verified
-      path untouched; share `load_info()` schema filtering, `widgets_values_named`, and the
-      Note/MarkdownNote skip between both branches
+      subgraph flattener — branch `build_prompt(cfg)` on `cfg["modality"]` (video / image / music,
+      v20) and keep the verified path untouched; share `load_info()` schema filtering,
+      `widgets_values_named`, the Note/MarkdownNote skip, and the **`_flatten(wf, info)` subgraph
+      expander** between branches (v20 extracted `_flatten` verbatim from the video path — an
+      equivalence test against the old inline flatten must stay byte-identical before you call it
+      a refactor)
 - [ ] **Use-case tasks beside generation** (v17): `GET /h3api/tasks` (availability: binary
       presence, model files, python deps) + `POST /h3api/task` with one handler per task;
       CPU work in-process (rembg → `scipy.ndimage` connected components for the element
@@ -124,22 +134,29 @@ WanGP pinned commit → local finetune JSONs → FastAPI headless server
       Comfy's combo lists category dirs — download with
       `snapshot_download(..., local_dir=models/<category>)` and track those paths in one shared
       set used by boot, `select`, and prune alike
-- [ ] **Probe + heal the CPU-task stack at install time** (v18): a Kaggle boot can't be debugged
-      interactively, so after pip installs run the EXACT imports your CPU tasks need in a
-      subprocess (`from numpy._core.strings import *; from scipy import ndimage; import rembg`),
-      and on failure resync numpy with `pip install --force-reinstall --no-deps numpy==<version>`
-      (a same-version reinstall rewrites every file from one wheel — re-consistent by
-      construction). Then run a **non-destructive in-kernel verify** (v19: ONE attempt, print the
-      first error + traceback tail, never reload C extensions in the kernel). Survive a permanent
-      failure: gate *secondary-feature* task requirements behind the health flag (`TASKS_HEALTHY`)
-      so a bad environment can't block READY — or the write-back cell that runs after it — while
-      core generation stays mandatory. **v18 lesson**: do NOT "fix" an in-kernel import failure by
-      popping the module from `sys.modules` and re-importing — same-process re-import of a stem
-      C-extension module is broken by itself (`cannot load module more than once per process`;
-      on Kaggle it dies inside `multiarray._override___module__` with `'numpy.ufunc' object has no
-      attribute '__module__'`), turning one small install hiccup into total in-kernel numpy loss
-      for the whole boot. Subprocess = the only place on-disk files get re-tested; the kernel only
-      reports.
+- [ ] **Probe + heal the CPU-task stack at install time** (v18/v19/v20): a Kaggle boot can't be
+      debugged interactively, so after pip installs run the EXACT imports your CPU tasks need in
+      a subprocess (`from numpy._core.strings import *; from scipy import ndimage; import rembg`)
+      **AND in the kernel**, and on EITHER failure resync numpy with
+      `pip install --force-reinstall --no-deps numpy==<version>` — a same-version reinstall
+      rewrites every file from one wheel, re-consistent by construction (a same-version resync
+      rewrites every file from one wheel — re-consistent by construction). Two traps the runs
+      taught us: (1) **v19 lit up why a subprocess-only probe is blind** — a subprocess `pip
+      install` (rembg's dep resolve) can swap numpy **in-place** after the kernel already
+      pre-loaded it (torch preflight): the disk imports self-consistently (subprocess OK) while
+      the kernel's loaded `umath` + new on-disk `strings.py` mix → `cannot import name '_slice'
+      from 'numpy._core.umath'`; heal must re-pin to the version the KERNEL loaded
+      (`numpy.__version__` in-process), verified locally (2.1.3→2.5.3 swap reproduced, heal
+      restores both probes). (2) do NOT "fix" an in-kernel import failure by popping the module
+      from `sys.modules` and re-importing — same-process re-import of a stem C-extension module
+      is broken by itself (`cannot load module more than once per process`; on Kaggle it dies
+      inside `multiarray._override___module__` with `'numpy.ufunc' object has no attribute
+      '__module__'`), turning one small install hiccup into total in-kernel numpy loss for the
+      whole boot. So: **subprocess = the only place on-disk files get re-tested; the kernel only
+      reports** (v19 non-destructive verify: ONE attempt, print the FIRST error + traceback tail).
+      Survive a permanent failure: gate *secondary-feature* task requirements behind the health
+      flag (`TASKS_HEALTHY`) so a bad environment can't block READY — or the write-back cell
+      that runs after it — while core generation stays mandatory.
 - [ ] **Never discard pip output on rc=0**: a "clean" install can silently shuffle numpy in the
       resolve (v17: a mixed `strings.py`/`umath.py` broke scipy and rembg while `import numpy`
       kept working — the one diagnostic line that would have shown it was thrown away). Always

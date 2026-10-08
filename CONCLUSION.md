@@ -182,7 +182,7 @@
   and the bg_remove task POST died with `Network is unreachable` (tunnel blip) — GETs already
   retried, the POSTs didn't.
 
-### v19 — non-destructive in-kernel verify + retry-once POSTs — PUSHED (Oct 8)
+### v19 — non-destructive in-kernel verify + retry-once POSTs — ✅ VERIFIED ON KAGGLE (Oct 8)
 - **`_kernel_verify` no longer touches `sys.modules`**: ONE attempt, print the **first** error +
   traceback tail, return False → `TASKS_HEALTHY=False` → graceful warn-only. The "fix by
   re-importing stem C extensions in the kernel process" idea is gone — the subprocess probe is
@@ -195,6 +195,65 @@
   byte-identical against `git show HEAD`.
 - Dry-run gate for v19 is the trimmed local check (ast + `_kernel_verify` healthy/failure-path
   micro-test); the full 59/59 `dryrun.py` harness is slated for reconstruction in the repo.
+
+#### v19 run result on Kaggle (COMPLETED — all three success criteria met)
+
+- ✅ **Criterion (a): the precise first error is logged.** Install cell showed `task deps health:
+  OK` (subprocess probe on a fresh interpreter) yet **`in-kernel task deps import FAIL:
+  ImportError cannot import name '_slice' from 'numpy._core.umath'`** with the traceback tail
+  (`numpy/strings/__init__.py` → `numpy/_core/strings.py:22` → `from numpy._core.umath import`)
+  → `TASKS_HEALTHY = False`. rembg warm-up + every bg_remove/extract call repeated the same
+  import error for the whole boot.
+- ✅ **Criterion (b): `TASK SMOKE PASSED` with a clean warn.** upscale `200 ok=True` (REQUIRED),
+  video_frames `200` (3 outputs), bg_remove (`Network is unreachable` tunnel blip retried, then
+  the numpy import error) and extract FAILED → both `WARN tolerated (install cell reported task
+  deps unhealthy after heal)` → no raise. (v18's pop+reimport self-infliction is gone; this time
+  the kernel-only failure is a *real* environment condition, exactly what warn-only is for.)
+- ✅ **Criterion (c): sync idles.** `cache inventory: 62 files, 59.3 GB` →
+  `cache owner: adityahalde8777 (via kagglehub.whoami)` → **`cache dataset up to date (manifest
+  match)`** — the v18-created dataset v2 is authoritative, writes now skip. (Read half still
+  needs the manual Add Data attach: `/kaggle/input` still held `0 candidate files`.)
+- 🎯 **The v17 mystery is solved.** v17 and v19 both showed a *kernel-only* `_slice` error while
+  a fresh subprocess imported numpy fine — proportioned exactly by **in-place numpy swap**: a
+  subprocess `pip install` (rembg's dep resolve) replaced the numpy wheel files while THIS kernel
+  already had numpy 2.1.3 loaded (torch, preflight cell). The disk becomes self-consistent new
+  numpy (subprocess probe OK) while the kernel's already-imported `numpy._core.umath` (old, no
+  `_slice`) and the new on-disk `strings.py` (imports `_slice`) mix → error. **Reproduced 1:1
+  locally** (pip upgraded numpy 2.1.3 → 2.5.3 while loaded → identical in-kernel error; the
+  subprocess probe stayed OK), and the **cure verified**: `pip force-reinstall --no-deps
+  numpy==<the version the kernel loaded>` (2.1.3) then BOTH probes return OK.
+
+### v20 — Music 3 lane + the proven numpy heal — PUSHED (Oct 8)
+- **Install cell heals on EITHER probe**: the subprocess-only heal had a blind spot v19 exposed —
+  the disk can be consistent while the kernel is broken. Now the heal fires when the subprocess
+  probe OR the in-kernel verify fails, force-reinstalls numpy to the **in-kernel loaded version**
+  (`numpy.__version__` in-process, not whatever pip resolved), then re-verifies both. Locally
+  verified end-to-end: preload 2.1.3 → rembg resolve upgraded disk to 2.5.3 → subprocess OK /
+  kernel FAIL → heal to 2.1.3 → both OK.
+- **Music lane (MiniMax Music 3)**: `build_prompt()` gains a `music` branch (`_build_music`)
+  using **ComfyUI core nodes only** (`comfy_extras/nodes_minimax_music.py` + `nodes_audio.py` +
+  `nodes_logic.py`) — no custom pack, no MultiStream, single T4. `audio_minimax_music_3.json`
+  (11-node subgraph) is flattened by the **shared `_flatten(wf, info)`**, which was extracted
+  from the video flattener verbatim — a local equivalence harness proved the video prompt is
+  **byte-identical** after the refactor (27 nodes, identical meta). The music subgraph stores
+  inner widgets **positionally** (older graph format, no `widgets_values_named`) → a
+  schema-verified `MUSIC_WIDGETS` table promotes them (`""` skips `control_after_generate`).
+  Wiring verified node-by-node: instance `switch` → `ComfySwitchNode` selects
+  `VAEDecodeAudioTiled` (tile 1536 / overlap 64) vs `VAEDecodeAudio` (lazy — one executes); seed
+  → `SeedNode` → `MiniMaxMusic3TextEncode.seed` + `KSampler.seed`; `max_duration` →
+  TextEncode + `EmptyMiniMaxMusic3LatentAudio.seconds`; subgraph output link → ComfySwitchNode →
+  `SaveAudioAdvanced.audio` with `format` as the dict `{"format":"flac"}`.
+- **Preset `music_smoke`**: max_duration 5, seed 4242, tiled decode on, `flac`; caption from
+  `MUSIC_SMOKE_PROMPT` (lyric-capable). Models: `Comfy-Org/MiniMax-Music-3` (dit fp16 4.91 GB +
+  TE pruned int8 convrot 9.20 GB + dav 0.22 GB = 14.33 GB) into the existing
+  `diffusion_models/text_encoders/vae` dirs.
+- **Smoke schedule default becomes `image,video,music`**: music waits up to 3600 s, then asserts a
+  real audio file (`auds` scan — `h3_music_*.flac`). Registry + `/h3api/catalog` (incl.
+  `?refresh=1`) carry the music tree; `/h3api/settings` and `/generate` accept `music_smoke`
+  (keys `lyrics`/`max_duration`/`tiled_decode`/`format`); docs page documents it.
+- Expected outcome of the v20 run: `TASKS_HEALTHY = True` (heal fires on the nil in-kernel
+  probe if the swap recurs), `SMOKE PASSED: ['image','video','music']`, a real FLAC in output,
+  bg_remove/extract green through the tunnel.
 
 ## 2026-10-07 — retired lanes (kept for history)
 
@@ -235,10 +294,11 @@
 6. ⬜ **First/last-frame conditioning at runtime**: the prompt structure validates locally
    (LoadImage → subgraph input, `node_errors {}`), but no Kaggle run has yet *executed* an
    image-conditioned generation end to end.
-7. ⬜→✅ **Write-back round trip**: **upload half CLOSED in v16** — `kagglehub upload OK ->
+7. ✅→🟡 **Write-back round trip**: **upload half CLOSED in v16** — `kagglehub upload OK ->
    adityahalde8777/minimax-h3-model-cache (530 s)`, 42 GB, dataset created from scratch
-   (owner via `kagglehub.whoami`, v15's `SKIP upload` gone). Still open: (a) second-boot probe
-   must find `MANIFEST.json` and **skip** the re-upload (v16's `BackendError/403` probe was
-   correct first-run behavior — verify in v17), (b) the read half: attach the dataset to the
-   kernel once via **Add Data** so `/kaggle/input` populates and later boots symlink models
-   instead of downloading from HF.
+   (owner via `kagglehub.whoami`, v15's `SKIP upload` gone). **(a) manifest drift is now
+   authoritative: CLOSED — v18 uploaded version 2 on a real `5 remote vs 6 local` drift
+   (716 s); v19 probed the populated dataset and idled on `cache dataset up to date (manifest
+   match)`. (b) read half still OPEN: attach the dataset to the kernel once via **Add Data**
+   so `/kaggle/input` populates and later boots symlink models instead of downloading from HF
+   (v19 still showed `0 candidate files` under `/kaggle/input`).

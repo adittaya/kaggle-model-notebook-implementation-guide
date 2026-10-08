@@ -62,6 +62,7 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
 | build script | `H_catalog` refresh branch would have raised `NameError: reg` | the branch used `reg.get("image_repo", ...)` **before** `reg = json.load(...)` — a variable that only exists after the load | load the registry first (`reg0`) inside the refresh branch; ordering bugs in error paths only fire when `?refresh=1` is called — which is exactly when users call it |
 | local box | first rembg warm-up downloads weights through a **symlinked** `models/` dir | `/tmp/ComfyUI → /tmp/opencode/ComfyUI` symlink; relative/`os.path` writes resolve through it fine, but inventory code that string-compares paths may not | keep `REMBG_HOME` under the resolved `models/` path and check `Path.resolve()` when comparing |
 | **v18 Kaggle run (COMPLETED, but bg_remove/extract down all boot)** | `task deps health: OK` (subprocess probe passed — **no mixed numpy this boot**) yet the **in-kernel** verify failed with `AttributeError: 'numpy.ufunc' object has no attribute '__module__'` → `TASKS_HEALTHY=False` → warm-up, api `import rembg` and every task died for the whole boot | **self-inflicted `_kernel_verify` bug**: it *popped* `numpy*` from `sys.modules` and re-imported in the same long-lived process. Pop-and-reimport of a stem C-extension module is broken by itself: locally reproduced on a healthy numpy 2.4.6 (`ImportError: cannot load module more than once per process`); on Kaggle the re-import walks the newer-style `multiarray._override___module__` and fails setting `ufunc.__module__` on the re-init'd objects → the *verified-healthy-subprocess* state and the *broken-kernel* state diverge | v19: **never touch `sys.modules` in `_kernel_verify`** — ONE attempt, print the FIRST error + traceback tail, return False (graceful `TASKS_HEALTHY=False`). The subprocess probe is the only place on-disk files are re-validated after a heal; a kernel process only *reports*, it does not reload C extensions. The `TASKS_HEALTHY` gate already made this non-fatal (upscale REQUIRED green, sync ran, dataset version 2) |
+| **v19 Kaggle run (COMPLETED — all three diagnostic goals met)** | `task deps health: OK` (subprocess probe on a fresh interpreter) yet **`in-kernel task deps import FAIL: ImportError cannot import name '_slice' from 'numpy._core.umath'`** (first error + traceback tail printed — exactly the diagnostic v18 lacked) → `TASKS_HEALTHY=False` → bg_remove/extract FAILED (after retry-once) but `WARN tolerated` → `TASK SMOKE PASSED`; **sync idled: `cache dataset up to date (manifest match)`** | **the mixed numpy is an IN-PLACE SWAP, not a bad image**: a subprocess `pip install` (rembg's dep resolve) replaces the numpy wheel files while THIS kernel already pre-loaded numpy 2.1.3 (torch preflight). Disk then imports self-consistently (new numpy → subprocess probe OK) while the kernel's already-imported `umath` (old, no `_slice`) + new on-disk `strings.py` (imports `_slice`) mix → kernel-only failure. Reproduced 1:1 locally (in-place upgrade 2.1.3→2.5.3 while loaded → same error; subprocess stayed OK) | **v20: heal fires when EITHER probe fails**, force-reinstalling numpy to the version the KERNEL loaded (`numpy.__version__` in-process), then re-verifies both — the cure itself verified locally (after heal: subprocess OK + in-kernel OK, `TASKS_HEALTHY=True`). Lesson: a subprocess-only probe validates disk files, not the long-lived process's loaded modules — probe both |
 
 ## Debugging signals that actually solved things
 
@@ -103,11 +104,15 @@ the runtime expects. Never `pip install -U huggingface_hub` while doing this (se
   retry) → **`TASK SMOKE PASSED`** → sync (drift → upload, or `manifest match` on a populated
   dataset) → READY. **v17 matched up to the last step** (bg_remove/extract — chain (C) above);
   **v18 matched fully** (with bg_remove/extract warn-only against the self-inflicted numpy bug,
-  sync uploaded version 2 in 716 s). When the log matches the healthy sequence up to one line,
-  that line *is* the bug — a missing flux line means the image schedule didn't load
-  (`H3_SMOKE`); a missing PNG after image smoke means the checkpoint never landed
-  (`value_not_in_list` on `ckpt_name`); a `WARN tolerated` row means the environment (not the
-  feature) is broken — stay in warn-only and let the run finish.
+  sync uploaded version 2 in 716 s); **v19 = the same sequence with a clean warn** (bg_remove/
+  extract FAILED on the in-place-numpy-swap but `WARN tolerated`), and **sync idled on `manifest
+  match`** (no drift); **v20 adds the third modality to that sequence** (music smoke → audio
+  file assertion) and expects `TASKS_HEALTHY=True` via the either-probe heal. When the log
+  matches the healthy sequence up to one line, that line *is* the bug — a missing flux line
+  means the image schedule didn't load (`H3_SMOKE`); a missing PNG after image smoke means the
+  checkpoint never landed (`value_not_in_list` on `ckpt_name`); a missing FLAC after music smoke
+  means the MiniMax-Music-3 assets never landed or the module is wrong; a `WARN tolerated` row
+  means the environment (not the feature) is broken — stay in warn-only and let the run finish.
 - **Dry-run the notebook cells locally before pushing**: run every cell against a local ComfyUI
   (CPU build) — registry/settings/assets/convert/submit/API all execute for free and `/prompt`
   validation is the real `validate_prompt`. The v15 harness goes further: after the cells it
